@@ -1,8 +1,8 @@
 {
 	"fill": {
 		"linear-gradient": [
-			"display-p3:0.18127,0.41301,0.28212,1.00000",
-			"display-p3:0.09652,0.20392,0.15411,1.00000"
+			"display-p3:0.12000,0.27000,0.82000,1.00000",
+			"display-p3:0.06000,0.13000,0.42000,1.00000"
 		]
 	},
 	"groups": [
@@ -20,8 +20,8 @@
 						{
 							"value": {
 								"linear-gradient": [
-									"display-p3:0.49491,0.92226,0.57293,1.00000",
-									"display-p3:0.10588,0.85098,0.41569,1.00000"
+									"display-p3:0.30000,0.50000,0.95000,1.00000",
+									"display-p3:0.10600,0.26700,0.85100,1.00000"
 								]
 							}
 						},
@@ -32,7 +32,7 @@
 					],
 					"glass": true,
 					"image-name": "Modrinth logo.svg",
-					"name": "Modrinth logo",
+					"name": "ArkRinth logo",
 					"opacity-specializations": [
 						{
 							"appearance": "tinted",

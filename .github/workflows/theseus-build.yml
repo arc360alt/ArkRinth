@@ -74,9 +74,9 @@ jobs:
           GIT_HASH=$(git rev-parse --short HEAD)
           cat > apps/app/tauri-dev.conf.json <<EOF
           {
-            "productName": "Modrinth App (dev-${GIT_HASH})",
-            "mainBinaryName": "Modrinth App (dev-${GIT_HASH})",
-            "identifier": "ModrinthApp-dev-${GIT_HASH}",
+            "productName": "ArkRinth App (dev-${GIT_HASH})",
+            "mainBinaryName": "ArkRinth App (dev-${GIT_HASH})",
+            "identifier": "ArkRinthApp-dev-${GIT_HASH}",
             "bundle": {
               "fileAssociations": []
             }
