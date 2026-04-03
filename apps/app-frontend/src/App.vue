@@ -327,18 +327,18 @@ async function setupApp() {
 		}),
 	)
 
-	fetch(`https://api.modrinth.com/appCriticalAnnouncement.json?version=${version}`)
-		.then((response) => response.json())
-		.then((res) => {
-			if (res && res.header && res.body) {
-				criticalErrorMessage.value = res
-			}
-		})
-		.catch(() => {
-			console.log(
-				`No critical announcement found at https://api.modrinth.com/appCriticalAnnouncement.json?version=${version}`,
-			)
-		})
+	// fetch(`https://api.modrinth.com/appCriticalAnnouncement.json?version=${version}`)
+	//	.then((response) => response.json())
+	//	.then((res) => {
+	//		if (res && res.header && res.body) {
+	//			criticalErrorMessage.value = res
+	//		}
+	//	})
+	//	.catch(() => {
+	//		console.log(
+	//			`No critical announcement found at https://api.modrinth.com/appCriticalAnnouncement.json?version=${version}`,
+	//		)
+	//	})
 
 	fetch(`https://modrinth.com/news/feed/articles.json`)
 		.then((response) => response.json())
