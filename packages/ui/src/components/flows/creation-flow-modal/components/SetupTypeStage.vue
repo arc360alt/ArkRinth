@@ -14,6 +14,12 @@
 		<template v-if="ctx.flowType === 'instance'">
 			<div class="flex flex-col gap-3">
 				<BigOptionButton
+					:icon="OAIcon"
+					title="OptiArk Base"
+					description="Start from an OptiArk renderer preset and version."
+					@click="setSetupType('optiark')"
+				/>
+				<BigOptionButton
 					:icon="BoxesIcon"
 					title="Custom setup"
 					description="Start from scratch by picking a loader and game version."
@@ -65,6 +71,7 @@
 
 <script setup lang="ts">
 import { BoxesIcon, BoxIcon, BoxImportIcon, PackageIcon } from '@modrinth/assets'
+import { defineComponent, h } from 'vue'
 
 import { useDebugLogger } from '#ui/composables/debug-logger'
 
@@ -75,7 +82,20 @@ const debug = useDebugLogger('SetupTypeStage')
 const ctx = injectCreationFlowContext()
 const { setSetupType: _setSetupType } = ctx
 
-function setSetupType(type: 'modpack' | 'custom' | 'vanilla') {
+const OAIcon = defineComponent({
+	name: 'OAIcon',
+	render: () =>
+		h(
+			'span',
+			{
+				class:
+					'flex h-full w-full items-center justify-center font-minecraft text-secondary font-bold text-lg leading-none',
+			},
+			'OA',
+		),
+})
+
+function setSetupType(type: 'modpack' | 'custom' | 'vanilla' | 'optiark') {
 	debug('selected:', type)
 	_setSetupType(type)
 }

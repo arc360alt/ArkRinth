@@ -17,7 +17,7 @@ use path_util::SafeRelativeUtf8UnixPathBuf;
 
 use super::install_from::{
     CreatePack, CreatePackLocation, PackFormat, generate_pack_from_file,
-    generate_pack_from_version_id,
+    generate_pack_from_url, generate_pack_from_version_id,
 };
 use crate::data::ProjectType;
 use std::io::{Cursor, ErrorKind};
@@ -47,6 +47,13 @@ pub async fn install_zipped_mrpack(
                 None,
             )
             .await?
+        }
+        CreatePackLocation::FromUrl {
+            url,
+            title,
+            icon_url,
+        } => {
+            generate_pack_from_url(url, title, icon_url, profile_path.clone()).await?
         }
         CreatePackLocation::FromFile { path } => {
             generate_pack_from_file(path, profile_path.clone()).await?

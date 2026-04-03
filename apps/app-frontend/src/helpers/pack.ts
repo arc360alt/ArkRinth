@@ -23,6 +23,13 @@ interface PackLocationFile {
 	path: string
 }
 
+interface PackLocationUrl {
+	type: 'fromUrl'
+	url: string
+	title: string
+	icon_url?: string
+}
+
 export async function create_profile_and_install(
 	projectId: string,
 	versionId: string,
@@ -73,6 +80,32 @@ export async function create_profile_and_install_from_file(path: string): Promis
 	const location: PackLocationFile = {
 		type: 'fromFile',
 		path,
+	}
+	const profile_creator = await invoke<PackProfileCreator>(
+		'plugin:pack|pack_get_profile_from_pack',
+		{ location },
+	)
+	const profile = await create(
+		profile_creator.name,
+		profile_creator.gameVersion,
+		profile_creator.modloader,
+		profile_creator.loaderVersion,
+		null,
+		true,
+	)
+	return await invoke('plugin:pack|pack_install', { location, profile })
+}
+
+export async function create_profile_and_install_from_url(
+	url: string,
+	title: string,
+	iconUrl?: string,
+): Promise<void> {
+	const location: PackLocationUrl = {
+		type: 'fromUrl',
+		url,
+		title,
+		icon_url: iconUrl,
 	}
 	const profile_creator = await invoke<PackProfileCreator>(
 		'plugin:pack|pack_get_profile_from_pack',

@@ -375,7 +375,7 @@ function handleKeyDown(event: KeyboardEvent) {
 
 	// Fade variants
 	&.standard {
-		background: linear-gradient(to bottom, rgba(29, 48, 43, 0.52) 0%, rgba(14, 21, 26, 0.95) 100%);
+		background: linear-gradient(to bottom, rgba(0, 5, 40, 0.55) 0%, rgba(2, 0, 18, 0.96) 100%);
 	}
 
 	&.warning {

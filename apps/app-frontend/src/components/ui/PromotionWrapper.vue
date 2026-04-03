@@ -32,24 +32,7 @@ function updateAdPosition() {
 </script>
 
 <template>
-	<div ref="adsWrapper" class="ad-parent relative flex w-full justify-center cursor-pointer bg-bg">
-		<a
-			href="https://modrinth.host/medal?from=app-placeholder"
-			target="_blank"
-			class="flex max-h-[250px] min-h-[250px] min-w-[300px] max-w-[300px] flex-col gap-4 rounded-[inherit]"
-		>
-			<img
-				src="https://cdn-raw.modrinth.com/modrinth-hosting-medal-light.webp"
-				alt="Host your next server with Modrinth Hosting"
-				class="hidden light-image rounded-[inherit]"
-			/>
-			<img
-				src="https://cdn-raw.modrinth.com/modrinth-hosting-medal-dark.webp"
-				alt="Host your next server with Modrinth Hosting"
-				class="dark-image rounded-[inherit]"
-			/>
-		</a>
-	</div>
+
 </template>
 <style lang="scss" scoped>
 .light,

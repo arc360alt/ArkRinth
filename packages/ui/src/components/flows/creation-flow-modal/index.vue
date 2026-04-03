@@ -36,6 +36,7 @@ const props = withDefaults(
 		fade?: 'standard' | 'warning' | 'danger'
 		searchModpacks?: (query: string, limit?: number) => Promise<ModpackSearchResult>
 		getProjectVersions?: (projectId: string) => Promise<{ id: string }[]>
+		getOptiArkDownloads?: () => Promise<unknown>
 	}>(),
 	{
 		type: 'world',
@@ -75,6 +76,7 @@ const ctx = createCreationFlowContext(
 		onBack: props.onBack ?? undefined,
 		searchModpacks: props.searchModpacks,
 		getProjectVersions: props.getProjectVersions,
+		getOptiArkDownloads: props.getOptiArkDownloads,
 	},
 )
 provideCreationFlowContext(ctx)

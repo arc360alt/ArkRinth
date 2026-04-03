@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { getCurrentWindow } from '@tauri-apps/api/window'
 import { Combobox, ThemeSelector, Toggle } from '@modrinth/ui'
 import { ref, watch } from 'vue'
 
@@ -12,6 +13,12 @@ const themeStore = useTheming()
 const os = ref(await getOS())
 const settings = ref(await get())
 
+async function updateNativeDecorations(enabled: boolean) {
+	settings.value.native_decorations = enabled
+	await getCurrentWindow().setDecorations(enabled)
+	window.dispatchEvent(new CustomEvent('native-decorations-changed', { detail: enabled }))
+}
+
 watch(
 	settings,
 	async () => {
@@ -22,7 +29,7 @@ watch(
 </script>
 <template>
 	<h2 class="m-0 text-lg font-extrabold text-contrast">Color theme</h2>
-	<p class="m-0 mt-1">Select your preferred color theme for Modrinth App.</p>
+	<p class="m-0 mt-1">Select your preferred color theme for ArkRinth App.</p>
 
 	<ThemeSelector
 		:update-color-theme="
@@ -68,9 +75,13 @@ watch(
 	<div v-if="os !== 'MacOS'" class="mt-4 flex items-center justify-between gap-4">
 		<div>
 			<h2 class="m-0 text-lg font-extrabold text-contrast">Native decorations</h2>
-			<p class="m-0 mt-1">Use system window frame (app restart required).</p>
+			<p class="m-0 mt-1">Use system window frame and borders.</p>
 		</div>
-		<Toggle id="native-decorations" v-model="settings.native_decorations" />
+		<Toggle
+			id="native-decorations"
+			:model-value="settings.native_decorations"
+			@update:model-value="(e) => updateNativeDecorations(!!e)"
+		/>
 	</div>
 
 	<div class="mt-4 flex items-center justify-between">

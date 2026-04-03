@@ -6,6 +6,12 @@ import CustomSetupStage from '../components/CustomSetupStage.vue'
 import { type CreationFlowContextValue, flowTypeHeadings } from '../creation-flow-context'
 
 function isForwardBlocked(ctx: CreationFlowContextValue): boolean {
+	if (ctx.setupType.value === 'optiark') {
+		if (ctx.optiarkLoading.value) return true
+		if (!ctx.optiarkRenderer.value) return true
+		if (!ctx.optiarkVersionUrl.value) return true
+		return false
+	}
 	if (!ctx.selectedGameVersion.value) return true
 	if (!ctx.hideLoaderChips.value && !ctx.selectedLoader.value) return true
 	if (

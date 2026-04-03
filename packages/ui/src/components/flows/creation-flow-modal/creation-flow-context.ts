@@ -12,11 +12,18 @@ import type { ComboboxOption } from '../../base/Combobox.vue'
 import { stageConfigs } from './stages'
 
 export type FlowType = 'world' | 'server-onboarding' | 'reset-server' | 'instance'
-export type SetupType = 'modpack' | 'custom' | 'vanilla'
+export type SetupType = 'modpack' | 'custom' | 'vanilla' | 'optiark'
 export type Gamemode = 'survival' | 'creative' | 'hardcore'
 export type Difficulty = 'peaceful' | 'easy' | 'normal' | 'hard'
 export type LoaderVersionType = 'stable' | 'latest' | 'other'
 export type GeneratorSettingsMode = 'default' | 'flat' | 'custom'
+
+export interface OptiArkVersionOption {
+	label: string
+	url: string
+	supported: boolean
+	note: string | null
+}
 
 export interface ModpackSelection {
 	projectId: string
@@ -97,6 +104,17 @@ export interface CreationFlowContextValue {
 	modpackFile: Ref<File | null>
 	modpackFilePath: Ref<string | null>
 
+	// OptiArk state
+	optiarkRenderer: Ref<string | null>
+	optiarkRendererIconUrl: Ref<string | null>
+	optiarkVersionLabel: Ref<string | null>
+	optiarkVersionUrl: Ref<string | null>
+	optiarkRendererOptions: Ref<ComboboxOption<string>[]>
+	optiarkVersionOptions: Ref<ComboboxOption<string>[]>
+	optiarkVersionMeta: Ref<Record<string, OptiArkVersionOption>>
+	optiarkLoading: Ref<boolean>
+	optiarkError: Ref<string | null>
+
 	// Modpack search state (persisted across stage navigation)
 	modpackSearchProjectId: Ref<string | undefined>
 	modpackSearchVersionId: Ref<string | undefined>
@@ -137,6 +155,7 @@ export interface CreationFlowContextValue {
 	// Platform-provided search
 	searchModpacks: (query: string, limit?: number) => Promise<ModpackSearchResult>
 	getProjectVersions: (projectId: string) => Promise<{ id: string }[]>
+	getOptiArkDownloads: () => Promise<unknown>
 }
 
 export const [injectCreationFlowContext, provideCreationFlowContext] =
@@ -156,6 +175,7 @@ export interface CreationFlowOptions {
 	onBack?: () => void
 	searchModpacks?: (query: string, limit?: number) => Promise<ModpackSearchResult>
 	getProjectVersions?: (projectId: string) => Promise<{ id: string }[]>
+	getOptiArkDownloads?: () => Promise<unknown>
 }
 
 export function createCreationFlowContext(
@@ -229,6 +249,15 @@ export function createCreationFlowContext(
 	const modpackSelection = ref<ModpackSelection | null>(null)
 	const modpackFile = ref<File | null>(null)
 	const modpackFilePath = ref<string | null>(null)
+	const optiarkRenderer = ref<string | null>(null)
+	const optiarkRendererIconUrl = ref<string | null>(null)
+	const optiarkVersionLabel = ref<string | null>(null)
+	const optiarkVersionUrl = ref<string | null>(null)
+	const optiarkRendererOptions = ref<ComboboxOption<string>[]>([])
+	const optiarkVersionOptions = ref<ComboboxOption<string>[]>([])
+	const optiarkVersionMeta = ref<Record<string, OptiArkVersionOption>>({})
+	const optiarkLoading = ref(false)
+	const optiarkError = ref<string | null>(null)
 
 	// Modpack search state (persisted across stage navigation)
 	const modpackSearchProjectId = ref<string | undefined>()
@@ -285,6 +314,15 @@ export function createCreationFlowContext(
 		modpackSelection.value = null
 		modpackFile.value = null
 		modpackFilePath.value = null
+		optiarkRenderer.value = null
+		optiarkRendererIconUrl.value = null
+		optiarkVersionLabel.value = null
+		optiarkVersionUrl.value = null
+		optiarkRendererOptions.value = []
+		optiarkVersionOptions.value = []
+		optiarkVersionMeta.value = {}
+		optiarkLoading.value = false
+		optiarkError.value = null
 		modpackSearchProjectId.value = undefined
 		modpackSearchVersionId.value = undefined
 		modpackSearchOptions.value = []
@@ -315,6 +353,9 @@ export function createCreationFlowContext(
 			modpackSelection.value = null
 			modpackFile.value = null
 			modpackFilePath.value = null
+			optiarkRendererIconUrl.value = null
+			optiarkVersionLabel.value = null
+			optiarkVersionUrl.value = null
 			if (type === 'vanilla') {
 				selectedLoader.value = null
 				selectedLoaderVersion.value = null
@@ -370,8 +411,14 @@ export function createCreationFlowContext(
 		return { known }
 	}
 
-	const searchModpacks = options.searchModpacks!
-	const getProjectVersions = options.getProjectVersions!
+	const searchModpacks = options.searchModpacks ?? (async () => ({
+		hits: [],
+		total_hits: 0,
+		offset: 0,
+		limit: 0,
+	}))
+	const getProjectVersions = options.getProjectVersions ?? (async () => [])
+	const getOptiArkDownloads = options.getOptiArkDownloads ?? (async () => ({}))
 
 	const resolvedStageConfigs = disableClose
 		? stageConfigs.map((stage) => ({ ...stage, disableClose: true }))
@@ -410,6 +457,15 @@ export function createCreationFlowContext(
 		modpackSelection,
 		modpackFile,
 		modpackFilePath,
+		optiarkRenderer,
+		optiarkRendererIconUrl,
+		optiarkVersionLabel,
+		optiarkVersionUrl,
+		optiarkRendererOptions,
+		optiarkVersionOptions,
+		optiarkVersionMeta,
+		optiarkLoading,
+		optiarkError,
 		modpackSearchProjectId,
 		modpackSearchVersionId,
 		modpackSearchOptions,
@@ -433,6 +489,7 @@ export function createCreationFlowContext(
 		buildProperties,
 		searchModpacks,
 		getProjectVersions,
+		getOptiArkDownloads,
 	}
 
 	return contextValue

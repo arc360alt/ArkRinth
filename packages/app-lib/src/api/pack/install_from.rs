@@ -92,6 +92,12 @@ pub enum CreatePackLocation {
         title: String,
         icon_url: Option<String>,
     },
+    // Create a pack from a remote URL (such as a third-party mrpack download)
+    FromUrl {
+        url: String,
+        title: String,
+        icon_url: Option<String>,
+    },
     // Create a pack from a file (such as an .mrpack for installing from a file, or a folder name for importing)
     FromFile {
         path: PathBuf,
@@ -164,6 +170,15 @@ pub fn get_profile_from_pack(
             }),
             ..Default::default()
         },
+        CreatePackLocation::FromUrl {
+            title,
+            icon_url,
+            ..
+        } => CreatePackProfile {
+            name: title,
+            icon_url,
+            ..Default::default()
+        },
         CreatePackLocation::FromFile { path } => {
             let file_name = path
                 .file_stem()
@@ -177,6 +192,81 @@ pub fn get_profile_from_pack(
             }
         }
     }
+}
+
+#[tracing::instrument]
+pub async fn generate_pack_from_url(
+    url: String,
+    title: String,
+    icon_url: Option<String>,
+    profile_path: String,
+) -> crate::Result<CreatePack> {
+    let state = State::get().await?;
+
+    let loading_bar = init_loading(
+        LoadingBarType::PackFileDownload {
+            profile_path: profile_path.clone(),
+            pack_name: title.clone(),
+            icon: icon_url.clone(),
+            pack_version: title.clone(),
+        },
+        100.0,
+        "Downloading pack file",
+    )
+    .await?;
+
+    let file = fetch_advanced(
+        Method::GET,
+        &url,
+        None,
+        None,
+        None,
+        Some((&loading_bar, 80.0)),
+        &state.fetch_semaphore,
+        &state.pool,
+    )
+    .await?;
+
+    let icon = if let Some(icon_url) = icon_url {
+        emit_loading(&loading_bar, 10.0, Some("Retrieving icon"))?;
+        let icon_bytes = fetch(&icon_url, None, &state.fetch_semaphore, &state.pool).await?;
+        let filename = icon_url.rsplit('/').next();
+
+        let fetched = if let Some(filename) = filename {
+            Some(
+                write_cached_icon(
+                    filename,
+                    &state.directories.caches_dir(),
+                    icon_bytes,
+                    &state.io_semaphore,
+                )
+                .await?,
+            )
+        } else {
+            None
+        };
+        emit_loading(&loading_bar, 10.0, None)?;
+        fetched
+    } else {
+        emit_loading(&loading_bar, 20.0, None)?;
+        None
+    };
+
+    if let Some(ref icon_path) = icon {
+        let _ = profile::edit_icon(&profile_path, Some(icon_path.as_path())).await;
+    }
+
+    Ok(CreatePack {
+        file,
+        description: CreatePackDescription {
+            icon,
+            override_title: Some(title),
+            project_id: None,
+            version_id: None,
+            existing_loading_bar: Some(loading_bar),
+            profile_path,
+        },
+    })
 }
 
 #[tracing::instrument]

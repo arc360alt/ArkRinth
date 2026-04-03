@@ -60,7 +60,6 @@ import { $fetch } from 'ofetch'
 import { computed, onMounted, onUnmounted, provide, ref, watch } from 'vue'
 import { RouterView, useRoute, useRouter } from 'vue-router'
 
-import ModrinthAppLogo from '@/assets/modrinth_app.svg?component'
 import ModrinthLoadingIndicator from '@/components/LoadingIndicatorBar.vue'
 import AccountsCard from '@/components/ui/AccountsCard.vue'
 import Breadcrumbs from '@/components/ui/Breadcrumbs.vue'
@@ -152,6 +151,7 @@ const {
 	handleBrowseModpacks,
 	searchModpacks,
 	getProjectVersions,
+	getOptiArkDownloads,
 	setModpackAlreadyInstalledModal,
 	handleModpackDuplicateCreateAnyway,
 	handleModpackDuplicateGoToInstance,
@@ -180,6 +180,10 @@ const criticalErrorMessage = ref()
 
 const isMaximized = ref(false)
 
+function handleNativeDecorationsChanged(event) {
+	nativeDecorations.value = !!event?.detail
+}
+
 const authUnreachableDebug = useDebugLogger('AuthReachableChecker')
 const authServerQuery = useQuery({
 	queryKey: ['authServerReachability'],
@@ -206,6 +210,7 @@ onMounted(async () => {
 
 	document.querySelector('body').addEventListener('click', handleClick)
 	document.querySelector('body').addEventListener('auxclick', handleAuxClick)
+	window.addEventListener('native-decorations-changed', handleNativeDecorationsChanged)
 
 	checkUpdates()
 })
@@ -213,6 +218,7 @@ onMounted(async () => {
 onUnmounted(async () => {
 	document.querySelector('body').removeEventListener('click', handleClick)
 	document.querySelector('body').removeEventListener('auxclick', handleAuxClick)
+	window.removeEventListener('native-decorations-changed', handleNativeDecorationsChanged)
 
 	await unlistenUpdateDownload?.()
 })
@@ -970,6 +976,7 @@ provideAppUpdateDownloadProgress(appUpdateDownload)
 			:fetch-existing-instance-names="fetchExistingInstanceNames"
 			:search-modpacks="searchModpacks"
 			:get-project-versions="getProjectVersions"
+			:get-opti-ark-downloads="getOptiArkDownloads"
 			@create="handleCreate"
 			@browse-modpacks="handleBrowseModpacks"
 		/>
@@ -1088,13 +1095,11 @@ provideAppUpdateDownloadProgress(appUpdateDownload)
 				</template>
 				<template #sign-out> <LogOutIcon /> Sign out </template>
 			</OverflowMenu>
-			<NavButton v-else v-tooltip.right="'Sign in to a Modrinth account'" :to="() => signIn()">
-				<LogInIcon class="text-brand" />
-			</NavButton>
+
 		</div>
 		<div data-tauri-drag-region class="app-grid-statusbar bg-bg-raised h-[--top-bar-height] flex">
 			<div data-tauri-drag-region class="flex min-w-0 flex-1 overflow-hidden p-3">
-				<ModrinthAppLogo class="h-full w-auto shrink-0 text-contrast pointer-events-none" />
+				<span class="font-bold text-lg text-contrast pointer-events-none tracking-tight">ArkRinth</span>
 				<div data-tauri-drag-region class="flex shrink-0 items-center gap-1 ml-3">
 					<button
 						class="cursor-pointer p-0 m-0 text-contrast border-none outline-none bg-button-bg rounded-full flex items-center justify-center w-6 h-6 hover:brightness-75 transition-all"
@@ -1257,32 +1262,10 @@ provideAppUpdateDownloadProgress(appUpdateDownload)
 							/>
 						</suspense>
 					</div>
-					<div v-if="news && news.length > 0" class="p-4 pr-1 flex flex-col items-center">
-						<h3 class="text-base mb-4 text-primary font-medium m-0 text-left w-full">News</h3>
-						<div class="space-y-4 flex flex-col items-center w-full">
-							<NewsArticleCard
-								v-for="(item, index) in news"
-								:key="`news-${index}`"
-								:article="item"
-							/>
-							<ButtonStyled color="brand" size="large">
-								<a href="https://modrinth.com/news" target="_blank" class="my-4">
-									<NewspaperIcon /> View all news
-								</a>
-							</ButtonStyled>
-						</div>
-					</div>
 				</div>
 			</div>
 			<template v-if="showAd">
-				<a
-					href="https://modrinth.plus?app"
-					class="absolute bottom-[250px] w-full flex justify-center items-center gap-1 px-4 py-3 text-purple font-medium hover:underline z-10"
-					target="_blank"
-				>
-					<ArrowBigUpDashIcon class="text-2xl" /> Upgrade to Modrinth+
-				</a>
-				<PromotionWrapper />
+
 			</template>
 		</div>
 	</div>
@@ -1461,7 +1444,7 @@ provideAppUpdateDownloadProgress(appUpdateDownload)
 .app-sidebar::after {
 	content: '';
 	position: absolute;
-	bottom: 250px;
+	bottom: 0;
 	left: 0;
 	right: 0;
 	height: 5rem;

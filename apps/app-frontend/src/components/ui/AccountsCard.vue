@@ -68,6 +68,26 @@
 				<PlusIcon />
 				Add account
 			</Button>
+			<div class="offline-section">
+				<p class="offline-label">Play offline</p>
+				<div class="offline-input-row">
+					<input
+						v-model="offlineUsername"
+						class="offline-username-input"
+						placeholder="Enter username"
+						maxlength="16"
+						@keydown.enter="loginOffline"
+					/>
+					<Button
+						:disabled="loginDisabled || !offlineUsername.trim()"
+						color="primary"
+						@click="loginOffline"
+					>
+						<SpinnerIcon v-if="loginDisabled" class="animate-spin" />
+						<LogInIcon v-else />
+					</Button>
+				</div>
+			</div>
 		</Card>
 	</transition>
 </template>
@@ -79,6 +99,7 @@ import { computed, onBeforeUnmount, onMounted, onUnmounted, ref } from 'vue'
 
 import { trackEvent } from '@/helpers/analytics'
 import {
+	create_offline_user,
 	get_default_user,
 	login as login_flow,
 	remove_user,
@@ -102,15 +123,44 @@ defineProps({
 
 const emit = defineEmits(['change'])
 
-const accounts = ref({})
+const accounts = ref([])
 const loginDisabled = ref(false)
 const defaultUser = ref()
 const equippedSkin = ref(null)
 const headUrlCache = ref(new Map())
+const offlineUsername = ref('')
+
+function normalizeAccount(account) {
+	if (!account) return null
+
+	if (account.profile?.id && account.profile?.name) {
+		return account
+	}
+
+	if (account.id && account.username) {
+		return {
+			...account,
+			profile: {
+				id: account.id,
+				name: account.username,
+			},
+		}
+	}
+
+	return null
+}
 
 async function refreshValues() {
 	defaultUser.value = await get_default_user().catch(handleError)
-	accounts.value = await users().catch(handleError)
+	const loadedUsers = await users().catch(handleError)
+	const normalizedAccounts = (Array.isArray(loadedUsers) ? loadedUsers : [])
+		.map(normalizeAccount)
+		.filter(Boolean)
+	accounts.value = normalizedAccounts
+
+	if (!defaultUser.value && normalizedAccounts.length > 0) {
+		defaultUser.value = normalizedAccounts[0].profile.id
+	}
 
 	try {
 		const skins = await get_available_skins()
@@ -140,9 +190,10 @@ defineExpose({
 })
 await refreshValues()
 
-const displayAccounts = computed(() =>
-	accounts.value.filter((account) => defaultUser.value !== account.profile.id),
-)
+const displayAccounts = computed(() => {
+	if (!Array.isArray(accounts.value)) return []
+	return accounts.value.filter((account) => defaultUser.value !== account.profile.id)
+})
 
 const avatarUrl = computed(() => {
 	if (equippedSkin.value?.texture_key) {
@@ -171,11 +222,13 @@ function getAccountAvatarUrl(account) {
 	return `https://mc-heads.net/avatar/${account.profile.id}/128`
 }
 
-const selectedAccount = computed(() =>
-	accounts.value.find((account) => account.profile.id === defaultUser.value),
-)
+const selectedAccount = computed(() => {
+	if (!Array.isArray(accounts.value)) return undefined
+	return accounts.value.find((account) => account.profile.id === defaultUser.value)
+})
 
 async function setAccount(account) {
+	if (!account?.profile?.id) return
 	defaultUser.value = account.profile.id
 	await set_default_user(account.profile.id).catch(handleError)
 	emit('change')
@@ -191,6 +244,23 @@ async function login() {
 	}
 
 	trackEvent('AccountLogIn')
+	loginDisabled.value = false
+}
+
+async function loginOffline() {
+	const username = offlineUsername.value.trim()
+	if (!username) return
+
+	loginDisabled.value = true
+	const account = await create_offline_user(username).catch(handleError)
+
+	if (account) {
+		await setAccount(account)
+		await refreshValues()
+		offlineUsername.value = ''
+	}
+
+	trackEvent('AccountOfflineLogIn')
 	loginDisabled.value = false
 }
 
@@ -215,6 +285,7 @@ const handleClickOutside = (event) => {
 		card.value &&
 		card.value.$el !== event.target &&
 		!elements.includes(card.value.$el) &&
+		button.value &&
 		!button.value.contains(event.target)
 	) {
 		toggleMenu(false)
@@ -473,6 +544,46 @@ onUnmounted(() => {
 		background: var(--color-base);
 		color: var(--color-contrast);
 		padding: 0.5rem 1rem;
+	}
+}
+
+.offline-section {
+	border-top: 1px solid var(--color-divider);
+	padding-top: 0.75rem;
+	margin-top: 0.5rem;
+}
+
+.offline-label {
+	margin: 0 0 0.5rem 0;
+	font-size: 0.85rem;
+	font-weight: 500;
+	color: var(--color-secondary);
+	text-transform: uppercase;
+	letter-spacing: 0.5px;
+}
+
+.offline-input-row {
+	display: flex;
+	gap: 0.5rem;
+	align-items: center;
+}
+
+.offline-username-input {
+	flex: 1;
+	padding: 0.5rem 0.75rem;
+	border: 1px solid var(--color-button-bg);
+	border-radius: var(--radius-md);
+	background: var(--color-bg);
+	color: var(--color-contrast);
+	font-size: 0.9rem;
+
+	&::placeholder {
+		color: var(--color-secondary);
+	}
+
+	&:focus {
+		outline: none;
+		border-color: var(--color-brand);
 	}
 }
 </style>

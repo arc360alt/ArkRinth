@@ -69,6 +69,10 @@ export default defineConfig({
 	// to make use of `TAURI_ENV_DEBUG` and other env variables
 	// https://v2.tauri.app/reference/environment-variables/#tauri-cli-hook-commands
 	envPrefix: ['VITE_', 'TAURI_'],
+	optimizeDeps: {
+		// qrcode.vue can produce unstable optimized chunks in the app dev environment.
+		exclude: ['qrcode.vue'],
+	},
 	build: {
 		rolldownOptions: {
 			onwarn(warning, defaultHandler) {

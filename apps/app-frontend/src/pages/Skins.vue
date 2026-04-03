@@ -384,7 +384,7 @@ await Promise.all([loadCapes(), loadSkins(), loadCurrentUser()])
 					>
 						<template #overlay-buttons>
 							<Button
-								color="green"
+								color="brand"
 								aria-label="Edit skin"
 								class="pointer-events-auto"
 								@click.stop="(e: MouseEvent) => editSkinModal?.show(e, skin)"

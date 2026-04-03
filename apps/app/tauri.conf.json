@@ -1,8 +1,8 @@
 {
 	"$schema": "https://schema.tauri.app/config/2",
 	"build": {
-		"beforeDevCommand": "pnpm turbo run dev --filter=@modrinth/app-frontend",
-		"beforeBuildCommand": "pnpm turbo run build --filter=@modrinth/app-frontend",
+		"beforeDevCommand": "npm --prefix ../app-frontend run dev",
+		"beforeBuildCommand": "npm --prefix ../app-frontend run build",
 		"frontendDist": "../app-frontend/dist",
 		"devUrl": "http://localhost:1420"
 	},
@@ -40,10 +40,10 @@
 			}
 		]
 	},
-	"productName": "Modrinth App",
+	"productName": "ArkRinth App",
 	"version": "../app-frontend/package.json",
-	"mainBinaryName": "Modrinth App",
-	"identifier": "ModrinthApp",
+	"mainBinaryName": "ArkRinth App",
+	"identifier": "ArkRinthApp",
 	"plugins": {
 		"deep-link": {
 			"desktop": {
@@ -62,7 +62,7 @@
 				"fullscreen": false,
 				"height": 800,
 				"resizable": true,
-				"title": "Modrinth App",
+				"title": "ArkRinth App",
 				"label": "main",
 				"width": 1280,
 				"minHeight": 700,
@@ -87,7 +87,7 @@
 			"capabilities": ["ads", "core", "plugins"],
 			"csp": {
 				"default-src": "'self' customprotocol: asset:",
-				"connect-src": "ipc: http://ipc.localhost https://modrinth.com https://*.modrinth.com https://*.posthog.com https://*.sentry.io https://api.mclo.gs http://textures.minecraft.net https://textures.minecraft.net 'self' data: blob:",
+				"connect-src": "ipc: http://ipc.localhost https://modrinth.com https://*.modrinth.com https://*.posthog.com https://*.sentry.io https://api.mclo.gs http://textures.minecraft.net https://textures.minecraft.net https://oaapi.arc360hub.com 'self' data: blob:",
 				"font-src": ["https://cdn-raw.modrinth.com/fonts/"],
 				"img-src": "https: 'unsafe-inline' 'self' asset: http://asset.localhost http://textures.minecraft.net blob: data:",
 				"style-src": "'unsafe-inline' 'self'",

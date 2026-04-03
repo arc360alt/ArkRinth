@@ -5,6 +5,7 @@ use std::{env, fs};
 
 fn main() {
     println!("cargo::rerun-if-changed=.env");
+    println!("cargo::rerun-if-changed=.env.prod");
     println!("cargo::rerun-if-changed=java/gradle");
     println!("cargo::rerun-if-changed=java/src");
     println!("cargo::rerun-if-changed=java/build.gradle.kts");
@@ -16,9 +17,7 @@ fn main() {
 }
 
 fn set_env() {
-    for (var_name, var_value) in
-        dotenvy::dotenv_iter().into_iter().flatten().flatten()
-    {
+    for (var_name, var_value) in dotenv_iter() {
         if var_name == "DATABASE_URL" {
             // The sqlx database URL is a build-time detail that should not be exposed to the crate
             continue;
@@ -26,6 +25,14 @@ fn set_env() {
 
         println!("cargo::rustc-env={var_name}={var_value}");
     }
+}
+
+fn dotenv_iter() -> Vec<(String, String)> {
+    dotenvy::from_filename_iter(".env")
+        .or_else(|_| dotenvy::from_filename_iter(".env.prod"))
+        .expect("failed to load .env or .env.prod")
+        .filter_map(Result::ok)
+        .collect()
 }
 
 fn build_java_jars() {

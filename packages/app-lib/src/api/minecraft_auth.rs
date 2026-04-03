@@ -1,9 +1,11 @@
 //! Authentication flow interface
 
+use chrono::{Duration, Utc};
 use reqwest::StatusCode;
+use uuid::Uuid;
 
 use crate::State;
-use crate::state::{Credentials, MinecraftLoginFlow};
+use crate::state::{Credentials, MinecraftLoginFlow, MinecraftProfile};
 use crate::util::fetch::REQWEST_CLIENT;
 
 #[tracing::instrument]
@@ -87,4 +89,29 @@ pub async fn users() -> crate::Result<Vec<Credentials>> {
     let state = State::get().await?;
     let users = Credentials::get_all(&state.pool).await?;
     Ok(users.into_iter().map(|x| x.1).collect())
+}
+
+/// Create an offline/local account that doesn't require a Microsoft login.
+/// The account uses a random UUID and the given username, and will never
+/// attempt to refresh tokens, allowing play on offline-mode servers.
+#[tracing::instrument]
+pub async fn create_offline_user(username: String) -> crate::Result<Credentials> {
+    let state = State::get().await?;
+
+    let credentials = Credentials {
+        offline_profile: MinecraftProfile {
+            id: Uuid::new_v4(),
+            name: username,
+            ..MinecraftProfile::default()
+        },
+        access_token: String::new(),
+        refresh_token: String::new(),
+        // Set expiry far in the future so the refresh logic never fires
+        expires: Utc::now() + Duration::days(365 * 100),
+        active: true,
+    };
+
+    credentials.upsert(&state.pool).await?;
+
+    Ok(credentials)
 }

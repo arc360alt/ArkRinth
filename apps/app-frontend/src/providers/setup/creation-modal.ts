@@ -3,6 +3,7 @@ import type {
 	CreationFlowContextValue,
 	CreationFlowModal,
 } from '@modrinth/ui'
+import { fetch as tauriFetch } from '@tauri-apps/plugin-http'
 import { provide, ref, useTemplateRef } from 'vue'
 import type { ComponentExposed } from 'vue-component-type-helpers'
 import { useRouter } from 'vue-router'
@@ -11,7 +12,11 @@ import type ModpackAlreadyInstalledModal from '@/components/ui/modal/ModpackAlre
 import { trackEvent } from '@/helpers/analytics'
 import { get_project_versions, get_search_results } from '@/helpers/cache.js'
 import { import_instance } from '@/helpers/import.js'
-import { create_profile_and_install, create_profile_and_install_from_file } from '@/helpers/pack'
+import {
+	create_profile_and_install,
+	create_profile_and_install_from_file,
+	create_profile_and_install_from_url,
+} from '@/helpers/pack'
 import { create, list } from '@/helpers/profile.js'
 import type { InstanceLoader } from '@/helpers/types'
 
@@ -50,6 +55,29 @@ export function setupCreationModal(notificationManager: AbstractWebNotificationM
 
 	async function handleCreate(config: CreationFlowContextValue) {
 		try {
+			if (config.setupType.value === 'optiark' && config.optiarkVersionUrl.value) {
+				const name =
+					config.instanceName.value.trim() ||
+					config.optiarkVersionLabel.value ||
+					`OptiArk ${config.optiarkRenderer.value ?? 'Base'}`
+
+				await create_profile_and_install_from_url(config.optiarkVersionUrl.value, name).catch(
+					(error) => {
+					throw new Error(
+						error instanceof Error
+							? `Failed to install OptiArk base: ${error.message}`
+							: 'Failed to install OptiArk base',
+					)
+					},
+				)
+
+				installationModal.value?.hide()
+				trackEvent('InstanceCreate', {
+					source: 'CreationModalOptiArk',
+				})
+				return
+			}
+
 			if (config.modpackSelection.value) {
 				const { projectId, versionId, name, iconUrl } = config.modpackSelection.value
 
@@ -158,6 +186,16 @@ export function setupCreationModal(notificationManager: AbstractWebNotificationM
 		return versions ?? []
 	}
 
+	async function getOptiArkDownloads() {
+		const response = await tauriFetch('https://oaapi.arc360hub.com/api/downloads', {
+			method: 'GET',
+		})
+		if (!response.ok) {
+			throw new Error(`Failed to fetch OptiArk versions (${response.status})`)
+		}
+		return await response.json()
+	}
+
 	return {
 		installationModal,
 		fetchExistingInstanceNames,
@@ -165,6 +203,7 @@ export function setupCreationModal(notificationManager: AbstractWebNotificationM
 		handleBrowseModpacks,
 		searchModpacks,
 		getProjectVersions,
+		getOptiArkDownloads,
 		setModpackAlreadyInstalledModal,
 		handleModpackDuplicateCreateAnyway,
 		handleModpackDuplicateGoToInstance,

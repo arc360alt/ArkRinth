@@ -3,7 +3,12 @@
 		<!-- Instance-specific: Icon upload -->
 		<div v-if="ctx.flowType === 'instance'" class="flex items-center gap-4">
 			<Avatar :src="ctx.instanceIconUrl.value ?? undefined" size="5rem" />
+			<div v-if="isOptiArkSetup" class="flex flex-col gap-1">
+				<span class="font-semibold text-contrast">Pack icon</span>
+				<span class="text-sm text-secondary">The icon is read from the selected OptiArk .mrpack during install.</span>
+			</div>
 			<div class="flex flex-col gap-2">
+				<template v-if="!isOptiArkSetup">
 				<ButtonStyled type="outlined">
 					<button class="!border-surface-5" @click="triggerIconInput">
 						<UploadIcon />
@@ -16,6 +21,7 @@
 						Remove icon
 					</button>
 				</ButtonStyled>
+				</template>
 			</div>
 		</div>
 
@@ -28,8 +34,34 @@
 			/>
 		</div>
 
+		<div v-if="isOptiArkSetup" class="flex flex-col gap-2">
+			<span class="font-semibold text-contrast">OptiArk renderer</span>
+			<Combobox
+				v-model="ctx.optiarkRenderer.value"
+				:options="ctx.optiarkRendererOptions.value"
+				searchable
+				sync-with-selection
+				placeholder="Select renderer"
+				search-placeholder="Search renderer..."
+			/>
+		</div>
+
+		<div v-if="isOptiArkSetup" class="flex flex-col gap-2">
+			<span class="font-semibold text-contrast">OptiArk version</span>
+			<Combobox
+				v-model="ctx.optiarkVersionUrl.value"
+				:options="ctx.optiarkVersionOptions.value"
+				:no-options-message="ctx.optiarkLoading.value ? 'Loading versions...' : 'No versions available'"
+				searchable
+				sync-with-selection
+				placeholder="Select OptiArk version"
+				search-placeholder="Search OptiArk version..."
+			/>
+			<span v-if="ctx.optiarkError.value" class="text-sm text-red">{{ ctx.optiarkError.value }}</span>
+		</div>
+
 		<!-- Loader chips -->
-		<div v-if="!hideLoaderChips" class="flex flex-col gap-2">
+		<div v-if="!isOptiArkSetup && !hideLoaderChips" class="flex flex-col gap-2">
 			<span class="font-semibold text-contrast">{{
 				ctx.flowType === 'instance' ? 'Loader' : 'Content loader'
 			}}</span>
@@ -42,7 +74,7 @@
 		</div>
 
 		<!-- Game version -->
-		<div class="flex flex-col gap-2">
+		<div v-if="!isOptiArkSetup" class="flex flex-col gap-2">
 			<span class="font-semibold text-contrast">Game version</span>
 			<Combobox
 				v-model="selectedGameVersion"
@@ -67,7 +99,7 @@
 		</div>
 
 		<!-- Loader version -->
-		<template v-if="!hideLoaderVersion">
+		<template v-if="!isOptiArkSetup && !hideLoaderVersion">
 			<Collapsible :collapsed="!selectedLoader || !selectedGameVersion" overflow-visible>
 				<div class="flex flex-col gap-2">
 					<span class="font-semibold text-contrast">{{
@@ -111,7 +143,7 @@ import Chips from '../../../base/Chips.vue'
 import Collapsible from '../../../base/Collapsible.vue'
 import Combobox, { type ComboboxOption } from '../../../base/Combobox.vue'
 import StyledInput from '../../../base/StyledInput.vue'
-import type { LoaderVersionType } from '../creation-flow-context'
+import type { LoaderVersionType, OptiArkVersionOption } from '../creation-flow-context'
 import { injectCreationFlowContext } from '../creation-flow-context'
 import { capitalize, formatLoaderLabel } from '../shared'
 
@@ -126,6 +158,7 @@ const {
 	hideLoaderChips,
 	hideLoaderVersion,
 } = ctx
+const isOptiArkSetup = computed(() => ctx.setupType.value === 'optiark')
 
 // For instance flow, prepend 'vanilla' to available loaders.
 // For server flows, vanilla is a separate option in the setup type stage, so exclude it here.
@@ -142,6 +175,9 @@ const effectiveLoaders = computed(() => {
 // Pre-select loader and game version from initial values
 onMounted(() => {
 	debug('mounted, initialLoader:', ctx.initialLoader, 'initialGameVersion:', ctx.initialGameVersion)
+	if (isOptiArkSetup.value) {
+		return
+	}
 	if (!selectedLoader.value) {
 		if (ctx.initialLoader) {
 			selectedLoader.value = ctx.initialLoader
@@ -180,6 +216,128 @@ function removeIcon() {
 	ctx.instanceIconUrl.value = null
 	ctx.instanceIconPath.value = null
 }
+
+interface OptiArkApiVersion {
+	label?: string
+	url?: string
+	supported?: boolean
+	note?: string | null
+}
+
+interface OptiArkApiCategory {
+	icon?: string
+	versions?: OptiArkApiVersion[]
+}
+
+interface OptiArkApiResponse {
+	categories?: Record<string, OptiArkApiCategory>
+}
+
+const optiArkCategories = ref<Record<string, OptiArkApiCategory>>({})
+
+function buildRendererOptions(categories: Record<string, OptiArkApiCategory>) {
+	return Object.keys(categories).map((key) => ({
+		value: key,
+		label:
+			key === 'Nividium'
+				? 'Nvidium'
+				: key === 'Other'
+					? 'OptiFine / Legacy'
+					: key,
+	}))
+}
+
+function buildVersionOptionLabel(version: OptiArkVersionOption) {
+	return version.note ? `${version.label} - ${version.note}` : version.label
+}
+
+function isInstallableOptiArkVersion(version: OptiArkApiVersion) {
+	const url = version.url?.trim()
+	if (!version.supported || !url) return false
+	return url.toLowerCase().endsWith('.mrpack')
+}
+
+async function fetchOptiArkDownloads() {
+	ctx.optiarkLoading.value = true
+	ctx.optiarkError.value = null
+	try {
+		const payload = (await ctx.getOptiArkDownloads()) as OptiArkApiResponse
+		const categories = payload?.categories ?? {}
+		optiArkCategories.value = categories
+		ctx.optiarkRendererOptions.value = buildRendererOptions(categories)
+		if (!ctx.optiarkRenderer.value && ctx.optiarkRendererOptions.value.length > 0) {
+			ctx.optiarkRenderer.value = ctx.optiarkRendererOptions.value[0].value
+		}
+	} catch (error) {
+		ctx.optiarkError.value = error instanceof Error ? error.message : 'Failed to load OptiArk data'
+		ctx.optiarkRendererOptions.value = []
+		ctx.optiarkVersionOptions.value = []
+		ctx.optiarkVersionMeta.value = {}
+	} finally {
+		ctx.optiarkLoading.value = false
+	}
+}
+
+watch(
+	() => isOptiArkSetup.value,
+	async (enabled) => {
+		if (!enabled) return
+		if (ctx.optiarkRendererOptions.value.length === 0) {
+			await fetchOptiArkDownloads()
+		}
+	},
+	{ immediate: true },
+)
+
+watch(
+	() => ctx.optiarkRenderer.value,
+	(renderer) => {
+		if (!isOptiArkSetup.value || !renderer) {
+			return
+		}
+
+		const versions = optiArkCategories.value[renderer]?.versions ?? []
+		ctx.optiarkRendererIconUrl.value = optiArkCategories.value[renderer]?.icon ?? null
+		const options: ComboboxOption<string>[] = []
+		const metadata: Record<string, OptiArkVersionOption> = {}
+
+		for (const version of versions) {
+			if (!version?.label || !isInstallableOptiArkVersion(version)) continue
+			const info: OptiArkVersionOption = {
+				label: version.label,
+				url: version.url!.trim(),
+				supported: version.supported ?? true,
+				note: version.note ?? null,
+			}
+			options.push({ value: info.url, label: buildVersionOptionLabel(info) })
+			metadata[info.url] = info
+		}
+
+		ctx.optiarkVersionOptions.value = options
+		ctx.optiarkVersionMeta.value = metadata
+		ctx.optiarkVersionUrl.value = options[0]?.value ?? null
+		ctx.optiarkVersionLabel.value = options[0]?.label ?? null
+		ctx.optiarkError.value =
+			options.length === 0
+				? 'No installable OptiArk builds are available for this renderer yet.'
+				: null
+	},
+	{ immediate: true },
+)
+
+watch(
+	() => ctx.optiarkVersionUrl.value,
+	(url) => {
+		if (!url) {
+			ctx.optiarkVersionLabel.value = null
+			return
+		}
+
+		const match = ctx.optiarkVersionMeta.value[url]
+		ctx.optiarkVersionLabel.value = match ? match.label : null
+	},
+	{ immediate: true },
+)
 
 // Loader versions fetched from launcher-meta
 interface LoaderVersionEntry {
@@ -243,6 +401,7 @@ const gameVersionOptions = computed<ComboboxOption<string>[]>(() => {
 watch(
 	gameVersionOptions,
 	(options) => {
+		if (isOptiArkSetup.value) return
 		if (options.length === 0) return
 		if (!selectedGameVersion.value || !options.some((o) => o.value === selectedGameVersion.value)) {
 			selectedGameVersion.value = options[0].value
@@ -359,6 +518,7 @@ function getLoaderVersionsForGameVersion(
 watch(
 	() => selectedLoader.value,
 	async (loader) => {
+		if (isOptiArkSetup.value) return
 		if (!loader || loader === 'vanilla') return
 		if (loader === 'paper') {
 			await fetchPaperSupportedVersions()
@@ -378,6 +538,9 @@ let loaderVersionWatchId = 0
 watch(
 	[() => selectedLoader.value, () => selectedGameVersion.value],
 	async ([loader, gameVersion]) => {
+		if (isOptiArkSetup.value) {
+			return
+		}
 		const watchId = ++loaderVersionWatchId
 		debug('watch [loader, gameVersion] fired:', { loader, gameVersion, watchId })
 		loaderVersionsData.value = []
