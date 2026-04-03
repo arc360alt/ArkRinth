@@ -1,4 +1,4 @@
-name: Modrinth App build
+name: ArkRinth App build
 on:
   push:
     branches:
@@ -178,16 +178,16 @@ jobs:
         with:
           name: App bundle (${{ matrix.artifact-target-name }})
           path: |
-            target/release/bundle/appimage/Modrinth App_*.AppImage*
-            target/release/bundle/deb/Modrinth App_*.deb*
-            target/release/bundle/rpm/Modrinth App-*.rpm*
-            target/release/bundle/appimage/Modrinth App (dev-*)_*.AppImage*
-            target/release/bundle/deb/Modrinth App (dev-*)_*.deb*
-            target/release/bundle/rpm/Modrinth App (dev-*)-*.rpm*
-            target/universal-apple-darwin/release/bundle/macos/Modrinth App.app.tar.gz*
-            target/universal-apple-darwin/release/bundle/macos/Modrinth App (dev-*)*.app.tar.gz
-            target/universal-apple-darwin/release/bundle/dmg/Modrinth App (dev-*)*.dmg
-            target/universal-apple-darwin/release/bundle/dmg/Modrinth App_*.dmg*
-            target/release/bundle/nsis/Modrinth App_*-setup.exe*
-            target/release/bundle/nsis/Modrinth App (dev-*)_*-setup.exe*
-            target/release/bundle/nsis/Modrinth App_*-setup.nsis.zip*
+            target/release/bundle/appimage/ArkRinth App_*.AppImage*
+            target/release/bundle/deb/ArkRinth App_*.deb*
+            target/release/bundle/rpm/ArkRinth App-*.rpm*
+            target/release/bundle/appimage/ArkRinth App (dev-*)_*.AppImage*
+            target/release/bundle/deb/ArkRinth App (dev-*)_*.deb*
+            target/release/bundle/rpm/ArkRinth App (dev-*)-*.rpm*
+            target/universal-apple-darwin/release/bundle/macos/ArkRinth App.app.tar.gz*
+            target/universal-apple-darwin/release/bundle/macos/ArkRinth App (dev-*)*.app.tar.gz
+            target/universal-apple-darwin/release/bundle/dmg/ArkRinth App (dev-*)*.dmg
+            target/universal-apple-darwin/release/bundle/dmg/ArkRinth App_*.dmg*
+            target/release/bundle/nsis/ArkRinth App_*-setup.exe*
+            target/release/bundle/nsis/ArkRinth App (dev-*)_*-setup.exe*
+            target/release/bundle/nsis/ArkRinth App_*-setup.nsis.zip*
