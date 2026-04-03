@@ -101,7 +101,13 @@ jobs:
       - name: Set application version and environment
         shell: bash
         run: |
-          APP_VERSION="$(git describe --tags --always | sed -E 's/-([0-9]+)-(g[0-9a-fA-F]+)$/-canary+\1.\2/')"
+          RAW_VERSION="$(git describe --tags --always | sed -E 's/-([0-9]+)-(g[0-9a-fA-F]+)$/-canary+\1.\2/')"
+          # If git describe returned only a commit hash (no tags), use a fallback semver
+          if [[ "$RAW_VERSION" =~ ^[0-9a-fA-F]+$ ]]; then
+            APP_VERSION="0.0.0-canary+${RAW_VERSION}"
+          else
+            APP_VERSION="$RAW_VERSION"
+          fi
           BUILD_ENVIRONMENT="${{ inputs.environment || 'prod' }}"
           echo "Setting application version to $APP_VERSION"
           echo "Using environment $BUILD_ENVIRONMENT"
