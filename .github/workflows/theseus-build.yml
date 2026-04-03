@@ -133,9 +133,9 @@ jobs:
             dasel delete -f apps/app/tauri-release.conf.json 'bundle.windows.signCommand'
           fi
 
-      - name: Build macOS app
-        run: ${{ (startsWith(github.ref, 'refs/tags/v') && secrets.APPLE_CERTIFICATE) && 'pnpm --filter=@modrinth/app run tauri build --target universal-apple-darwin --config tauri-release.conf.json' || 'pnpm --filter=@modrinth/app run tauri build --target universal-apple-darwin --config tauri-dev.conf.json' }}
-        if: startsWith(matrix.platform, 'macos')
+      - name: Build macOS app (signed)
+        run: pnpm --filter=@modrinth/app run tauri build --target universal-apple-darwin --config tauri-release.conf.json
+        if: startsWith(matrix.platform, 'macos') && startsWith(github.ref, 'refs/tags/v') && secrets.APPLE_CERTIFICATE != ''
         env:
           ENABLE_CODE_SIGNING: ${{ secrets.APPLE_CERTIFICATE }}
           APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
@@ -146,6 +146,10 @@ jobs:
           APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_KEY_PASSWORD }}
+
+      - name: Build macOS app (unsigned)
+        run: pnpm --filter=@modrinth/app run tauri build --target universal-apple-darwin --config tauri-dev.conf.json
+        if: startsWith(matrix.platform, 'macos') && !(startsWith(github.ref, 'refs/tags/v') && secrets.APPLE_CERTIFICATE != '')
 
       - name: Build Linux app
         run: ${{ (startsWith(github.ref, 'refs/tags/v') && secrets.TAURI_PRIVATE_KEY) && 'pnpm --filter=@modrinth/app run tauri build --config tauri-release.conf.json' || 'pnpm --filter=@modrinth/app run tauri build --config tauri-dev.conf.json' }}
