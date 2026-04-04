@@ -110,31 +110,22 @@ export async function create_offline_user(username) {
 	}
 
 	const normalizedUsername = username.trim()
+
+	// Create in the backend (SQLite) so the launcher can find credentials when launching
+	const credentials = await invoke('plugin:auth|create_offline_user', { username: normalizedUsername })
+
+	// Also keep a localStorage copy so the UI can display it even if backend is slow
 	const offlineAccounts = getOfflineAccountsMap()
-
-	for (const id in offlineAccounts) {
-		if (offlineAccounts[id]?.username === normalizedUsername) {
-			throw new Error(`Username "${username}" already exists`)
-		}
-	}
-
-	const id = `offline-${Math.random().toString(36).slice(2, 11)}`
-	const account = {
-		id,
+	offlineAccounts[credentials.profile.id] = {
+		id: credentials.profile.id,
 		username: normalizedUsername,
 		offline: true,
 		created: new Date().toISOString(),
-		profile: {
-			id,
-			name: normalizedUsername,
-		},
+		profile: credentials.profile,
 	}
-
-	offlineAccounts[id] = account
 	setOfflineAccountsMap(offlineAccounts)
-	localStorage.setItem(OFFLINE_DEFAULT_USER_KEY, id)
 
-	return account
+	return credentials
 }
 
 export async function get_offline_accounts() {
