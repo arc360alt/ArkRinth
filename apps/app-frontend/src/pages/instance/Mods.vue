@@ -29,6 +29,7 @@
 				@confirm="handleModpackUpdateConfirm"
 				@cancel="handleModpackUpdateCancel"
 			/>
+			<ModpackZipTypeModal ref="modpackZipTypeModal" />
 			<ExportModal v-if="projects.length > 0" ref="exportModal" :instance="instance" />
 			<ContentUpdaterModal
 				v-if="updatingProject || updatingModpack"
@@ -60,11 +61,31 @@
 			/>
 		</template>
 	</ContentPageLayout>
+	<Transition name="fade">
+		<div
+			v-if="dragUploadOverlayVisible"
+			class="fixed inset-0 z-[190] bg-black/35 backdrop-blur-sm pointer-events-none flex items-center justify-center"
+		>
+			<div class="bg-bg-raised border border-solid border-surface-5 rounded-2xl px-6 py-5 shadow-2xl">
+				<div class="flex flex-col items-center gap-2 text-contrast">
+					<UploadIcon class="w-8 h-8 text-brand" />
+					<span class="font-extrabold text-lg">{{ formatMessage(messages.dragUploadOverlayTitle) }}</span>
+					<span class="text-secondary text-sm">
+						{{
+							formatMessage(messages.dragUploadOverlayHint, {
+								count: Math.max(dragUploadOverlayCount, 1),
+							})
+						}}
+					</span>
+				</div>
+			</div>
+		</div>
+	</Transition>
 </template>
 
 <script setup lang="ts">
 import type { Labrinth } from '@modrinth/api-client'
-import { ClipboardCopyIcon, FolderOpenIcon } from '@modrinth/assets'
+import { ClipboardCopyIcon, FolderOpenIcon, UploadIcon } from '@modrinth/assets'
 import {
 	commonMessages,
 	ConfirmModpackUpdateModal,
@@ -94,6 +115,7 @@ import { useRouter } from 'vue-router'
 
 import ExportModal from '@/components/ui/ExportModal.vue'
 import ShareModalWrapper from '@/components/ui/modal/ShareModalWrapper.vue'
+import ModpackZipTypeModal from '@/components/ui/modal/ModpackZipTypeModal.vue'
 import { trackEvent } from '@/helpers/analytics'
 import { get_project_versions, get_version } from '@/helpers/cache.js'
 import { profile_listener } from '@/helpers/events.js'
@@ -143,6 +165,15 @@ const messages = defineMessages({
 		id: 'app.instance.mods.content-type-project',
 		defaultMessage: 'project',
 	},
+	dragUploadOverlayTitle: {
+		id: 'app.instance.mods.drag-upload-overlay.title',
+		defaultMessage: 'Drop files to upload',
+	},
+	dragUploadOverlayHint: {
+		id: 'app.instance.mods.drag-upload-overlay.hint',
+		defaultMessage:
+			'{count, plural, one {Release to upload # file} other {Release to upload # files}}',
+	},
 })
 
 let savedModalState: ModpackContentModalState | null = null
@@ -161,6 +192,8 @@ const props = defineProps<{
 
 const loading = ref(true)
 const projects = ref<ContentItem[]>([])
+const dragUploadOverlayVisible = ref(false)
+const dragUploadOverlayCount = ref(0)
 
 const installingBuffer = ref<ContentItem[]>([])
 
@@ -208,6 +241,7 @@ const exportModal = ref(null)
 const contentUpdaterModal = ref<InstanceType<typeof ContentUpdaterModal> | null>()
 const modpackContentModal = ref<InstanceType<typeof ModpackContentModal> | null>()
 const modpackUpdateConfirmModal = ref<InstanceType<typeof ConfirmModpackUpdateModal> | null>()
+const modpackZipTypeModal = ref<InstanceType<typeof ModpackZipTypeModal> | null>()
 
 const updatingProject = ref<ContentItem | null>(null)
 const updatingProjectVersions = ref<Labrinth.Versions.v2.Version[]>([])
@@ -716,6 +750,27 @@ async function initProjects(cacheBehaviour?: CacheBehaviour) {
 	loading.value = false
 }
 
+function getFileName(filePath: string) {
+	return filePath.split(/[\\/]/).pop() ?? filePath
+}
+
+async function getDroppedProjectType(
+	filePath: string,
+): Promise<'mod' | 'resourcepack' | 'shaderpack' | 'cancelled' | null> {
+	const loweredPath = filePath.toLowerCase()
+
+	if (loweredPath.endsWith('.jar')) {
+		return 'mod'
+	}
+
+	if (loweredPath.endsWith('.zip')) {
+		const selectedType = await modpackZipTypeModal.value?.show(getFileName(filePath))
+		return selectedType ?? 'cancelled'
+	}
+
+	return null
+}
+
 provideAppBackup({
 	async createBackup() {
 		const allProfiles = await list()
@@ -858,10 +913,40 @@ const removeBeforeEach = router.beforeEach(() => {
 })
 
 const unlisten = await getCurrentWebview().onDragDropEvent(async (event) => {
+	if (event.payload.type === 'enter' || event.payload.type === 'over') {
+		dragUploadOverlayVisible.value = true
+		dragUploadOverlayCount.value = event.payload.paths?.length ?? 0
+		return
+	}
+
+	if (event.payload.type === 'leave') {
+		dragUploadOverlayVisible.value = false
+		dragUploadOverlayCount.value = 0
+		return
+	}
+
 	if (event.payload.type !== 'drop' || !props.instance) return
+	dragUploadOverlayVisible.value = false
+	dragUploadOverlayCount.value = 0
+	const isLinkedModpack =
+		Boolean(props.instance.linked_data?.project_id) || linkedModpackProject.value !== null
 
 	for (const file of event.payload.paths) {
-		if (file.endsWith('.mrpack')) continue
+		if (file.toLowerCase().endsWith('.mrpack')) continue
+
+		const projectType = await getDroppedProjectType(file)
+		if (projectType === 'cancelled') continue
+		if (projectType) {
+			await add_project_from_path(props.instance.path, file, projectType).catch(handleError)
+			continue
+		}
+
+		if (isLinkedModpack) {
+			// Let backend inference handle non-jar/zip files like datapacks.
+			await add_project_from_path(props.instance.path, file).catch(handleError)
+			continue
+		}
+
 		await add_project_from_path(props.instance.path, file).catch(handleError)
 	}
 	await initProjects()

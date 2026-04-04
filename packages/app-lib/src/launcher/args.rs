@@ -267,7 +267,11 @@ pub async fn get_minecraft_arguments(
     quick_play_type: &QuickPlayType,
     quick_play_version: QuickPlayVersion,
 ) -> crate::Result<Vec<String>> {
-    let access_token = credentials.access_token.clone();
+    let access_token = if credentials.access_token.is_empty() {
+        "OFFLINE_ACCESS_TOKEN".to_string()
+    } else {
+        credentials.access_token.clone()
+    };
     let profile = credentials.maybe_online_profile().await;
     let mut parsed_arguments = Vec::new();
 

@@ -104,7 +104,7 @@ pub async fn create_offline_user(username: String) -> crate::Result<Credentials>
             name: username,
             ..MinecraftProfile::default()
         },
-        access_token: String::new(),
+        access_token: "OFFLINE_ACCESS_TOKEN".to_string(),
         refresh_token: String::new(),
         // Set expiry far in the future so the refresh logic never fires
         expires: Utc::now() + Duration::days(365 * 100),
