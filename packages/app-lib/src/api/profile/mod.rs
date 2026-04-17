@@ -760,10 +760,25 @@ pub async fn run(
     let state = State::get().await?;
 
     let default_account = Credentials::get_default_credential(&state.pool)
-        .await?
-        .ok_or_else(|| crate::ErrorKind::NoCredentialsError.as_error())?;
+        .await?;
 
-    run_credentials(path, &default_account, quick_play_type).await
+    let credentials = match (default_account, &quick_play_type) {
+        (Some(account), _) => account,
+        (None, QuickPlayType::Singleplayer(username)) => {
+            // Allow offline play by generating a temporary offline credential with the provided username
+            crate::api::minecraft_auth::create_offline_user(username.clone()).await?
+        },
+        (None, QuickPlayType::None) => {
+            // Username is required for offline play, so error if not provided
+            return Err(crate::ErrorKind::OtherError("Offline play requires a username".to_string()).as_error());
+        },
+        (None, QuickPlayType::Server(_)) => {
+            // Server play requires credentials
+            return Err(crate::ErrorKind::NoCredentialsError.as_error());
+        }
+    };
+
+    run_credentials(path, &credentials, quick_play_type).await
 }
 
 /// Run Minecraft using a profile, and credentials for authentication

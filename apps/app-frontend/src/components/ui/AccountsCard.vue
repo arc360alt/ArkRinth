@@ -133,13 +133,19 @@ const offlineUsername = ref('')
 function normalizeAccount(account) {
 	if (!account) return null
 
+	// Always set offline flag if id starts with offline-
 	if (account.profile?.id && account.profile?.name) {
+		if (account.profile.id.startsWith('offline-')) {
+			return { ...account, offline: true }
+		}
 		return account
 	}
 
 	if (account.id && account.username) {
+		const isOffline = account.id.startsWith('offline-')
 		return {
 			...account,
+			offline: isOffline,
 			profile: {
 				id: account.id,
 				name: account.username,
@@ -160,6 +166,13 @@ async function refreshValues() {
 
 	if (!defaultUser.value && normalizedAccounts.length > 0) {
 		defaultUser.value = normalizedAccounts[0].profile.id
+	}
+
+	// Only fetch skins if there is a valid selected account and it is not offline
+	const selected = accounts.value.find(a => a.profile.id === defaultUser.value)
+	if (!selected || selected.offline) {
+		equippedSkin.value = null
+		return
 	}
 
 	try {
@@ -236,6 +249,12 @@ async function setAccount(account) {
 
 async function login() {
 	loginDisabled.value = true
+	// Clear all account state before login to avoid ghosts
+	accounts.value = []
+	defaultUser.value = null
+	equippedSkin.value = null
+	headUrlCache.value.clear()
+	await refreshValues()
 	const loggedIn = await login_flow().catch(handleSevereError)
 
 	if (loggedIn) {
@@ -252,6 +271,12 @@ async function loginOffline() {
 	if (!username) return
 
 	loginDisabled.value = true
+	// Clear all account state before offline login to avoid ghosts
+	accounts.value = []
+	defaultUser.value = null
+	equippedSkin.value = null
+	headUrlCache.value.clear()
+	await refreshValues()
 	const account = await create_offline_user(username).catch(handleError)
 
 	if (account) {
@@ -266,13 +291,14 @@ async function loginOffline() {
 
 const logout = async (id) => {
 	await remove_user(id).catch(handleError)
+	// Clear all account state after removal to avoid ghosts
+	accounts.value = []
+	defaultUser.value = null
+	equippedSkin.value = null
+	headUrlCache.value.clear()
 	await refreshValues()
-	if (!selectedAccount.value && accounts.value.length > 0) {
-		await setAccount(accounts.value[0])
-		await refreshValues()
-	} else {
-		emit('change')
-	}
+	// Do NOT auto-select a new account after logout; just emit change
+	emit('change')
 	trackEvent('AccountLogOut')
 }
 

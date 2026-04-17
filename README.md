@@ -11,3 +11,6 @@ This is a fork of the Modrinth app with the following features:
 - And lots more!
 
 If you want to know how to build this just look at modrinths documentation.
+
+## Nodecraft Server Hosting:
+Nodecraft is a seperate app that is apart of the ArkRinth project that allows you to manage and run servers like you do modpacks on Arkrinth. Releasing soon.

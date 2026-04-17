@@ -591,6 +591,7 @@ impl Profile {
         profile_path: &str,
         pool: &SqlitePool,
     ) -> crate::Result<()> {
+        // Remove the profile from the profiles table
         sqlx::query!(
             "
             DELETE FROM profiles
@@ -601,8 +602,27 @@ impl Profile {
         .execute(pool)
         .await?;
 
-        if let Ok(path) = crate::api::profile::get_full_path(profile_path).await
-        {
+        // Remove credentials from minecraft_users if any match this profile
+        // (Assume profile_path is the UUID or can be mapped to it)
+        // Try to parse as UUID, otherwise skip
+        if let Ok(uuid) = uuid::Uuid::parse_str(profile_path) {
+            sqlx::query(
+                "DELETE FROM minecraft_users WHERE uuid = ?"
+            )
+            .bind(uuid.to_string())
+            .execute(pool)
+            .await?;
+
+            // If the deleted user was active, clear any remaining active user
+            sqlx::query(
+                "UPDATE minecraft_users SET active = FALSE WHERE uuid = ?"
+            )
+            .bind(uuid.to_string())
+            .execute(pool)
+            .await?;
+        }
+
+        if let Ok(path) = crate::api::profile::get_full_path(profile_path).await {
             io::remove_dir_all(&path).await?;
         }
 

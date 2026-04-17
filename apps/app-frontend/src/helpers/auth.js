@@ -68,26 +68,40 @@ export async function set_default_user(user) {
 }
 
 export async function remove_user(user) {
+	let uuid = user
 	if (user && user.startsWith('offline-')) {
-		const offlineAccounts = getOfflineAccountsMap()
-		delete offlineAccounts[user]
+		uuid = user.replace(/^offline-/, '')
+	}
+
+	// Remove from localStorage map
+	const offlineAccounts = getOfflineAccountsMap()
+	delete offlineAccounts[user]
+	if (Object.keys(offlineAccounts).length === 0) {
+		localStorage.removeItem(OFFLINE_ACCOUNTS_KEY)
+	} else {
 		setOfflineAccountsMap(offlineAccounts)
+	}
+	if (localStorage.getItem(OFFLINE_DEFAULT_USER_KEY) === user) {
+		localStorage.removeItem(OFFLINE_DEFAULT_USER_KEY)
+	}
 
-		if (localStorage.getItem(OFFLINE_DEFAULT_USER_KEY) === user) {
-			localStorage.removeItem(OFFLINE_DEFAULT_USER_KEY)
+	// Only call backend if uuid is a valid UUID
+	const uuidRegex = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/
+	if (uuidRegex.test(uuid)) {
+		try {
+			await invokeWithTimeout('plugin:auth|remove_user', { user: uuid })
+		} catch (error) {
+			console.warn('Could not remove user from backend:', error)
 		}
-		return
 	}
 
-	try {
-		return await invokeWithTimeout('plugin:auth|remove_user', { user })
-	} catch (error) {
-		console.warn('Could not remove user:', error)
-	}
+	window.dispatchEvent(new Event('storage'))
+	return
 }
 
 export async function users() {
-	const offlineAccounts = Object.values(getOfflineAccountsMap())
+	// Always re-read localStorage to avoid stale cache
+	const offlineAccounts = Object.values(JSON.parse(localStorage.getItem('offlineAccounts') || '{}'))
 
 	try {
 		const backendUsers = await invokeWithTimeout('plugin:auth|get_users', {}, 3000)

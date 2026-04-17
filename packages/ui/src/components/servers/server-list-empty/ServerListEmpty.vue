@@ -5,10 +5,10 @@
 			<!-- Heading -->
 			<div class="flex flex-col gap-2 items-start w-[300px]">
 				<p class="text-3xl leading-9 font-semibold text-contrast">
-					{{ formatMessage(messages.modrinthHostingLabel) }}
+					Nodecraft servers
 				</p>
 				<p class="text-base font-normal text-primary">
-					{{ formatMessage(messages.noServersDescription) }}
+					Server hosting made easy
 				</p>
 			</div>
 
@@ -57,7 +57,7 @@
 							{{ formatMessage(messages.playWithFriendsTitle) }}
 						</p>
 						<p class="text-base font-normal text-primary">
-							{{ formatMessage(messages.playWithFriendsDescription) }}
+							Invite friends and get them set up right in the Arkrinth App.
 						</p>
 					</div>
 				</div>
@@ -67,37 +67,15 @@
 			<div class="flex flex-col gap-6 items-start">
 				<div class="flex flex-col gap-3 items-start">
 					<ButtonStyled color="brand">
-						<button @click="onClickNewServer?.()">
+						<button>
 							<PlusIcon aria-hidden="true" />
-							{{ formatMessage(messages.newServerButton) }}
+							Download App (Coming soon)
 						</button>
 					</ButtonStyled>
 
-					<AutoLink
-						to="https://modrinth.com/hosting"
-						target="_blank"
-						class="flex items-center gap-1 hover:brightness-125"
-					>
-						{{ formatMessage(messages.learnMoreLink) }}
-						<RightArrowIcon class="size-5 shrink-0" aria-hidden="true" />
-					</AutoLink>
+				<p class="this">This is a separate app from the Arkrinth App.</p>
 				</div>
 
-				<template v-if="!loggedIn">
-					<div class="h-px w-full bg-surface-5" />
-
-					<div class="flex gap-3 items-center flex-wrap">
-						<p class="text-base font-normal text-primary">
-							{{ formatMessage(messages.alreadyHaveServerLabel) }}
-						</p>
-						<ButtonStyled>
-							<button @click="onClickSignIn?.()">
-								<LogInIcon aria-hidden="true" />
-								{{ formatMessage(messages.signInButton) }}
-							</button>
-						</ButtonStyled>
-					</div>
-				</template>
 			</div>
 		</div>
 
@@ -196,7 +174,7 @@ const { formatMessage } = useVIntl()
 const messages = defineMessages({
 	modrinthHostingLabel: {
 		id: 'servers.list-empty.modrinth-hosting-label',
-		defaultMessage: 'Modrinth Hosting',
+		defaultMessage: 'Nodecraft Servers',
 	},
 	noServersTitle: {
 		id: 'servers.list-empty.no-servers-title',
@@ -204,7 +182,7 @@ const messages = defineMessages({
 	},
 	noServersDescription: {
 		id: 'servers.list-empty.no-servers-description',
-		defaultMessage: 'Install mods, invite friends, and play together all from the Modrinth App.',
+		defaultMessage: 'Install mods, invite friends, and play together all from the Nodecraft App.',
 	},
 	oneClickModInstallsTitle: {
 		id: 'servers.list-empty.one-click-mod-installs-title',
@@ -228,7 +206,7 @@ const messages = defineMessages({
 	},
 	playWithFriendsDescription: {
 		id: 'servers.list-empty.play-with-friends-description',
-		defaultMessage: 'Invite friends and get them set up right in the Modrinth App.',
+		defaultMessage: 'Invite friends and get them set up right in the Nodecraft App!',
 	},
 	newServerButton: {
 		id: 'servers.list-empty.new-server-button',
@@ -236,7 +214,7 @@ const messages = defineMessages({
 	},
 	learnMoreLink: {
 		id: 'servers.list-empty.learn-more-link',
-		defaultMessage: 'Learn more about Modrinth Hosting',
+		defaultMessage: 'Learn more about Nodecraft Hosting',
 	},
 	alreadyHaveServerLabel: {
 		id: 'servers.list-empty.already-have-server-label',
@@ -281,6 +259,11 @@ function getGridImage(row: number, col: number): string {
 <style scoped>
 p {
 	margin: 0;
+}
+
+.this {
+	margin: 0;
+	font-size: 10px;
 }
 
 @keyframes drift-right {

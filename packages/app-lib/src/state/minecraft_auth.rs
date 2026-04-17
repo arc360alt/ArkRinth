@@ -270,6 +270,11 @@ impl Credentials {
 
     #[tracing::instrument(skip(self))]
     pub async fn online_profile(&self) -> Option<Arc<MinecraftProfile>> {
+        // If this is an offline account, never attempt to fetch an online profile
+        if self.access_token == "OFFLINE_ACCESS_TOKEN" {
+            return None;
+        }
+
         let mut profile_cache = PROFILE_CACHE.lock().await;
 
         loop {
@@ -282,13 +287,9 @@ impl Credentials {
                             return Some(Arc::clone(profile));
                         }
                         ProfileCacheEntry::Hit(_) => {
-                            // The profile is stale, so remove it and try again
                             entry.remove();
                             continue;
                         }
-                        // Auth errors must be handled with a backoff strategy because it
-                        // has been experimentally found that Mojang quickly rate limits
-                        // the profile data endpoint on repeated attempts with bad auth
                         ProfileCacheEntry::AuthErrorBackoff {
                             likely_expired_token,
                             last_attempt,
@@ -312,9 +313,6 @@ impl Credentials {
                             let cache_entry =
                                 ProfileCacheEntry::Hit(Arc::clone(&profile));
 
-                            // When fetching a profile for the first time, the player UUID may
-                            // be unknown (i.e., set to a dummy value), so make sure we don't
-                            // cache it in the wrong place
                             if entry.key() != &profile.id {
                                 profile_cache.insert(profile.id, cache_entry);
                             } else {
@@ -334,10 +332,6 @@ impl Credentials {
                                 self.offline_profile.id
                             );
 
-                            // We have to assume the player UUID key we have is correct here, which
-                            // should always be the case assuming a non-adversarial server. In any
-                            // case, any cache poisoning is inconsequential due to the entry expiration
-                            // and the fact that we use at most one single dummy UUID
                             entry.insert(ProfileCacheEntry::AuthErrorBackoff {
                                 likely_expired_token: self.access_token.clone(),
                                 last_attempt: Instant::now(),
