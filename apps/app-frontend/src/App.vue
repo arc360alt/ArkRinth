@@ -24,7 +24,7 @@ import {
 	SettingsIcon,
 	UserIcon,
 	WorldIcon,
-	XIcon
+	XIcon,
 } from '@modrinth/assets'
 import {
 	Admonition,
@@ -46,7 +46,7 @@ import {
 	providePageContext,
 	providePopupNotificationManager,
 	useDebugLogger,
-	useVIntl
+	useVIntl,
 } from '@modrinth/ui'
 import { formatBytes, renderString } from '@modrinth/utils'
 import { useQuery, useQueryClient } from '@tanstack/vue-query'
@@ -1147,7 +1147,7 @@ provideAppUpdateDownloadProgress(appUpdateDownload)
 				<LibraryIcon />
 			</NavButton>
 			<NavButton
-				v-tooltip.right="'Modrinth Hosting'"
+				v-tooltip.right="'Nodecraft Hosting'"
 				to="/hosting/manage"
 				:is-primary="(r) => r.path === '/hosting/manage' || r.path === '/hosting/manage/'"
 				:is-subpage="(r) => r.path.startsWith('/hosting/manage/') && r.path !== '/hosting/manage/'"
@@ -1230,11 +1230,12 @@ provideAppUpdateDownloadProgress(appUpdateDownload)
 				</template>
 				<template #sign-out> <LogOutIcon /> Sign out </template>
 			</OverflowMenu>
-
 		</div>
 		<div data-tauri-drag-region class="app-grid-statusbar bg-bg-raised h-[--top-bar-height] flex">
 			<div data-tauri-drag-region class="flex min-w-0 flex-1 overflow-hidden p-3">
-				<span class="font-bold text-lg text-contrast pointer-events-none tracking-tight">ArkRinth</span>
+				<span class="font-bold text-lg text-contrast pointer-events-none tracking-tight"
+					>ArkRinth</span
+				>
 				<div data-tauri-drag-region class="flex shrink-0 items-center gap-1 ml-3">
 					<button
 						class="cursor-pointer p-0 m-0 text-contrast border-none outline-none bg-button-bg rounded-full flex items-center justify-center w-6 h-6 hover:brightness-75 transition-all"
@@ -1379,9 +1380,7 @@ provideAppUpdateDownloadProgress(appUpdateDownload)
 					</div>
 				</div>
 			</div>
-			<template v-if="showAd">
-
-			</template>
+			<template v-if="showAd"> </template>
 		</div>
 	</div>
 	<I18nDebugPanel />

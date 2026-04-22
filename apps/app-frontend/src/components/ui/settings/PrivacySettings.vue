@@ -23,8 +23,6 @@ watch(
 </script>
 
 <template>
-
-
 	<div class="mt-4 flex items-center justify-between gap-4">
 		<div>
 			<h2 class="m-0 text-lg font-semibold text-contrast">Telemetry</h2>
