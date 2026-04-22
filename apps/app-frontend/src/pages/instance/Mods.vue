@@ -89,12 +89,12 @@ import { ClipboardCopyIcon, FolderOpenIcon, UploadIcon } from '@modrinth/assets'
 import {
 	commonMessages,
 	ConfirmModpackUpdateModal,
-	ContentCardLayout as ContentPageLayout,
 	type ContentItem,
 	type ContentModpackCardCategory,
 	type ContentModpackCardProject,
 	type ContentModpackCardVersion,
 	type ContentOwner,
+	ContentCardLayout as ContentPageLayout,
 	ContentUpdaterModal,
 	defineMessages,
 	injectNotificationManager,
@@ -104,7 +104,7 @@ import {
 	provideAppBackup,
 	provideContentManager,
 	useDebugLogger,
-	useVIntl,
+	useVIntl
 } from '@modrinth/ui'
 import { getCurrentWebview } from '@tauri-apps/api/webview'
 import { open } from '@tauri-apps/plugin-dialog'
@@ -114,8 +114,8 @@ import { computed, nextTick, onUnmounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 
 import ExportModal from '@/components/ui/ExportModal.vue'
-import ShareModalWrapper from '@/components/ui/modal/ShareModalWrapper.vue'
 import ModpackZipTypeModal from '@/components/ui/modal/ModpackZipTypeModal.vue'
+import ShareModalWrapper from '@/components/ui/modal/ShareModalWrapper.vue'
 import { trackEvent } from '@/helpers/analytics'
 import { get_project_versions, get_version } from '@/helpers/cache.js'
 import { profile_listener } from '@/helpers/events.js'

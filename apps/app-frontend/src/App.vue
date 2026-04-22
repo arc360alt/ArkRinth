@@ -8,7 +8,6 @@ import {
 	VerboseLoggingFeature,
 } from '@modrinth/api-client'
 import {
-	ArrowBigUpDashIcon,
 	ChangeSkinIcon,
 	CompassIcon,
 	DownloadIcon,
@@ -16,9 +15,7 @@ import {
 	HomeIcon,
 	LeftArrowIcon,
 	LibraryIcon,
-	LogInIcon,
 	LogOutIcon,
-	NewspaperIcon,
 	NotepadTextIcon,
 	PlusIcon,
 	RefreshCwIcon,
@@ -27,7 +24,7 @@ import {
 	SettingsIcon,
 	UserIcon,
 	WorldIcon,
-	XIcon,
+	XIcon
 } from '@modrinth/assets'
 import {
 	Admonition,
@@ -38,7 +35,7 @@ import {
 	CreationFlowModal,
 	defineMessages,
 	I18nDebugPanel,
-	NewsArticleCard,
+	LoadingBar,
 	NotificationPanel,
 	OverflowMenu,
 	PopupNotificationPanel,
@@ -49,10 +46,10 @@ import {
 	providePageContext,
 	providePopupNotificationManager,
 	useDebugLogger,
-	useVIntl,
+	useVIntl
 } from '@modrinth/ui'
 import { formatBytes, renderString } from '@modrinth/utils'
-import { useQuery } from '@tanstack/vue-query'
+import { useQuery, useQueryClient } from '@tanstack/vue-query'
 import { getVersion } from '@tauri-apps/api/app'
 import { invoke } from '@tauri-apps/api/core'
 import { getCurrentWindow } from '@tauri-apps/api/window'
@@ -64,7 +61,6 @@ import { $fetch } from 'ofetch'
 import { computed, onMounted, onUnmounted, provide, ref, watch } from 'vue'
 import { RouterView, useRoute, useRouter } from 'vue-router'
 
-import ModrinthLoadingIndicator from '@/components/LoadingIndicatorBar.vue'
 import AccountsCard from '@/components/ui/AccountsCard.vue'
 import Breadcrumbs from '@/components/ui/Breadcrumbs.vue'
 import ErrorModal from '@/components/ui/ErrorModal.vue'
@@ -78,7 +74,6 @@ import InstallToPlayModal from '@/components/ui/modal/InstallToPlayModal.vue'
 import ModpackAlreadyInstalledModal from '@/components/ui/modal/ModpackAlreadyInstalledModal.vue'
 import UpdateToPlayModal from '@/components/ui/modal/UpdateToPlayModal.vue'
 import NavButton from '@/components/ui/NavButton.vue'
-import PromotionWrapper from '@/components/ui/PromotionWrapper.vue'
 import QuickInstanceSwitcher from '@/components/ui/QuickInstanceSwitcher.vue'
 import RunningAppBar from '@/components/ui/RunningAppBar.vue'
 import SplashScreen from '@/components/ui/SplashScreen.vue'
@@ -112,8 +107,9 @@ import {
 import { createServerInstall, provideServerInstall } from '@/providers/server-install'
 import { setupProviders } from '@/providers/setup'
 import { setupAuthProvider } from '@/providers/setup/auth'
+import { setupLoadingStateProvider } from '@/providers/setup/loading-state'
 import { useError } from '@/store/error.js'
-import { useLoading, useTheming } from '@/store/state'
+import { useTheming } from '@/store/state'
 
 import { generateSkinPreviews } from './helpers/rendering/batch-skin-renderer'
 import { get_available_capes, get_available_skins } from './helpers/skins'
@@ -426,9 +422,11 @@ const handleClose = async () => {
 const router = useRouter()
 const route = useRoute()
 
-const loading = useLoading()
+const loading = setupLoadingStateProvider()
 loading.setEnabled(false)
-loading.startLoading()
+let initialLoadToken = loading.begin()
+let routerToken = null
+let suspenseToken = null
 
 let suspensePending = false
 
@@ -441,7 +439,8 @@ const sidebarOverlayScrollbarsOptions = Object.freeze({
 
 router.beforeEach(() => {
 	suspensePending = false
-	loading.startLoading()
+	if (routerToken) loading.end(routerToken)
+	routerToken = loading.begin()
 })
 router.afterEach((to, from, failure) => {
 	trackEvent('PageView', {
@@ -451,9 +450,81 @@ router.afterEach((to, from, failure) => {
 	})
 	setTimeout(() => {
 		if (!suspensePending && stateInitialized.value) {
-			loading.stopLoading()
+			if (initialLoadToken) {
+				loading.end(initialLoadToken)
+				initialLoadToken = null
+			}
+			if (routerToken) {
+				loading.end(routerToken)
+				routerToken = null
+			}
 		}
 	}, 100)
+})
+
+function onSuspensePending() {
+	suspensePending = true
+	if (suspenseToken) loading.end(suspenseToken)
+	suspenseToken = loading.begin()
+}
+
+function onSuspenseResolve() {
+	if (suspenseToken) {
+		loading.end(suspenseToken)
+		suspenseToken = null
+	}
+	if (routerToken) {
+		loading.end(routerToken)
+		routerToken = null
+	}
+}
+
+const queryClient = useQueryClient()
+
+watch(stateInitialized, (ready) => {
+	if (ready) {
+		if (initialLoadToken) {
+			loading.end(initialLoadToken)
+			initialLoadToken = null
+		}
+		if (routerToken) {
+			loading.end(routerToken)
+			routerToken = null
+		}
+
+		queryClient.prefetchQuery({
+			queryKey: ['servers'],
+			queryFn: async () => {
+				const response = await tauriApiClient.archon.servers_v0.list({ limit: 100 })
+				const hasMedalServers = response.servers.some((s) => s.is_medal)
+				if (hasMedalServers) {
+					const subscriptions = await tauriApiClient.labrinth.billing_internal.getSubscriptions()
+					for (const server of response.servers) {
+						if (server.is_medal) {
+							const sub = subscriptions.find((s) => s.metadata?.id === server.server_id)
+							if (sub) {
+								server.medal_expires = new Date(
+									new Date(sub.created).getTime() + 5 * 86400000,
+								).toISOString()
+							}
+						}
+					}
+				}
+				return response
+			},
+			staleTime: 30_000,
+		})
+		queryClient.prefetchQuery({
+			queryKey: ['billing', 'subscriptions'],
+			queryFn: () => tauriApiClient.labrinth.billing_internal.getSubscriptions(),
+			staleTime: 30_000,
+		})
+		queryClient.prefetchQuery({
+			queryKey: ['billing', 'payments'],
+			queryFn: () => tauriApiClient.labrinth.billing_internal.getPayments(),
+			staleTime: 30_000,
+		})
+	}
 })
 
 const error = useError()
@@ -1241,7 +1312,7 @@ provideAppUpdateDownloadProgress(appUpdateDownload)
 					width: 'calc(100% - var(--left-bar-width) - var(--right-bar-width))',
 				}"
 			>
-				<ModrinthLoadingIndicator />
+				<LoadingBar position="absolute" />
 			</div>
 			<div
 				v-if="themeStore.featureFlags.page_path"
@@ -1277,31 +1348,22 @@ provideAppUpdateDownloadProgress(appUpdateDownload)
 			</Admonition>
 			<RouterView v-slot="{ Component }">
 				<template v-if="Component">
-					<Suspense
-						@pending="
-							() => {
-								suspensePending = true
-								loading.startLoading()
-							}
-						"
-						@resolve="
-							() => {
-								loading.stopLoading()
-							}
-						"
-					>
+					<Suspense @pending="onSuspensePending" @resolve="onSuspenseResolve">
 						<component :is="Component"></component>
 					</Suspense>
 				</template>
 			</RouterView>
 		</div>
 		<div
-			v-overlay-scrollbars="sidebarOverlayScrollbarsOptions"
 			class="app-sidebar mt-px shrink-0 flex flex-col border-0 border-l-[1px] border-[--brand-gradient-border] border-solid"
 			:class="{ 'has-plus': hasPlus }"
-			data-overlayscrollbars-initialize
 		>
-			<div class="app-sidebar-scrollable flex-grow shrink relative" :class="{ 'pb-12': !hasPlus }">
+			<div
+				v-overlay-scrollbars="sidebarOverlayScrollbarsOptions"
+				class="app-sidebar-scrollable flex-grow shrink relative"
+				:class="{ 'pb-12': !hasPlus }"
+				data-overlayscrollbars-initialize
+			>
 				<div id="sidebar-teleport-target" class="sidebar-teleport-content"></div>
 				<div class="sidebar-default-content" :class="{ 'sidebar-enabled': sidebarVisible }">
 					<div class="p-4 border-0 border-b-[1px] border-[--brand-gradient-border] border-solid">
@@ -1384,6 +1446,7 @@ provideAppUpdateDownloadProgress(appUpdateDownload)
 
 .app-grid-statusbar {
 	grid-area: status;
+	padding-right: var(--window-controls-width, 0px);
 }
 
 [data-tauri-drag-region-exclude] {

@@ -83,6 +83,7 @@
 				sync-with-selection
 				placeholder="Select game version"
 				search-placeholder="Search game version..."
+				@option-hover="handleGameVersionHover"
 			>
 				<template v-if="ctx.showSnapshotToggle" #dropdown-footer>
 					<button
@@ -122,7 +123,28 @@
 							:search-placeholder="
 								isPaperLike ? 'Search build number...' : 'Search loader version...'
 							"
-						/>
+						>
+							<!-- When not Paper, this scoped slot is omitted and Combobox uses default option markup. -->
+							<template v-if="selectedLoader === 'paper'" #option="{ item, isSelected }">
+								<div class="flex w-full items-center justify-between gap-2">
+									<div class="flex flex-wrap items-center gap-2">
+										<span
+											class="font-semibold leading-tight"
+											:class="isSelected ? 'text-contrast' : 'text-primary'"
+										>
+											{{ item.label }}
+										</span>
+										<PaperChannelBadge :channel="paperBuildChannelTag(String(item.value))" />
+									</div>
+								</div>
+							</template>
+							<template v-if="selectedLoader === 'paper'" #search-selection-affix="{ option }">
+								<PaperChannelBadge
+									affix
+									:channel="option ? paperBuildChannelTag(String(option.value)) : null"
+								/>
+							</template>
+						</Combobox>
 					</div>
 				</div>
 			</Collapsible>
@@ -131,6 +153,7 @@
 </template>
 
 <script setup lang="ts">
+import type { Paper } from '@modrinth/api-client'
 import { EyeIcon, EyeOffIcon, UploadIcon, XIcon } from '@modrinth/assets'
 import { computed, onMounted, ref, watch } from 'vue'
 
@@ -142,6 +165,7 @@ import ButtonStyled from '../../../base/ButtonStyled.vue'
 import Chips from '../../../base/Chips.vue'
 import Collapsible from '../../../base/Collapsible.vue'
 import Combobox, { type ComboboxOption } from '../../../base/Combobox.vue'
+import PaperChannelBadge from '../../../base/PaperChannelBadge.vue'
 import StyledInput from '../../../base/StyledInput.vue'
 import type { LoaderVersionType, OptiArkVersionOption } from '../creation-flow-context'
 import { injectCreationFlowContext } from '../creation-flow-context'
@@ -350,7 +374,7 @@ const loaderVersionsData = ref<LoaderVersionEntry[]>([])
 const loaderVersionsCache = ref<Record<string, { id: string; loaders: LoaderVersionEntry[] }[]>>({})
 
 // Paper/Purpur build caches
-const paperVersions = ref<Record<string, number[]>>({})
+const paperVersions = ref<Record<string, Paper.Versions.v3.Build[]>>({})
 const purpurVersions = ref<Record<string, string[]>>({})
 
 // Paper/Purpur supported game version sets (for filtering the game version combobox)
@@ -457,14 +481,31 @@ async function fetchPurpurSupportedVersions() {
 	}
 }
 
+function paperBuildChannelTag(buildId: string): 'ALPHA' | 'BETA' | null {
+	const gv = selectedGameVersion.value
+	if (!gv || selectedLoader.value !== 'paper') return null
+	const b = paperVersions.value[gv]?.find((x) => String(x.id) === buildId)
+	if (!b) return null
+	const u = String(b.channel).toUpperCase()
+	if (u === 'ALPHA' || u === 'BETA') return u
+	return null
+}
+
 async function fetchPaperVersions(mcVersion: string) {
 	if (paperVersions.value[mcVersion]) return
 	try {
 		const data = await client.paper.versions_v3.getBuilds(mcVersion)
-		paperVersions.value[mcVersion] = data.builds.sort((a, b) => b - a)
+		paperVersions.value[mcVersion] = data.builds.toSorted((a, b) => b.id - a.id)
 	} catch {
 		paperVersions.value[mcVersion] = []
 	}
+}
+
+function handleGameVersionHover(option: ComboboxOption<string | null>) {
+	const v = option.value
+	if (v == null || v === '') return
+	if (selectedLoader.value === 'paper') void fetchPaperVersions(v)
+	else if (selectedLoader.value === 'purpur') void fetchPurpurVersions(v)
 }
 
 async function fetchPurpurVersions(mcVersion: string) {
@@ -556,7 +597,7 @@ watch(
 			loaderVersionsLoading.value = false
 			const builds = paperVersions.value[gameVersion]
 			if (builds?.length) {
-				selectedLoaderVersion.value = `${builds[0]}`
+				selectedLoaderVersion.value = `${builds[0].id}`
 			}
 			return
 		}
@@ -622,7 +663,10 @@ function autoSelectLoaderVersion() {
 const loaderVersionOptions = computed<ComboboxOption<string>[]>(() => {
 	if (selectedLoader.value === 'paper' && selectedGameVersion.value) {
 		const builds = paperVersions.value[selectedGameVersion.value] ?? []
-		return builds.map((b) => ({ value: `${b}`, label: `Build ${b}` }))
+		return builds.map((b) => ({
+			value: `${b.id}`,
+			label: `Build ${b.id}`,
+		}))
 	}
 
 	if (selectedLoader.value === 'purpur' && selectedGameVersion.value) {
