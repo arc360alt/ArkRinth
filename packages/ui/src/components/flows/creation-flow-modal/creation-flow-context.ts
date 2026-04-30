@@ -202,8 +202,6 @@ export function createCreationFlowContext(
 	const initialLoader = options.initialLoader ?? null
 	const initialGameVersion = options.initialGameVersion ?? null
 	const onBack = options.onBack ?? null
-	const searchModpacks = options.searchModpacks!
-	const getProjectVersions = options.getProjectVersions!
 	const getLoaderManifest = options.getLoaderManifest ?? null
 
 	const setupType = ref<SetupType | null>(null)

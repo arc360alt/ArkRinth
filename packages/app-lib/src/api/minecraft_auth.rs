@@ -6,7 +6,7 @@ use uuid::Uuid;
 
 use crate::State;
 use crate::state::{Credentials, MinecraftLoginFlow, MinecraftProfile};
-use crate::util::fetch::REQWEST_CLIENT;
+use crate::util::fetch::INSECURE_REQWEST_CLIENT;
 
 #[tracing::instrument]
 pub async fn check_reachable() -> crate::Result<()> {
