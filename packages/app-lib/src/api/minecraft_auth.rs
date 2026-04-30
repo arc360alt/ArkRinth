@@ -10,7 +10,7 @@ use crate::util::fetch::REQWEST_CLIENT;
 
 #[tracing::instrument]
 pub async fn check_reachable() -> crate::Result<()> {
-    let resp = REQWEST_CLIENT
+    let resp = INSECURE_REQWEST_CLIENT
         .get("https://sessionserver.mojang.com/session/minecraft/hasJoined")
         .send()
         .await?;

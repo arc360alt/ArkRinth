@@ -12,13 +12,13 @@
 				<ButtonStyled type="outlined">
 					<button class="!border-surface-5" @click="triggerIconInput">
 						<UploadIcon />
-						Select icon
+						{{ formatMessage(messages.selectIcon) }}
 					</button>
 				</ButtonStyled>
 				<ButtonStyled type="outlined">
 					<button class="!border-surface-5" :disabled="!ctx.instanceIcon.value" @click="removeIcon">
 						<XIcon />
-						Remove icon
+						{{ formatMessage(messages.removeIcon) }}
 					</button>
 				</ButtonStyled>
 				</template>
@@ -27,7 +27,7 @@
 
 		<!-- Instance-specific: Name field -->
 		<div v-if="ctx.flowType === 'instance'" class="flex flex-col gap-2">
-			<span class="font-semibold text-contrast">Name</span>
+			<span class="font-semibold text-contrast">{{ formatMessage(messages.nameLabel) }}</span>
 			<StyledInput
 				v-model="ctx.instanceName.value"
 				:placeholder="ctx.autoInstanceName.value || 'Enter instance name'"
@@ -63,7 +63,9 @@
 		<!-- Loader chips -->
 		<div v-if="!isOptiArkSetup && !hideLoaderChips" class="flex flex-col gap-2">
 			<span class="font-semibold text-contrast">{{
-				ctx.flowType === 'instance' ? 'Loader' : 'Content loader'
+				ctx.flowType === 'instance'
+					? formatMessage(messages.loaderLabel)
+					: formatMessage(messages.contentLoaderLabel)
 			}}</span>
 			<Chips
 				v-model="selectedLoader"
@@ -79,10 +81,15 @@
 			<Combobox
 				v-model="selectedGameVersion"
 				:options="gameVersionOptions"
+				:no-options-message="
+					gameVersionsLoading
+						? formatMessage(commonMessages.loadingLabel)
+						: formatMessage(messages.noVersionsAvailable)
+				"
 				searchable
 				sync-with-selection
-				placeholder="Select game version"
-				search-placeholder="Search game version..."
+				:placeholder="formatMessage(messages.selectGameVersion)"
+				:search-placeholder="formatMessage(messages.searchGameVersion)"
 				@option-hover="handleGameVersionHover"
 			>
 				<template v-if="ctx.showSnapshotToggle" #dropdown-footer>
@@ -93,7 +100,11 @@
 					>
 						<EyeOffIcon v-if="ctx.showSnapshots.value" class="size-4" />
 						<EyeIcon v-else class="size-4" />
-						{{ ctx.showSnapshots.value ? 'Hide snapshots' : 'Show all versions' }}
+						{{
+							ctx.showSnapshots.value
+								? formatMessage(commonMessages.hideSnapshotsButton)
+								: formatMessage(commonMessages.showAllVersionsButton)
+						}}
 					</button>
 				</template>
 			</Combobox>
@@ -104,24 +115,36 @@
 			<Collapsible :collapsed="!selectedLoader || !selectedGameVersion" overflow-visible>
 				<div class="flex flex-col gap-2">
 					<span class="font-semibold text-contrast">{{
-						isPaperLike ? 'Build number' : 'Loader version'
+						isPaperLike
+							? formatMessage(messages.buildNumberLabel)
+							: formatMessage(messages.loaderVersionLabel)
 					}}</span>
 					<Chips
 						v-if="!isPaperLike"
 						v-model="loaderVersionType"
 						:items="loaderVersionTypeItems"
-						:format-label="capitalize"
+						:format-label="formatLoaderVersionTypeLabel"
 					/>
 					<div v-if="isPaperLike || loaderVersionType === 'other'">
 						<Combobox
 							v-model="selectedLoaderVersion"
 							:options="loaderVersionOptions"
-							:no-options-message="loaderVersionsLoading ? 'Loading...' : 'No versions available'"
+							:no-options-message="
+								loaderVersionsLoading
+									? formatMessage(commonMessages.loadingLabel)
+									: formatMessage(messages.noVersionsAvailable)
+							"
 							searchable
 							sync-with-selection
-							:placeholder="isPaperLike ? 'Select build number' : 'Select loader version'"
+							:placeholder="
+								isPaperLike
+									? formatMessage(messages.selectBuildNumber)
+									: formatMessage(messages.selectLoaderVersion)
+							"
 							:search-placeholder="
-								isPaperLike ? 'Search build number...' : 'Search loader version...'
+								isPaperLike
+									? formatMessage(messages.searchBuildNumber)
+									: formatMessage(messages.searchLoaderVersion)
 							"
 						>
 							<!-- When not Paper, this scoped slot is omitted and Combobox uses default option markup. -->
@@ -155,6 +178,7 @@
 <script setup lang="ts">
 import type { Paper } from '@modrinth/api-client'
 import { EyeIcon, EyeOffIcon, UploadIcon, XIcon } from '@modrinth/assets'
+import { commonMessages, defineMessages, useVIntl } from '@modrinth/ui'
 import { computed, onMounted, ref, watch } from 'vue'
 
 import { useDebugLogger } from '#ui/composables/debug-logger'
@@ -169,11 +193,12 @@ import PaperChannelBadge from '../../../base/PaperChannelBadge.vue'
 import StyledInput from '../../../base/StyledInput.vue'
 import type { LoaderVersionType, OptiArkVersionOption } from '../creation-flow-context'
 import { injectCreationFlowContext } from '../creation-flow-context'
-import { capitalize, formatLoaderLabel } from '../shared'
+import { formatLoaderLabel } from '../shared'
 
 const debug = useDebugLogger('CustomSetupStage')
 const client = injectModrinthClient()
 const ctx = injectCreationFlowContext()
+const { formatMessage } = useVIntl()
 const {
 	selectedLoader,
 	selectedGameVersion,
@@ -371,15 +396,22 @@ interface LoaderVersionEntry {
 
 const loaderVersionsLoading = ref(false)
 const loaderVersionsData = ref<LoaderVersionEntry[]>([])
-const loaderVersionsCache = ref<Record<string, { id: string; loaders: LoaderVersionEntry[] }[]>>({})
 
 // Paper/Purpur build caches
 const paperVersions = ref<Record<string, Paper.Versions.v3.Build[]>>({})
 const purpurVersions = ref<Record<string, string[]>>({})
 
-// Paper/Purpur supported game version sets (for filtering the game version combobox)
-const paperSupportedVersions = ref<Set<string> | null>(null)
-const purpurSupportedVersions = ref<Set<string> | null>(null)
+function toApiLoaderName(loader: string): string {
+	return loader === 'neoforge' ? 'neo' : loader
+}
+
+const gameVersionsLoading = computed(() => {
+	const loader = selectedLoader.value
+	if (!loader || loader === 'vanilla') return false
+	if (loader === 'paper') return ctx.paperSupportedVersions.value === null
+	if (loader === 'purpur') return ctx.purpurSupportedVersions.value === null
+	return ctx.loaderVersionsCache.value[toApiLoaderName(loader)] === undefined
+})
 
 // Game versions from tags provider, filtered by loader support
 const gameVersionOptions = computed<ComboboxOption<string>[]>(() => {
@@ -389,33 +421,35 @@ const gameVersionOptions = computed<ComboboxOption<string>[]>(() => {
 
 	// For loaders with per-version data, only show game versions that have builds
 	if (selectedLoader.value && selectedLoader.value !== 'vanilla') {
-		if (selectedLoader.value === 'paper' && paperSupportedVersions.value) {
+		if (selectedLoader.value === 'paper') {
+			if (!ctx.paperSupportedVersions.value) return []
 			return versions
-				.filter((v) => paperSupportedVersions.value!.has(v.version))
+				.filter((v) => ctx.paperSupportedVersions.value!.has(v.version))
 				.map((v) => ({ value: v.version, label: v.version }))
 		}
 
-		if (selectedLoader.value === 'purpur' && purpurSupportedVersions.value) {
+		if (selectedLoader.value === 'purpur') {
+			if (!ctx.purpurSupportedVersions.value) return []
 			return versions
-				.filter((v) => purpurSupportedVersions.value!.has(v.version))
+				.filter((v) => ctx.purpurSupportedVersions.value!.has(v.version))
 				.map((v) => ({ value: v.version, label: v.version }))
 		}
 
-		let apiLoader = selectedLoader.value
-		if (apiLoader === 'neoforge') apiLoader = 'neo'
+		const apiLoader = toApiLoaderName(selectedLoader.value)
+		const manifest = ctx.loaderVersionsCache.value[apiLoader]
+		if (!manifest) return []
 
-		const manifest = loaderVersionsCache.value[apiLoader]
-		if (manifest) {
-			const hasPlaceholder = manifest.some((x) => x.id === '${modrinth.gameVersion}')
-			if (!hasPlaceholder) {
-				const supportedVersions = new Set(
-					manifest.filter((x) => x.loaders.length > 0).map((x) => x.id),
+		const hasPlaceholder = manifest.some((x) => x.id === '${modrinth.gameVersion}')
+		const supportedVersions = new Set(
+			manifest
+				.filter(
+					(x) => x.id !== '${modrinth.gameVersion}' && (hasPlaceholder || x.loaders.length > 0),
 				)
-				return versions
-					.filter((v) => supportedVersions.has(v.version))
-					.map((v) => ({ value: v.version, label: v.version }))
-			}
-		}
+				.map((x) => x.id),
+		)
+		return versions
+			.filter((v) => supportedVersions.has(v.version))
+			.map((v) => ({ value: v.version, label: v.version }))
 	}
 
 	return versions.map((v) => ({ value: v.version, label: v.version }))
@@ -435,50 +469,20 @@ watch(
 )
 
 async function fetchLoaderManifest(loader: string) {
-	let apiLoader = loader
-	if (apiLoader === 'neoforge') apiLoader = 'neo'
-
+	const apiLoader = toApiLoaderName(loader)
 	debug(
 		'fetchLoaderManifest:',
 		loader,
 		'apiLoader:',
 		apiLoader,
 		'cached:',
-		!!loaderVersionsCache.value[apiLoader],
+		!!ctx.loaderVersionsCache.value[apiLoader],
 	)
-	if (loaderVersionsCache.value[apiLoader]) return
-
-	try {
-		const res = await fetch(`https://launcher-meta.modrinth.com/${apiLoader}/v0/manifest.json`)
-		const data = (await res.json()) as {
-			gameVersions: { id: string; loaders: LoaderVersionEntry[] }[]
-		}
-		loaderVersionsCache.value[apiLoader] = data.gameVersions
-		debug('fetchLoaderManifest: loaded', apiLoader, 'gameVersions:', data.gameVersions.length)
-	} catch (e) {
-		debug('fetchLoaderManifest: FAILED', apiLoader, e)
-		loaderVersionsCache.value[apiLoader] = []
-	}
+	await ctx.fetchLoaderMetadata(loader)
 }
 
-async function fetchPaperSupportedVersions() {
-	if (paperSupportedVersions.value) return
-	try {
-		const project = await client.paper.versions_v3.getProject()
-		paperSupportedVersions.value = new Set(Object.values(project.versions).flat())
-	} catch {
-		paperSupportedVersions.value = new Set()
-	}
-}
-
-async function fetchPurpurSupportedVersions() {
-	if (purpurSupportedVersions.value) return
-	try {
-		const project = await client.purpur.versions_v2.getProject()
-		purpurSupportedVersions.value = new Set(project.versions)
-	} catch {
-		purpurSupportedVersions.value = new Set()
-	}
+async function fetchLoaderMetadata(loader?: string | null) {
+	await ctx.fetchLoaderMetadata(loader)
 }
 
 function paperBuildChannelTag(buildId: string): 'ALPHA' | 'BETA' | null {
@@ -522,10 +526,8 @@ function getLoaderVersionsForGameVersion(
 	loader: string,
 	gameVersion: string,
 ): LoaderVersionEntry[] {
-	let apiLoader = loader
-	if (apiLoader === 'neoforge') apiLoader = 'neo'
-
-	const manifest = loaderVersionsCache.value[apiLoader]
+	const apiLoader = toApiLoaderName(loader)
+	const manifest = ctx.loaderVersionsCache.value[apiLoader]
 	debug('getLoaderVersionsForGameVersion:', {
 		loader,
 		apiLoader,
@@ -538,6 +540,7 @@ function getLoaderVersionsForGameVersion(
 	// Some loaders (e.g. Fabric) list all versions under a placeholder entry
 	const placeholder = manifest.find((x) => x.id === '${modrinth.gameVersion}')
 	if (placeholder) {
+		if (!manifest.some((x) => x.id === gameVersion)) return []
 		debug(
 			'getLoaderVersionsForGameVersion: using placeholder, loaders:',
 			placeholder.loaders.length,

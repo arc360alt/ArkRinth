@@ -1,4 +1,5 @@
 <script setup>
+import { Intercom, shutdown as shutdownIntercom } from '@intercom/messenger-js-sdk'
 import {
 	AuthFeature,
 	NodeAuthFeature,
@@ -62,11 +63,13 @@ import { computed, onMounted, onUnmounted, provide, ref, watch } from 'vue'
 import { RouterView, useRoute, useRouter } from 'vue-router'
 
 import AccountsCard from '@/components/ui/AccountsCard.vue'
+import AppActionBar from '@/components/ui/AppActionBar.vue'
 import Breadcrumbs from '@/components/ui/Breadcrumbs.vue'
 import ErrorModal from '@/components/ui/ErrorModal.vue'
 import FriendsList from '@/components/ui/friends/FriendsList.vue'
 import AddServerToInstanceModal from '@/components/ui/install_flow/AddServerToInstanceModal.vue'
 import IncompatibilityWarningModal from '@/components/ui/install_flow/IncompatibilityWarningModal.vue'
+import UnknownPackWarningModal from '@/components/ui/install_flow/UnknownPackWarningModal.vue'
 import MinecraftAuthErrorModal from '@/components/ui/minecraft-auth-error-modal/MinecraftAuthErrorModal.vue'
 import AppSettingsModal from '@/components/ui/modal/AppSettingsModal.vue'
 import AuthGrantFlowWaitModal from '@/components/ui/modal/AuthGrantFlowWaitModal.vue'
@@ -75,7 +78,6 @@ import ModpackAlreadyInstalledModal from '@/components/ui/modal/ModpackAlreadyIn
 import UpdateToPlayModal from '@/components/ui/modal/UpdateToPlayModal.vue'
 import NavButton from '@/components/ui/NavButton.vue'
 import QuickInstanceSwitcher from '@/components/ui/QuickInstanceSwitcher.vue'
-import RunningAppBar from '@/components/ui/RunningAppBar.vue'
 import SplashScreen from '@/components/ui/SplashScreen.vue'
 import WindowControls from '@/components/ui/WindowControls.vue'
 import { useCheckDisableMouseover } from '@/composables/macCssFix.js'
@@ -165,6 +167,7 @@ provideModalBehavior({
 
 const {
 	installationModal,
+	unknownPackWarningModal,
 	fetchExistingInstanceNames,
 	handleCreate,
 	handleBrowseModpacks,
@@ -174,7 +177,7 @@ const {
 	setModpackAlreadyInstalledModal,
 	handleModpackDuplicateCreateAnyway,
 	handleModpackDuplicateGoToInstance,
-} = setupProviders(notificationManager)
+} = setupProviders(notificationManager, popupNotificationManager)
 
 const news = ref([])
 const availableSurvey = ref(false)
@@ -652,6 +655,102 @@ const sidebarVisible = computed(() => sidebarToggled.value || forceSidebar.value
 const showAd = computed(
 	() => sidebarVisible.value && !hasPlus.value && credentials.value !== undefined,
 )
+const hostingRouteActive = computed(() => route.path.startsWith('/hosting'))
+const INTERCOM_DEFAULT_PADDING = 20
+const INTERCOM_APP_SIDEBAR_WIDTH = 300
+
+let intercomBooting = false
+let intercomBooted = false
+
+async function fetchIntercomToken() {
+	const creds = await getCreds()
+	if (!creds?.session) {
+		throw new Error('Not authenticated')
+	}
+
+	const params = new URLSearchParams()
+	if (route.path.startsWith('/hosting/manage/') && typeof route.params.id === 'string') {
+		params.set('server_id', route.params.id)
+	}
+	const query = params.size > 0 ? `?${params.toString()}` : ''
+
+	const response = await tauriFetch(`${config.siteUrl}/api/intercom/messenger-jwt${query}`, {
+		method: 'GET',
+		headers: {
+			Authorization: `Bearer ${creds.session}`,
+		},
+	})
+	if (!response.ok) {
+		throw new Error(`Failed to fetch Intercom token: ${response.status}`)
+	}
+	return await response.json()
+}
+
+async function bootIntercom() {
+	if (
+		intercomBooting ||
+		intercomBooted ||
+		!hostingRouteActive.value ||
+		!credentials.value?.session
+	) {
+		return
+	}
+
+	intercomBooting = true
+	console.debug('[APP][INTERCOM] initializing secure support chat')
+	try {
+		const { token } = await fetchIntercomToken()
+		Intercom({
+			app_id: 'ykeritl9',
+			intercom_user_jwt: token,
+			session_duration: 1000 * 60 * 60 * 24,
+			alignment: 'right',
+			horizontal_padding: sidebarVisible.value
+				? INTERCOM_APP_SIDEBAR_WIDTH + INTERCOM_DEFAULT_PADDING
+				: INTERCOM_DEFAULT_PADDING,
+			vertical_padding: INTERCOM_DEFAULT_PADDING,
+		})
+		intercomBooted = true
+	} catch (error) {
+		console.warn('[APP][INTERCOM] failed to initialize secure support chat', error)
+	} finally {
+		intercomBooting = false
+	}
+}
+
+function shutdownHostingIntercom() {
+	if (!intercomBooted && !intercomBooting) return
+	shutdownIntercom()
+	intercomBooting = false
+	intercomBooted = false
+}
+
+watch(
+	sidebarVisible,
+	(visible) => {
+		if (intercomBooted) {
+			window.Intercom?.('update', {
+				horizontal_padding: visible
+					? INTERCOM_APP_SIDEBAR_WIDTH + INTERCOM_DEFAULT_PADDING
+					: INTERCOM_DEFAULT_PADDING,
+				vertical_padding: INTERCOM_DEFAULT_PADDING,
+			})
+		}
+	},
+	{ immediate: true },
+)
+
+watch(
+	[hostingRouteActive, credentials],
+	([active]) => {
+		if (active) {
+			void bootIntercom()
+		} else {
+			shutdownHostingIntercom()
+		}
+	},
+	{ immediate: true },
+)
 
 watch(showAd, () => {
 	if (!showAd.value) {
@@ -686,7 +785,9 @@ async function handleCommand(e) {
 	if (e.event === 'RunMRPack') {
 		// RunMRPack should directly install a local mrpack given a path
 		if (e.path.endsWith('.mrpack')) {
-			await create_profile_and_install_from_file(e.path).catch(handleError)
+			await create_profile_and_install_from_file(e.path, (createProfile, fileName) =>
+				unknownPackWarningModal.value?.show(createProfile, fileName),
+			).catch(handleError)
 			trackEvent('InstanceCreate', {
 				source: 'CreationModalFileDrop',
 			})
@@ -1073,7 +1174,6 @@ provideAppUpdateDownloadProgress(appUpdateDownload)
 </script>
 
 <template>
-	<WindowControls />
 	<SplashScreen v-if="!stateFailed" ref="splashScreen" data-tauri-drag-region />
 	<div id="teleports"></div>
 	<div
@@ -1113,6 +1213,7 @@ provideAppUpdateDownloadProgress(appUpdateDownload)
 			@create="handleCreate"
 			@browse-modpacks="handleBrowseModpacks"
 		/>
+		<UnknownPackWarningModal ref="unknownPackWarningModal" />
 		<div
 			class="app-grid-navbar bg-bg-raised flex flex-col p-[0.5rem] pt-0 gap-[0.5rem] w-[--left-bar-width]"
 		>
@@ -1268,9 +1369,10 @@ provideAppUpdateDownloadProgress(appUpdateDownload)
 				</ButtonStyled>
 				<div class="flex mr-3">
 					<Suspense>
-						<RunningAppBar />
+						<AppActionBar />
 					</Suspense>
 				</div>
+				<WindowControls />
 			</section>
 		</div>
 	</div>

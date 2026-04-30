@@ -1,9 +1,15 @@
 import { LeftArrowIcon, PlusIcon, RightArrowIcon } from '@modrinth/assets'
 import { markRaw } from 'vue'
 
+import { commonMessages } from '#ui/utils/common-messages'
+
 import type { StageConfigInput } from '../../../base'
 import CustomSetupStage from '../components/CustomSetupStage.vue'
-import { type CreationFlowContextValue, flowTypeHeadings } from '../creation-flow-context'
+import {
+	type CreationFlowContextValue,
+	creationFlowMessages,
+	flowTypeHeadingMessages,
+} from '../creation-flow-context'
 
 function isForwardBlocked(ctx: CreationFlowContextValue): boolean {
 	if (ctx.setupType.value === 'optiark') {
@@ -14,18 +20,13 @@ function isForwardBlocked(ctx: CreationFlowContextValue): boolean {
 	}
 	if (!ctx.selectedGameVersion.value) return true
 	if (!ctx.hideLoaderChips.value && !ctx.selectedLoader.value) return true
-	if (
-		!ctx.hideLoaderVersion.value &&
-		ctx.loaderVersionType.value === 'other' &&
-		!ctx.selectedLoaderVersion.value
-	)
-		return true
+	if (!ctx.hideLoaderVersion.value && !ctx.selectedLoaderVersion.value) return true
 	return false
 }
 
 export const stageConfig: StageConfigInput<CreationFlowContextValue> = {
 	id: 'custom-setup',
-	title: (ctx) => flowTypeHeadings[ctx.flowType],
+	title: (ctx) => ctx.formatMessage(flowTypeHeadingMessages[ctx.flowType]),
 	stageContent: markRaw(CustomSetupStage),
 	skip: (ctx) =>
 		ctx.setupType.value === 'modpack' ||
@@ -33,7 +34,7 @@ export const stageConfig: StageConfigInput<CreationFlowContextValue> = {
 		ctx.isImportMode.value,
 	cannotNavigateForward: isForwardBlocked,
 	leftButtonConfig: (ctx) => ({
-		label: 'Back',
+		label: ctx.formatMessage(commonMessages.backButton),
 		icon: LeftArrowIcon,
 		onClick: () => ctx.modal.value?.setStage('setup-type'),
 	}),
@@ -47,7 +48,7 @@ export const stageConfig: StageConfigInput<CreationFlowContextValue> = {
 
 		if (isInstance) {
 			return {
-				label: 'Create instance',
+				label: ctx.formatMessage(creationFlowMessages.createInstanceButton),
 				icon: PlusIcon,
 				iconPosition: 'before' as const,
 				color: 'brand' as const,
@@ -58,7 +59,9 @@ export const stageConfig: StageConfigInput<CreationFlowContextValue> = {
 		}
 
 		return {
-			label: goesToNextStage ? 'Continue' : 'Finish',
+			label: ctx.formatMessage(
+				goesToNextStage ? commonMessages.continueButton : creationFlowMessages.finishButton,
+			),
 			icon: goesToNextStage ? RightArrowIcon : null,
 			iconPosition: 'after' as const,
 			color: goesToNextStage ? undefined : ('brand' as const),

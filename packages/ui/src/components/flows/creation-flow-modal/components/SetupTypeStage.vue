@@ -1,13 +1,7 @@
 <template>
 	<div class="flex flex-col gap-4">
 		<span class="font-semibold text-contrast">
-			{{
-				ctx.flowType === 'instance'
-					? 'Choose instance type'
-					: ctx.flowType === 'server-onboarding' || ctx.flowType === 'reset-server'
-						? 'Select installation type'
-						: 'Select world type'
-			}}
+			{{ setupTypeTitle }}
 		</span>
 
 		<!-- Instance flow options -->
@@ -21,25 +15,25 @@
 				/>
 				<BigOptionButton
 					:icon="BoxesIcon"
-					title="Custom setup"
-					description="Start from scratch by picking a loader and game version."
+					:title="formatMessage(messages.customSetupTitle)"
+					:description="formatMessage(messages.customSetupDescription)"
 					@click="setSetupType('custom')"
 				/>
 				<BigOptionButton
 					:icon="PackageIcon"
-					title="Modpack base"
-					description="Use a popular modpack as your starting point."
+					:title="formatMessage(messages.modpackBaseTitle)"
+					:description="formatMessage(messages.modpackBaseDescription)"
 					@click="setSetupType('modpack')"
 				/>
 				<BigOptionButton
 					:icon="BoxImportIcon"
-					title="Import instance"
-					description="Import an instance from Prism, CurseForge, or similar."
+					:title="formatMessage(messages.importInstanceTitle)"
+					:description="formatMessage(messages.importInstanceDescription)"
 					@click="ctx.setImportMode()"
 				/>
 			</div>
 			<span class="text-sm text-secondary">
-				An instance is a Minecraft setup with a specific loader, version, and mods.
+				{{ formatMessage(messages.instanceDescription) }}
 			</span>
 		</template>
 
@@ -48,20 +42,20 @@
 			<div class="flex flex-col gap-3">
 				<BigOptionButton
 					:icon="PackageIcon"
-					title="Modpack base"
-					description="Use a popular modpack as your starting point."
+					:title="formatMessage(messages.modpackBaseTitle)"
+					:description="formatMessage(messages.modpackBaseDescription)"
 					@click="setSetupType('modpack')"
 				/>
 				<BigOptionButton
 					:icon="BoxesIcon"
-					title="Custom setup"
-					description="Start from scratch by picking a loader and game version."
+					:title="formatMessage(messages.customSetupTitle)"
+					:description="formatMessage(messages.customSetupDescription)"
 					@click="setSetupType('custom')"
 				/>
 				<BigOptionButton
 					:icon="BoxIcon"
-					title="Vanilla Minecraft"
-					description="Classic Minecraft with no mods or plugins."
+					:title="formatMessage(messages.vanillaMinecraftTitle)"
+					:description="formatMessage(messages.vanillaMinecraftDescription)"
 					@click="setSetupType('vanilla')"
 				/>
 			</div>

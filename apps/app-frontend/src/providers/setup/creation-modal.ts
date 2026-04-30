@@ -1,4 +1,5 @@
 import type {
+	AbstractPopupNotificationManager,
 	AbstractWebNotificationManager,
 	CreationFlowContextValue,
 	CreationFlowModal,
@@ -8,6 +9,7 @@ import { provide, ref, useTemplateRef } from 'vue'
 import type { ComponentExposed } from 'vue-component-type-helpers'
 import { useRouter } from 'vue-router'
 
+import type UnknownPackWarningModal from '@/components/ui/install_flow/UnknownPackWarningModal.vue'
 import type ModpackAlreadyInstalledModal from '@/components/ui/modal/ModpackAlreadyInstalledModal.vue'
 import { trackEvent } from '@/helpers/analytics'
 import { get_project_versions, get_search_results } from '@/helpers/cache.js'
@@ -20,12 +22,29 @@ import {
 import { create, list } from '@/helpers/profile.js'
 import type { InstanceLoader } from '@/helpers/types'
 
-export function setupCreationModal(notificationManager: AbstractWebNotificationManager) {
+export function setupCreationModal(
+	notificationManager: AbstractWebNotificationManager,
+	popupNotificationManager: AbstractPopupNotificationManager,
+) {
 	const { handleError } = notificationManager
+	const { formatMessage } = useVIntl()
 	const router = useRouter()
+
+	const messages = defineMessages({
+		installingModpackTitle: {
+			id: 'app.creation-modal.installing-modpack.title',
+			defaultMessage: 'Installing modpack...',
+		},
+		installingModpackDescription: {
+			id: 'app.creation-modal.installing-modpack.description',
+			defaultMessage: '{fileName}',
+		},
+	})
 
 	const installationModal =
 		useTemplateRef<ComponentExposed<typeof CreationFlowModal>>('installationModal')
+	const unknownPackWarningModal =
+		useTemplateRef<InstanceType<typeof UnknownPackWarningModal>>('unknownPackWarningModal')
 	const modpackAlreadyInstalledModal = ref<InstanceType<typeof ModpackAlreadyInstalledModal>>()
 
 	function setModpackAlreadyInstalledModal(
@@ -115,7 +134,24 @@ export function setupCreationModal(notificationManager: AbstractWebNotificationM
 			}
 
 			if (config.modpackFilePath.value) {
-				await create_profile_and_install_from_file(config.modpackFilePath.value).catch(handleError)
+				const waitingNotification = popupNotificationManager.addPopupNotification({
+					title: formatMessage(messages.installingModpackTitle),
+					text: formatMessage(messages.installingModpackDescription, {
+						fileName: config.modpackFilePath.value.split('/').pop() ?? config.modpackFilePath.value,
+					}),
+					type: 'info',
+					autoCloseMs: null,
+					waiting: true,
+				})
+
+				await create_profile_and_install_from_file(
+					config.modpackFilePath.value,
+					(createProfile, fileName) => {
+						popupNotificationManager.removeNotification(waitingNotification.id)
+						unknownPackWarningModal.value?.show(createProfile, fileName)
+					},
+				).catch(handleError)
+				popupNotificationManager.removeNotification(waitingNotification.id)
 				trackEvent('InstanceCreate', { source: 'CreationModalModpackFile' })
 				return
 			}
@@ -198,6 +234,7 @@ export function setupCreationModal(notificationManager: AbstractWebNotificationM
 
 	return {
 		installationModal,
+		unknownPackWarningModal,
 		fetchExistingInstanceNames,
 		handleCreate,
 		handleBrowseModpacks,

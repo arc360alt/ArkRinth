@@ -18,6 +18,7 @@ import {
 	createCreationFlowContext,
 	type CreationFlowContextValue,
 	type FlowType,
+	type LoaderManifestResolver,
 	type ModpackSearchResult,
 	provideCreationFlowContext,
 } from './creation-flow-context'
@@ -83,6 +84,7 @@ provideCreationFlowContext(ctx)
 
 async function show() {
 	await ctx.reset()
+	void ctx.prefetchLoaderMetadata()
 	modal.value?.setStage(0)
 	modal.value?.show()
 }
