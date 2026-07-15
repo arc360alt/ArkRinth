@@ -1,15 +1,84 @@
 {
+  "app.action-bar.downloading-java": {
+    "message": "A descarregar a versão do java {version}"
+  },
+  "app.action-bar.downloading-update": {
+    "message": "A transferir atualização"
+  },
+  "app.action-bar.downloads": {
+    "message": "Downloads"
+  },
+  "app.action-bar.hide-more-running-instances": {
+    "message": "Esconder mais instâncias a correr"
+  },
+  "app.action-bar.make-primary-instance": {
+    "message": "Transformar na instância principal"
+  },
+  "app.action-bar.no-instances-running": {
+    "message": "Nenhuma instância a correr"
+  },
+  "app.action-bar.offline": {
+    "message": "Offline"
+  },
+  "app.action-bar.primary-instance": {
+    "message": "Instância principal"
+  },
+  "app.action-bar.reload-to-update": {
+    "message": "Recarregar para atualizar"
+  },
+  "app.action-bar.show-more-running-instances": {
+    "message": "Mostrar mais instâncias a correr"
+  },
+  "app.action-bar.stop-instance": {
+    "message": "Para instância"
+  },
+  "app.action-bar.update": {
+    "message": "Atualizar"
+  },
+  "app.action-bar.view-active-downloads": {
+    "message": "Ver instâncias ativas"
+  },
+  "app.action-bar.view-instance": {
+    "message": "Ver instância"
+  },
+  "app.action-bar.view-logs": {
+    "message": "Ver logs"
+  },
+  "app.appearance-settings.advanced-rendering.description": {
+    "message": "Ativa a renderização avançada, como efeitos de desfoque, que podem causar problemas de desempenho sem o uso de renderização acelerada por hardware."
+  },
+  "app.appearance-settings.advanced-rendering.title": {
+    "message": "Renderização avançada"
+  },
+  "app.appearance-settings.color-theme.description": {
+    "message": "Seleciona a tua cor preferida para a Modrinth App."
+  },
+  "app.appearance-settings.color-theme.title": {
+    "message": "Cor de tema"
+  },
+  "app.appearance-settings.default-landing-page.description": {
+    "message": "Mudar a página em que o launcher abre."
+  },
+  "app.appearance-settings.default-landing-page.home": {
+    "message": "Casa"
+  },
+  "app.appearance-settings.default-landing-page.library": {
+    "message": "Livraria"
+  },
+  "app.appearance-settings.default-landing-page.title": {
+    "message": "Página de carregamento principal"
+  },
+  "app.appearance-settings.minimize-launcher.title": {
+    "message": "Minimizar launcher"
+  },
+  "app.appearance-settings.select-option": {
+    "message": "Seleciona uma opção"
+  },
   "app.auth-servers.unreachable.body": {
     "message": "Os servidores de autenticação do Minecraft poderão estar em baixo de momento. Verifica a tua ligação à internet e tenta novamente mais tarde."
   },
   "app.auth-servers.unreachable.header": {
     "message": "Não foi possível alcançar os servidores de autenticação"
-  },
-  "app.browse.add-server-to-instance": {
-    "message": "Adicionar servidor à instância"
-  },
-  "app.browse.add-servers-to-instance": {
-    "message": "Adicionar servidores à tua instância"
   },
   "app.browse.add-to-instance": {
     "message": "Adicionar à instância"
@@ -29,14 +98,8 @@
   "app.browse.discover-servers": {
     "message": "Descobrir servidores"
   },
-  "app.browse.hide-added-servers": {
-    "message": "Esconder servidores adicionados"
-  },
-  "app.browse.hide-installed-content": {
-    "message": "Esconder conteúdo instalado"
-  },
-  "app.browse.install-content-to-instance": {
-    "message": "Instalar conteúdo à instância"
+  "app.browse.project-type.modpacks": {
+    "message": "Modpacks"
   },
   "app.export-modal.description-placeholder": {
     "message": "Insere a descrição do modpack..."
@@ -47,14 +110,8 @@
   "app.export-modal.header": {
     "message": "Exportar modpack"
   },
-  "app.export-modal.modpack-name-label": {
-    "message": "Nome do Modpack"
-  },
   "app.export-modal.modpack-name-placeholder": {
     "message": "Nome do Modpack"
-  },
-  "app.export-modal.select-files-label": {
-    "message": "Seleciona as pastas e ficheiros a incluir no pack"
   },
   "app.export-modal.version-number-label": {
     "message": "Número da versão"
@@ -110,12 +167,6 @@
   "app.instance.worlds.browse-servers": {
     "message": "Procurar servidores"
   },
-  "app.instance.worlds.delete-world-description": {
-    "message": "\"{name}\" vai ser **apagado permanentemente**, e não haverá maneira de o recuperar."
-  },
-  "app.instance.worlds.delete-world-title": {
-    "message": "Tens a certeza que queres apagar permanentemente este mundo?"
-  },
   "app.instance.worlds.filter-modded": {
     "message": "Com Mods"
   },
@@ -134,23 +185,8 @@
   "app.instance.worlds.no-worlds-heading": {
     "message": "Sem servidores ou mundos adicionados"
   },
-  "app.instance.worlds.remove-server-description": {
-    "message": "\"{name}\" vai ser removido da tua lista, incluindo dentro do jogo, e não haverá maneira de o recuperar."
-  },
-  "app.instance.worlds.remove-server-description-with-address": {
-    "message": "\"{name}\" ({address}) vai ser removido da tua lista, incluindo dentro do jogo, e não haverá maneira de o recuperar."
-  },
-  "app.instance.worlds.remove-server-title": {
-    "message": "Tens a certeza que queres remover {name}?"
-  },
   "app.instance.worlds.search-worlds-placeholder": {
     "message": "Pesquisar {count} mundos..."
-  },
-  "app.instance.worlds.this-server": {
-    "message": "este servidor"
-  },
-  "app.modal.install-to-play.content-required": {
-    "message": "Conteúdo necessário"
   },
   "app.modal.install-to-play.header": {
     "message": "Instala para jogar"
@@ -161,26 +197,14 @@
   "app.modal.install-to-play.mod-count": {
     "message": "{count, plural, one {mod} other {mods}}"
   },
-  "app.modal.install-to-play.required-modpack": {
-    "message": "Modpack requerido"
-  },
-  "app.modal.install-to-play.server-requires-mods": {
-    "message": "Este servidor requer mods para jogares. Clica Instalar para transferir os ficheiros necessários do Modrinth, e então entrar diretamente no servidor."
-  },
   "app.modal.install-to-play.shared-instance": {
     "message": "Instância partilhada"
-  },
-  "app.modal.install-to-play.shared-server-instance": {
-    "message": "Instância de servidor partilhada"
   },
   "app.modal.install-to-play.view-contents": {
     "message": "Ver conteúdo"
   },
   "app.modal.update-to-play.header": {
     "message": "Atualiza para jogar"
-  },
-  "app.modal.update-to-play.update-required": {
-    "message": "Atualização necessária"
   },
   "app.modal.update-to-play.update-required-description": {
     "message": "Uma atualização é necessária para jogar {name}. Por favor atualiza para a versão mais recente para iniciar o jogo."
@@ -209,8 +233,14 @@
   "app.settings.tabs.resource-management": {
     "message": "Gestão de recursos"
   },
-  "app.update-popup.body": {
-    "message": "Modrinth App v{version} está pronta para ser instalada! Recarrega para atualizar agora, ou automaticamente quando fechares a Modrinth App."
+  "app.skins.delete-modal.title": {
+    "message": "Tens a certeza que queres apagar esta skin?"
+  },
+  "app.skins.dropped-file-error.text": {
+    "message": "Não foi possível ler o ficheiro largado."
+  },
+  "app.skins.section.modrinth": {
+    "message": "Modrinth"
   },
   "app.update-popup.body.download-complete": {
     "message": "Modrinth App v{version} acabou de ser transferida. Recarrega para atualizar agora, ou automaticamente quando fechares a Modrinth App."
@@ -230,9 +260,6 @@
   "app.update-popup.download-complete": {
     "message": "Transferência concluída"
   },
-  "app.update-popup.reload": {
-    "message": "Recarregar"
-  },
   "app.update-popup.title": {
     "message": "Atualização disponível"
   },
@@ -241,15 +268,6 @@
   },
   "app.update.complete-toast.title": {
     "message": "Versão {version} foi instalada com sucesso!"
-  },
-  "app.update.download-update": {
-    "message": "Transferir atualização"
-  },
-  "app.update.downloading-update": {
-    "message": "A transferir atualização ({percent}%)"
-  },
-  "app.update.reload-to-update": {
-    "message": "Recarrega para instalar a atualização"
   },
   "app.world.server-modal.placeholder-address": {
     "message": "exemplo.modrinth.gg"

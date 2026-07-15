@@ -132,6 +132,18 @@ async fn version_updates() {
                 beta_version_id
             );
 
+            let versions = api
+                .update_files_deserialized_common(
+                    "sha1",
+                    vec![beta_version_hash.to_string()],
+                    None,
+                    None,
+                    None,
+                    None,
+                )
+                .await;
+            assert!(versions.is_empty());
+
             // When there is only the one version, there should be no updates
             let version = api
                 .get_update_from_hash_deserialized_common(
@@ -482,7 +494,8 @@ pub async fn test_patch_version() {
                 project_id: Some(*beta_project_id_parsed),
                 version_id: None,
                 file_name: Some("dummy_file_name".to_string()),
-                dependency_type: DependencyType::Required
+                dependency_type: DependencyType::Required,
+                attribution: None,
             }]
         );
         assert_eq!(version.loaders, vec!["forge".to_string()]);

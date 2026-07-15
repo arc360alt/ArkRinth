@@ -2,6 +2,7 @@ use crate::database::redis::RedisPool;
 use crate::models::exp;
 use crate::models::exp::minecraft::JavaServerPing;
 use crate::models::ids::{ProjectId, VersionId};
+use crate::models::projects::DependencyType;
 use crate::queue::server_ping;
 use crate::routes::ApiError;
 use crate::{database::PgPool, env::ENV};
@@ -10,12 +11,19 @@ use async_trait::async_trait;
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use std::{collections::HashMap, str::FromStr};
+use std::{collections::HashMap, str::FromStr, sync::Arc};
 use thiserror::Error;
 use utoipa::ToSchema;
 
 pub mod backend;
+pub mod incremental;
 pub mod indexing;
+
+#[derive(Clone)]
+pub struct SearchState {
+    pub backend: Arc<dyn SearchBackend>,
+    pub queue: incremental::IncrementalSearchQueue,
+}
 
 /// Search parameters which can fit in a URL query string.
 ///
@@ -52,8 +60,6 @@ pub struct SearchRequest {
     #[serde(default)]
     pub show_metadata: bool,
     #[serde(default)]
-    pub elasticsearch_config: backend::elasticsearch::RequestConfig,
-    #[serde(default)]
     pub typesense_config: backend::typesense::RequestConfig,
 
     pub new_filters: Option<String>,
@@ -71,8 +77,6 @@ impl From<SearchQuery> for SearchRequest {
             index: query.index,
             limit: query.limit,
             show_metadata: false,
-            elasticsearch_config:
-                backend::elasticsearch::RequestConfig::default(),
             typesense_config: backend::typesense::RequestConfig::default(),
             new_filters: query.new_filters,
             facets: query.facets,
@@ -105,6 +109,16 @@ pub trait SearchBackend: Send + Sync {
         &self,
         ro_pool: PgPool,
         redis: RedisPool,
+    ) -> eyre::Result<()>;
+
+    async fn index_documents(
+        &self,
+        documents: &[UploadSearchProject],
+    ) -> eyre::Result<()>;
+
+    async fn remove_project_documents(
+        &self,
+        ids: &[ProjectId],
     ) -> eyre::Result<()>;
 
     async fn remove_documents(&self, ids: &[VersionId]) -> eyre::Result<()>;
@@ -178,8 +192,6 @@ pub enum TasksCancelFilter {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum SearchBackendKind {
-    Meilisearch,
-    Elasticsearch,
     Typesense,
 }
 
@@ -190,6 +202,7 @@ pub enum SearchField {
     Author,
     License,
     ProjectTypes,
+    AllProjectTypes,
     ProjectId,
     OpenSource,
     Environment,
@@ -201,6 +214,8 @@ pub enum SearchField {
     MinecraftJavaServerContentKind,
     MinecraftJavaServerContentSupportedGameVersions,
     MinecraftJavaServerPingData,
+    DependencyProjectIds,
+    CompatibleDependencyProjectIds,
 }
 
 #[derive(Debug, Error)]
@@ -212,8 +227,6 @@ impl FromStr for SearchBackendKind {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         Ok(match s {
-            "meilisearch" => SearchBackendKind::Meilisearch,
-            "elasticsearch" => SearchBackendKind::Elasticsearch,
             "typesense" => SearchBackendKind::Typesense,
             _ => return Err(InvalidSearchBackendKind),
         })
@@ -226,6 +239,8 @@ pub struct UploadSearchProject {
     pub project_id: String,
     //
     pub project_types: Vec<String>,
+    #[serde(default)]
+    pub all_project_types: Vec<String>,
     pub slug: Option<String>,
     pub author: String,
     pub author_id: String,
@@ -256,6 +271,12 @@ pub struct UploadSearchProject {
     pub version_published_timestamp: i64,
     pub open_source: bool,
     pub color: Option<u32>,
+    #[serde(default)]
+    pub dependency_project_ids: Vec<String>,
+    #[serde(default)]
+    pub compatible_dependency_project_ids: Vec<String>,
+    #[serde(default)]
+    pub dependencies: Vec<SearchProjectDependency>,
 
     // Hidden fields to get the Project model out of the search results.
     pub loaders: Vec<String>, // Search uses loaders as categories- this is purely for the Project model.
@@ -267,7 +288,16 @@ pub struct UploadSearchProject {
     pub loader_fields: HashMap<String, Vec<serde_json::Value>>,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone, ToSchema)]
+pub struct SearchProjectDependency {
+    pub project_id: String,
+    pub dependency_type: DependencyType,
+    pub name: String,
+    pub slug: Option<String>,
+    pub icon_url: Option<String>,
+}
+
+#[derive(Serialize, Deserialize, Debug, ToSchema)]
 pub struct SearchResults {
     pub hits: Vec<ResultSearchProject>,
     pub page: usize,
@@ -275,11 +305,13 @@ pub struct SearchResults {
     pub total_hits: usize,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, ToSchema)]
 pub struct ResultSearchProject {
     pub version_id: String,
     pub project_id: String,
     pub project_types: Vec<String>,
+    #[serde(default)]
+    pub all_project_types: Vec<String>,
     pub slug: Option<String>,
     pub author: String,
     #[serde(default)]
@@ -303,6 +335,12 @@ pub struct ResultSearchProject {
     pub gallery: Vec<String>,
     pub featured_gallery: Option<String>,
     pub color: Option<u32>,
+    #[serde(default)]
+    pub dependency_project_ids: Vec<String>,
+    #[serde(default)]
+    pub compatible_dependency_project_ids: Vec<String>,
+    #[serde(default)]
+    pub dependencies: Vec<SearchProjectDependency>,
 
     // Hidden fields to get the Project model out of the search results.
     pub loaders: Vec<String>, // Search uses loaders as categories- this is purely for the Project model.
@@ -322,6 +360,7 @@ impl From<UploadSearchProject> for ResultSearchProject {
             version_id: source.version_id,
             project_id: source.project_id,
             project_types: source.project_types,
+            all_project_types: source.all_project_types,
             slug: source.slug,
             author: source.author,
             author_id: Some(source.author_id),
@@ -340,6 +379,10 @@ impl From<UploadSearchProject> for ResultSearchProject {
             gallery: source.gallery,
             featured_gallery: source.featured_gallery,
             color: source.color,
+            dependency_project_ids: source.dependency_project_ids,
+            compatible_dependency_project_ids: source
+                .compatible_dependency_project_ids,
+            dependencies: source.dependencies,
             loaders: source.loaders,
             project_loader_fields: source.project_loader_fields,
             components: source.components,
@@ -351,13 +394,6 @@ impl From<UploadSearchProject> for ResultSearchProject {
 
 pub fn backend(meta_namespace: Option<String>) -> Box<dyn SearchBackend> {
     match ENV.SEARCH_BACKEND {
-        SearchBackendKind::Meilisearch => {
-            let config = backend::MeilisearchConfig::new(meta_namespace);
-            Box::new(backend::Meilisearch::new(config))
-        }
-        SearchBackendKind::Elasticsearch => {
-            Box::new(backend::Elasticsearch::new(meta_namespace).unwrap())
-        }
         SearchBackendKind::Typesense => {
             let config = backend::TypesenseConfig::new(meta_namespace);
             Box::new(backend::Typesense::new(config))

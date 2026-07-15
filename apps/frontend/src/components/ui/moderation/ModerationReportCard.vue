@@ -37,21 +37,22 @@
 					>
 						{{ formatRelativeTime(report.created) }}
 					</span>
-					<ButtonStyled circular>
-						<OverflowMenu :options="quickActions">
-							<template #default>
-								<EllipsisVerticalIcon class="size-4" />
-							</template>
-							<template #copy-id>
+					<div class="flex items-center gap-2">
+						<ButtonStyled circular>
+							<button v-tooltip="'Copy ID'" @click="copyId">
 								<ClipboardCopyIcon />
-								<span class="hidden sm:inline">Copy ID</span>
-							</template>
-							<template #copy-link>
-								<LinkIcon />
-								<span class="hidden sm:inline">Copy link</span>
-							</template>
-						</OverflowMenu>
-					</ButtonStyled>
+							</button>
+						</ButtonStyled>
+						<ButtonStyled circular>
+							<a
+								v-tooltip="'Open in new tab'"
+								:href="`/moderation/reports/${props.report.id}`"
+								target="_blank"
+							>
+								<ExternalIcon />
+							</a>
+						</ButtonStyled>
+					</div>
 				</div>
 			</div>
 
@@ -143,7 +144,7 @@
 			:expand-text="expandText"
 			collapse-text="Collapse thread"
 		>
-			<div class="bg-surface-2 p-4 pt-2">
+			<div class="bg-surface-2 pt-2">
 				<ThreadView
 					v-if="threadWithReportBody"
 					ref="reportThread"
@@ -154,8 +155,8 @@
 					@update-thread="updateThread"
 				>
 					<template #closedActions>
-						<ButtonStyled v-if="isStaff(auth.user)" color="green" class="mt-2">
-							<button class="w-full gap-2 sm:w-auto" @click="reopenReport()">
+						<ButtonStyled v-if="isStaff(auth.user)" color="green">
+							<button class="mt-2 w-full gap-2 sm:w-auto" @click="reopenReport()">
 								<CheckCircleIcon class="size-4" />
 								Reopen Thread
 							</button>
@@ -183,21 +184,15 @@
 	</div>
 </template>
 <script setup lang="ts">
-import {
-	CheckCircleIcon,
-	ClipboardCopyIcon,
-	EllipsisVerticalIcon,
-	LinkIcon,
-} from '@modrinth/assets'
+import { CheckCircleIcon, ClipboardCopyIcon, ExternalIcon } from '@modrinth/assets'
 import { type ExtendedReport, reportQuickReplies } from '@modrinth/moderation'
-import { type OverflowMenuOption, useFormatDateTime } from '@modrinth/ui'
 import {
 	Avatar,
 	ButtonStyled,
 	CollapsibleRegion,
 	getProjectTypeIcon,
 	injectNotificationManager,
-	OverflowMenu,
+	useFormatDateTime,
 	useRelativeTime,
 } from '@modrinth/ui'
 import { formatProjectType } from '@modrinth/utils'
@@ -327,35 +322,6 @@ function updateThread(newThread: any) {
 	}
 }
 
-const quickActions: OverflowMenuOption[] = [
-	{
-		id: 'copy-link',
-		action: () => {
-			const base = window.location.origin
-			const reportUrl = `${base}/moderation/reports/${props.report.id}`
-			navigator.clipboard.writeText(reportUrl).then(() => {
-				addNotification({
-					type: 'success',
-					title: 'Report link copied',
-					text: 'The link to this report has been copied to your clipboard.',
-				})
-			})
-		},
-	},
-	{
-		id: 'copy-id',
-		action: () => {
-			navigator.clipboard.writeText(props.report.id).then(() => {
-				addNotification({
-					type: 'success',
-					title: 'Report ID copied',
-					text: 'The ID of this report has been copied to your clipboard.',
-				})
-			})
-		},
-	},
-]
-
 const reportItemAvatarUrl = computed(() => {
 	switch (props.report.item_type) {
 		case 'project':
@@ -394,4 +360,14 @@ const formattedReportType = computed(() => {
 	const words = reportType.includes('-') ? reportType.split('-') : reportType.split(' ')
 	return words.map((word) => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')
 })
+
+function copyId() {
+	navigator.clipboard.writeText(props.report.id).then(() => {
+		addNotification({
+			type: 'success',
+			title: 'Report ID copied',
+			text: 'The ID of this report has been copied to your clipboard.',
+		})
+	})
+}
 </script>

@@ -119,16 +119,18 @@ const collapsedOptions = computed(() => {
 
 const containerRef = ref<HTMLElement | null>(null)
 const isExpanded = ref(true)
-const observer = new ResizeObserver((entries) => {
-	for (const entry of entries) {
-		isExpanded.value = entry.contentRect.width >= 700
-	}
-})
+let observer: ResizeObserver | null = null
 onMounted(() => {
+	observer = new ResizeObserver((entries) => {
+		for (const entry of entries) {
+			isExpanded.value = entry.contentRect.width >= 700
+		}
+	})
 	if (containerRef.value) observer.observe(containerRef.value)
 })
 onUnmounted(() => {
-	observer.disconnect()
+	observer?.disconnect()
+	observer = null
 })
 </script>
 
@@ -152,9 +154,18 @@ onUnmounted(() => {
 						>
 							{{ project.title }}
 						</AutoLink>
-						<span v-if="project.filename" class="truncate text-secondary mb-2">
+						<span
+							v-if="project.filename && (owner || version)"
+							class="truncate text-secondary mb-2"
+						>
 							{{ project.filename }}
 						</span>
+					</div>
+					<div
+						v-if="project.filename && !(owner || version)"
+						class="flex min-h-8 min-w-0 items-center text-secondary"
+					>
+						<span class="truncate">{{ project.filename }}</span>
 					</div>
 					<div
 						v-if="owner || version"
@@ -222,6 +233,7 @@ onUnmounted(() => {
 						<Tooltip
 							v-if="hasContentListener"
 							theme="dismissable-prompt"
+							class="inline-flex"
 							:triggers="[]"
 							:shown="showContentHint && isExpanded"
 							:auto-hide="false"
@@ -242,7 +254,7 @@ onUnmounted(() => {
 								</button>
 							</ButtonStyled>
 							<template #popper>
-								<div class="experimental-styles-within grid grid-cols-[min-content] gap-1">
+								<div class="grid grid-cols-[min-content] gap-1">
 									<div class="flex min-w-48 items-center justify-between gap-8">
 										<h3 class="m-0 whitespace-nowrap text-base font-bold text-contrast">
 											{{ formatMessage(messages.contentHintTitle) }}
@@ -265,7 +277,6 @@ onUnmounted(() => {
 
 						<ButtonStyled v-if="hasSettingsListener" type="outlined" circular>
 							<button
-								class="!border !border-surface-4"
 								@click="
 									() => {
 										emit('settings')
@@ -292,6 +303,7 @@ onUnmounted(() => {
 					<Tooltip
 						v-if="collapsedOptions.length"
 						theme="dismissable-prompt"
+						class="inline-flex"
 						:triggers="[]"
 						:shown="showContentHint && !isExpanded"
 						:auto-hide="false"
@@ -301,7 +313,6 @@ onUnmounted(() => {
 							><TeleportOverflowMenu
 								:options="collapsedOptions"
 								class="flex @[700px]:hidden"
-								btn-class="!border-surface-4 !border"
 								@open="emit('dismiss-content-hint')"
 							>
 								<MoreVerticalIcon class="size-5" />
@@ -316,7 +327,7 @@ onUnmounted(() => {
 							</TeleportOverflowMenu></ButtonStyled
 						>
 						<template #popper>
-							<div class="experimental-styles-within grid grid-cols-[min-content] gap-1">
+							<div class="grid grid-cols-[min-content] gap-1">
 								<div class="flex min-w-48 items-center justify-between gap-8">
 									<h3 class="m-0 whitespace-nowrap text-base font-bold text-contrast">
 										{{ formatMessage(messages.contentHintTitle) }}

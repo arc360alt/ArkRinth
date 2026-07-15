@@ -1,18 +1,219 @@
 {
+  "app.action-bar.downloading-java": {
+    "message": "正在下载 Java {version}"
+  },
+  "app.action-bar.downloading-update": {
+    "message": "下载更新中"
+  },
+  "app.action-bar.downloads": {
+    "message": "下载"
+  },
+  "app.action-bar.hide-more-running-instances": {
+    "message": "隐藏更多运行中的实例"
+  },
+  "app.action-bar.install.copied-details": {
+    "message": "已复制"
+  },
+  "app.action-bar.install.copy-details": {
+    "message": "复制详情"
+  },
+  "app.action-bar.install.dismiss": {
+    "message": "忽略"
+  },
+  "app.action-bar.install.open-instance": {
+    "message": "打开实例"
+  },
+  "app.action-bar.install.retry": {
+    "message": "重试"
+  },
+  "app.action-bar.install.summary.app-closing": {
+    "message": "由于应用关闭而取消"
+  },
+  "app.action-bar.install.summary.bad-modpack-file": {
+    "message": "无法读取整合包"
+  },
+  "app.action-bar.install.summary.canceled": {
+    "message": "已取消"
+  },
+  "app.action-bar.install.summary.cleanup-incomplete": {
+    "message": "清理未完成"
+  },
+  "app.action-bar.install.summary.content-download-failed": {
+    "message": "无法下载文件"
+  },
+  "app.action-bar.install.summary.corrupt-download": {
+    "message": "下载的文件已损坏"
+  },
+  "app.action-bar.install.summary.could-not-save-files": {
+    "message": "无法保存文件"
+  },
+  "app.action-bar.install.summary.download-failed": {
+    "message": "下载无法完成"
+  },
+  "app.action-bar.install.summary.instance-not-found": {
+    "message": "无法找到实例"
+  },
+  "app.action-bar.install.summary.invalid-file-path": {
+    "message": "文件路径无效"
+  },
+  "app.action-bar.install.summary.invalid-modpack": {
+    "message": "整合包数据无效"
+  },
+  "app.action-bar.install.summary.invalid-modpack-files": {
+    "message": "整合包文件含有无效元数据"
+  },
+  "app.action-bar.install.summary.java-setup-failed": {
+    "message": "无法完成 Java 配置"
+  },
+  "app.action-bar.install.summary.loader-setup-failed": {
+    "message": "加载器配置失败"
+  },
+  "app.action-bar.install.summary.local-data-error": {
+    "message": "无法更新本地数据"
+  },
+  "app.action-bar.install.summary.minecraft-setup-failed": {
+    "message": "Minecraft 配置失败"
+  },
+  "app.action-bar.install.summary.modrinth-unreachable": {
+    "message": "无法连接 Modrinth"
+  },
+  "app.action-bar.install.summary.no-write-permission": {
+    "message": "没有写入权限"
+  },
+  "app.action-bar.install.summary.pack-download-failed": {
+    "message": "无法下载包"
+  },
+  "app.action-bar.install.summary.unexpected-error": {
+    "message": "出错了"
+  },
+  "app.action-bar.install.unknown-instance": {
+    "message": "未知的实例"
+  },
+  "app.action-bar.installs": {
+    "message": "安装"
+  },
+  "app.action-bar.make-primary-instance": {
+    "message": "设为主实例"
+  },
+  "app.action-bar.no-instances-running": {
+    "message": "没有运行中的实例"
+  },
+  "app.action-bar.offline": {
+    "message": "离线"
+  },
+  "app.action-bar.primary-instance": {
+    "message": "主实例"
+  },
+  "app.action-bar.reload-to-update": {
+    "message": "重新加载以更新"
+  },
+  "app.action-bar.show-more-running-instances": {
+    "message": "显示更多运行中的实例"
+  },
+  "app.action-bar.stop-instance": {
+    "message": "停止实例"
+  },
+  "app.action-bar.update": {
+    "message": "更新"
+  },
+  "app.action-bar.view-active-downloads": {
+    "message": "查看正在下载内容"
+  },
+  "app.action-bar.view-instance": {
+    "message": "查看实例"
+  },
+  "app.action-bar.view-logs": {
+    "message": "查看日志"
+  },
+  "app.appearance-settings.advanced-rendering.description": {
+    "message": "启用模糊效果等高级渲染。可能会在没有硬件加速渲染的情况下造成性能问题。"
+  },
+  "app.appearance-settings.advanced-rendering.title": {
+    "message": "高级渲染"
+  },
+  "app.appearance-settings.color-theme.description": {
+    "message": "为 Modrinth App 选择偏好的色彩主题。"
+  },
+  "app.appearance-settings.color-theme.title": {
+    "message": "色彩主题"
+  },
+  "app.appearance-settings.default-landing-page.description": {
+    "message": "更改启动器打开的页面。"
+  },
+  "app.appearance-settings.default-landing-page.home": {
+    "message": "首页"
+  },
+  "app.appearance-settings.default-landing-page.library": {
+    "message": "库"
+  },
+  "app.appearance-settings.default-landing-page.title": {
+    "message": "默认起始页"
+  },
+  "app.appearance-settings.hide-nametag.description": {
+    "message": "在皮肤页面中禁用你玩家头顶上的名牌。"
+  },
+  "app.appearance-settings.hide-nametag.title": {
+    "message": "隐藏名牌"
+  },
+  "app.appearance-settings.jump-back-into-worlds.description": {
+    "message": "在主页的“快速回到”部分包含最近的世界。"
+  },
+  "app.appearance-settings.jump-back-into-worlds.title": {
+    "message": "快速回到世界"
+  },
+  "app.appearance-settings.minimize-launcher.description": {
+    "message": "当 Minecraft 进程启动时，将启动器最小化。"
+  },
+  "app.appearance-settings.minimize-launcher.title": {
+    "message": "最小化启动器"
+  },
+  "app.appearance-settings.native-decorations.description": {
+    "message": "使用系统窗口边框（需要重启应用）。"
+  },
+  "app.appearance-settings.native-decorations.title": {
+    "message": "原生窗口"
+  },
+  "app.appearance-settings.select-option": {
+    "message": "选择一个选项"
+  },
+  "app.appearance-settings.show-play-time.description": {
+    "message": "显示你在每个实例中游玩的时间。"
+  },
+  "app.appearance-settings.show-play-time.title": {
+    "message": "显示总游玩时间"
+  },
+  "app.appearance-settings.skip-non-essential-warnings.description": {
+    "message": "自动跳过低风险确认，包括重复安装整合包、常规内容删除、批量更新、解除整合包关联及修复提示。危险警告仍会显示。"
+  },
+  "app.appearance-settings.skip-non-essential-warnings.title": {
+    "message": "跳过非必要的警告"
+  },
+  "app.appearance-settings.toggle-sidebar.description": {
+    "message": "启用切换侧边栏的功能。"
+  },
+  "app.appearance-settings.toggle-sidebar.title": {
+    "message": "切换侧边栏"
+  },
+  "app.appearance-settings.unknown-pack-warning.description": {
+    "message": "如果你尝试安装一个未托管在 Modrinth 上的 Modrinth 整合包文件（.mrpack），我们会确保你在安装之前了解相关风险。"
+  },
+  "app.appearance-settings.unknown-pack-warning.title": {
+    "message": "安装未知整合包前提醒我"
+  },
   "app.auth-servers.unreachable.body": {
     "message": "Minecraft 身份验证服务器现在可能无法使用。请检查你的网络连接，并稍后再试。"
   },
   "app.auth-servers.unreachable.header": {
     "message": "无法连接到身份验证服务器"
   },
-  "app.browse.add-server-to-instance": {
-    "message": "将服务器添加到实例实例"
-  },
   "app.browse.add-servers-to-instance": {
-    "message": "将服务器添加到你的实例"
+    "message": "添加服务器到实例"
+  },
+  "app.browse.add-to-an-instance": {
+    "message": "添加到实例"
   },
   "app.browse.add-to-instance": {
-    "message": "添加到实例实例"
+    "message": "添加到实例"
   },
   "app.browse.add-to-instance-name": {
     "message": "添加到 {instanceName}"
@@ -21,7 +222,10 @@
     "message": "已添加"
   },
   "app.browse.already-added": {
-    "message": "已添加"
+    "message": "已经添加"
+  },
+  "app.browse.back-to-instance": {
+    "message": "返回实例"
   },
   "app.browse.discover-content": {
     "message": "发现内容"
@@ -32,11 +236,17 @@
   "app.browse.hide-added-servers": {
     "message": "隐藏已添加的服务器"
   },
-  "app.browse.hide-installed-content": {
-    "message": "隐藏已安装的内容"
+  "app.browse.project-type.modpacks": {
+    "message": "整合包"
   },
-  "app.browse.install-content-to-instance": {
-    "message": "将内容安装到实例中"
+  "app.browse.server-instance-content-warning": {
+    "message": "加入服务器时，添加内容可能会破坏兼容性。当更新服务器实例内容时，任何添加的内容也将丢失。"
+  },
+  "app.browse.server.installing": {
+    "message": "安装中"
+  },
+  "app.content-install.no-compatible-versions": {
+    "message": "没有与 {compatibilityLabel} 匹配的可用版本。如果仍要安装，请选择一个版本。依赖项将不会自动安装。"
   },
   "app.export-modal.description-placeholder": {
     "message": "输入整合包描述……"
@@ -53,14 +263,65 @@
   "app.export-modal.modpack-name-placeholder": {
     "message": "整合包名称"
   },
-  "app.export-modal.select-files-label": {
-    "message": "选择要包含在包中的文件和文件夹"
-  },
   "app.export-modal.version-number-label": {
     "message": "版本号"
   },
   "app.export-modal.version-number-placeholder": {
     "message": "1.0.0"
+  },
+  "app.install.phase.downloading_content": {
+    "message": "正在下载内容"
+  },
+  "app.install.phase.downloading_minecraft": {
+    "message": "正在下载 Minecraft"
+  },
+  "app.install.phase.downloading_pack_file": {
+    "message": "正在下载包文件"
+  },
+  "app.install.phase.extracting_overrides": {
+    "message": "提取覆盖项"
+  },
+  "app.install.phase.finalizing": {
+    "message": "完成"
+  },
+  "app.install.phase.preparing_instance": {
+    "message": "已加入安装队列"
+  },
+  "app.install.phase.preparing_java": {
+    "message": "正在准备 Java"
+  },
+  "app.install.phase.preparing_java.downloading": {
+    "message": "正在下载 Java {version}"
+  },
+  "app.install.phase.preparing_java.extracting": {
+    "message": "正在提取 Java {version}"
+  },
+  "app.install.phase.preparing_java.fetching-metadata": {
+    "message": "正在获取 Java {version}"
+  },
+  "app.install.phase.preparing_java.resolving": {
+    "message": "正在准备 Java {version}"
+  },
+  "app.install.phase.preparing_java.validating": {
+    "message": "正在校验 Java {version}"
+  },
+  "app.install.phase.reading_pack_manifest": {
+    "message": "正在读取整合包清单"
+  },
+  "app.install.phase.resolving_loader": {
+    "message": "正在解析加载器"
+  },
+  "app.install.phase.resolving_minecraft": {
+    "message": "正在解析 Minecraft"
+  },
+  "app.install.phase.resolving_pack": {
+    "message": "正在解析内容"
+  },
+  "app.install.phase.rolling_back": {
+    "message": "回滚"
+  },
+  "app.install.phase.running_loader_processors": {
+    "message": "正在运行加载处理器"
   },
   "app.instance.confirm-delete.admonition-body": {
     "message": "你实例的所有数据将被永久删除，包括你的世界、配置和所有已安装的内容。"
@@ -86,6 +347,15 @@
   "app.instance.modpack-already-installed.instance": {
     "message": "实例"
   },
+  "app.instance.mods.bulk-update.downloading-projects": {
+    "message": "正在下载 {current, number}/{total, number}个 项目……"
+  },
+  "app.instance.mods.bulk-update.finishing": {
+    "message": "正在结束更新……"
+  },
+  "app.instance.mods.bulk-update.resolving-versions": {
+    "message": "正在解析版本……"
+  },
   "app.instance.mods.content-type-project": {
     "message": "项目"
   },
@@ -110,14 +380,20 @@
   "app.instance.worlds.browse-servers": {
     "message": "浏览服务器"
   },
-  "app.instance.worlds.delete-world-description": {
-    "message": "“{name}”将被**永久删除**，并且无法恢复。"
+  "app.instance.worlds.delete-world-modal.delete-button": {
+    "message": "删除世界"
   },
-  "app.instance.worlds.delete-world-title": {
-    "message": "你确定要永久删除这个世界吗？"
+  "app.instance.worlds.delete-world-modal.title": {
+    "message": "删除世界"
+  },
+  "app.instance.worlds.delete-world-modal.warning-body": {
+    "message": "这个世界将会被永久删除，此操作无法撤销。"
+  },
+  "app.instance.worlds.delete-world-modal.warning-header": {
+    "message": "正在删除 {name}"
   },
   "app.instance.worlds.filter-modded": {
-    "message": "模组适配"
+    "message": "含模组"
   },
   "app.instance.worlds.filter-offline": {
     "message": "离线"
@@ -134,23 +410,20 @@
   "app.instance.worlds.no-worlds-heading": {
     "message": "未添加服务器或世界"
   },
-  "app.instance.worlds.remove-server-description": {
-    "message": "将从你的列表中删除“{name}”，包括游戏内，并且无法恢复。"
+  "app.instance.worlds.remove-server-modal.remove-button": {
+    "message": "删除服务器"
   },
-  "app.instance.worlds.remove-server-description-with-address": {
-    "message": "将从你的列表中删除“{name}”（{address}），包括游戏内，并且无法恢复。"
+  "app.instance.worlds.remove-server-modal.title": {
+    "message": "删除服务器"
   },
-  "app.instance.worlds.remove-server-title": {
-    "message": "你确定要删除 {name} 吗？"
+  "app.instance.worlds.remove-server-modal.warning-body": {
+    "message": "该服务器将会被移出你的服务器列表，也包括游戏内的服务器列表。之后如果你记得地址，仍可将其添加回来。"
+  },
+  "app.instance.worlds.remove-server-modal.warning-header": {
+    "message": "正在删除 {name}"
   },
   "app.instance.worlds.search-worlds-placeholder": {
     "message": "搜索 {count} 个世界……"
-  },
-  "app.instance.worlds.this-server": {
-    "message": "此服务器"
-  },
-  "app.modal.install-to-play.content-required": {
-    "message": "需求内容"
   },
   "app.modal.install-to-play.header": {
     "message": "安装以游玩"
@@ -161,17 +434,8 @@
   "app.modal.install-to-play.mod-count": {
     "message": "{count} 个模组"
   },
-  "app.modal.install-to-play.required-modpack": {
-    "message": "需求整合包"
-  },
-  "app.modal.install-to-play.server-requires-mods": {
-    "message": "此服务器需要安装模组才能游玩。点击安装，从 Modrinth 下载所需文件，然后直接进入服务器。"
-  },
   "app.modal.install-to-play.shared-instance": {
     "message": "共享实例"
-  },
-  "app.modal.install-to-play.shared-server-instance": {
-    "message": "共享的服务端实例"
   },
   "app.modal.install-to-play.view-contents": {
     "message": "查看内容"
@@ -179,11 +443,32 @@
   "app.modal.update-to-play.header": {
     "message": "更新以游玩"
   },
-  "app.modal.update-to-play.update-required": {
-    "message": "需要更新"
-  },
   "app.modal.update-to-play.update-required-description": {
     "message": "需要更新至最新版本才能运行 {name}。请更新后启动游戏。"
+  },
+  "app.project.install-button.already-installed": {
+    "message": "此项目已安装"
+  },
+  "app.project.install-button.switch-version": {
+    "message": "切换版本"
+  },
+  "app.project.install-context.back-to-browse": {
+    "message": "返回发现页"
+  },
+  "app.project.install-context.install-content-to-instance": {
+    "message": "将内容安装到实例中"
+  },
+  "app.project.version.all-versions": {
+    "message": "所有版本"
+  },
+  "app.project.version.download-in-browser": {
+    "message": "在浏览器中下载"
+  },
+  "app.project.version.installing": {
+    "message": "安装中"
+  },
+  "app.project.versions.already-installed": {
+    "message": "已安装"
   },
   "app.settings.developer-mode-enabled": {
     "message": "开发者模式已启用。"
@@ -209,8 +494,155 @@
   "app.settings.tabs.resource-management": {
     "message": "资源管理"
   },
-  "app.update-popup.body": {
-    "message": "Modrinth App v{version} 更新已就绪！立即重启更新，或退出时自动安装。"
+  "app.skins.add-button": {
+    "message": "添加皮肤"
+  },
+  "app.skins.add-button.drag-and-drop": {
+    "message": "拖放"
+  },
+  "app.skins.apply-button": {
+    "message": "应用"
+  },
+  "app.skins.delete-button": {
+    "message": "删除皮肤"
+  },
+  "app.skins.delete-modal.description": {
+    "message": "这会永久删除所选皮肤。这操作无法撤销。"
+  },
+  "app.skins.delete-modal.title": {
+    "message": "你确定要删除这个皮肤吗？"
+  },
+  "app.skins.dropped-file-error.text": {
+    "message": "无法读取拖放的文件。"
+  },
+  "app.skins.dropped-file-error.title": {
+    "message": "处理文件时出错"
+  },
+  "app.skins.edit-button": {
+    "message": "编辑皮肤"
+  },
+  "app.skins.modal.add-skin-button": {
+    "message": "添加皮肤"
+  },
+  "app.skins.modal.add-title": {
+    "message": "添加皮肤中"
+  },
+  "app.skins.modal.arm-style-section": {
+    "message": "手臂样式"
+  },
+  "app.skins.modal.arm-style-slim": {
+    "message": "细"
+  },
+  "app.skins.modal.arm-style-wide": {
+    "message": "粗"
+  },
+  "app.skins.modal.cape-fallback-name": {
+    "message": "披风"
+  },
+  "app.skins.modal.cape-section": {
+    "message": "披风"
+  },
+  "app.skins.modal.edit-title": {
+    "message": "编辑皮肤中"
+  },
+  "app.skins.modal.make-edit-first-tooltip": {
+    "message": "请先对皮肤进行编辑！"
+  },
+  "app.skins.modal.no-cape-tooltip": {
+    "message": "无披风"
+  },
+  "app.skins.modal.none-cape-option": {
+    "message": "无"
+  },
+  "app.skins.modal.replace-texture-button": {
+    "message": "替换纹理"
+  },
+  "app.skins.modal.save-skin-button": {
+    "message": "保存皮肤"
+  },
+  "app.skins.modal.saving-tooltip": {
+    "message": "保存中……"
+  },
+  "app.skins.modal.texture-section": {
+    "message": "纹理"
+  },
+  "app.skins.modal.upload-skin-first-tooltip": {
+    "message": "请先上传皮肤！"
+  },
+  "app.skins.preview.edit-button": {
+    "message": "编辑皮肤"
+  },
+  "app.skins.previewing-badge": {
+    "message": "预览"
+  },
+  "app.skins.rate-limit.text": {
+    "message": "你更改皮肤过于频繁。Mojang服务器已暂时阻止了后续请求。请稍等片刻后再试。"
+  },
+  "app.skins.rate-limit.title": {
+    "message": "慢点！"
+  },
+  "app.skins.reorder-error.text": {
+    "message": "未能保存皮肤顺序。"
+  },
+  "app.skins.reorder-error.title": {
+    "message": "皮肤排序失败"
+  },
+  "app.skins.section.builders-and-biomes": {
+    "message": "建造者与生物群系"
+  },
+  "app.skins.section.chaos-cubed": {
+    "message": "混沌立方"
+  },
+  "app.skins.section.chase-the-skies": {
+    "message": "追逐天空"
+  },
+  "app.skins.section.default-skins": {
+    "message": "默认皮肤"
+  },
+  "app.skins.section.minecon-earth-2017": {
+    "message": "MINECON Earth 2017"
+  },
+  "app.skins.section.modrinth": {
+    "message": "Modrinth"
+  },
+  "app.skins.section.modrinth-pride": {
+    "message": "Modrinth 精选"
+  },
+  "app.skins.section.modrinth-pride.tooltip": {
+    "message": "你在骄傲月期间为 Modrinth 的骄傲月筹款活动捐款，因此获得了这些皮肤。"
+  },
+  "app.skins.section.mounts-of-mayhem": {
+    "message": "群骑纷争"
+  },
+  "app.skins.section.saved-skins": {
+    "message": "已保存皮肤"
+  },
+  "app.skins.section.striding-hero": {
+    "message": "Striding Hero"
+  },
+  "app.skins.section.the-copper-age": {
+    "message": "铜器时代"
+  },
+  "app.skins.section.the-garden-awakens": {
+    "message": "苍园觉醒"
+  },
+  "app.skins.section.tiny-takeover": {
+    "message": "小鬼当家"
+  },
+  "app.skins.sign-in.button": {
+    "message": "登录"
+  },
+  "app.skins.sign-in.description": {
+    "message": "请登录您的 Minecraft 账号，以便使用 Modrinth 应用的皮肤管理功能。"
+  },
+  "app.skins.sign-in.rinthbot-alt": {
+    "message": "兴奋的 Modrinth Bot"
+  },
+  "app.skins.sign-in.title": {
+    "message": "请登录"
+  },
+  "app.skins.title": {
+    "message": "皮肤选择器"
   },
   "app.update-popup.body.download-complete": {
     "message": "Modrinth App v{version} 更新已下载完成！立即重启更新，或退出时自动安装。"
@@ -231,7 +663,7 @@
     "message": "下载完成"
   },
   "app.update-popup.reload": {
-    "message": "重新启动"
+    "message": "重新加载以更新"
   },
   "app.update-popup.title": {
     "message": "有可用的更新"
@@ -241,15 +673,6 @@
   },
   "app.update.complete-toast.title": {
     "message": "版本 {version} 已成功安装！"
-  },
-  "app.update.download-update": {
-    "message": "下载更新"
-  },
-  "app.update.downloading-update": {
-    "message": "下载更新中（{percent}%）"
-  },
-  "app.update.reload-to-update": {
-    "message": "重启以安装更新"
   },
   "app.world.server-modal.placeholder-address": {
     "message": "example.modrinth.gg"
@@ -399,7 +822,7 @@
     "message": "将从设备中永久删除该实例，包括所有存档、配置文件及已安装内容。此操作不可撤销，请谨慎操作。"
   },
   "instance.settings.tabs.general.deleting.button": {
-    "message": "删除中..."
+    "message": "删除中……"
   },
   "instance.settings.tabs.general.duplicate-button": {
     "message": "复制"
@@ -440,11 +863,35 @@
   "instance.settings.tabs.general.name": {
     "message": "名称"
   },
+  "instance.settings.tabs.general.update-channel": {
+    "message": "更新渠道"
+  },
+  "instance.settings.tabs.general.update-channel.alpha": {
+    "message": "Alpha 测试版"
+  },
+  "instance.settings.tabs.general.update-channel.alpha.description": {
+    "message": "正式版，beta 和 alpha 测试版会被显示为可用更新。"
+  },
+  "instance.settings.tabs.general.update-channel.beta": {
+    "message": "Beta 测试版"
+  },
+  "instance.settings.tabs.general.update-channel.beta.description": {
+    "message": "正式版和 beta 测试版会被显示为可用更新。"
+  },
+  "instance.settings.tabs.general.update-channel.release": {
+    "message": "正式版"
+  },
+  "instance.settings.tabs.general.update-channel.release.description": {
+    "message": "只有正式版会被显示为可用更新。"
+  },
+  "instance.settings.tabs.general.update-channel.select": {
+    "message": "选择更新渠道"
+  },
   "instance.settings.tabs.hooks": {
     "message": "启动 Hooks"
   },
   "instance.settings.tabs.hooks.custom-hooks": {
-    "message": "自定义启动Hooks"
+    "message": "自定义启动 Hooks"
   },
   "instance.settings.tabs.hooks.description": {
     "message": "Hooks允许高级用户在启动游戏前后运行特定的系统命令。"
@@ -456,7 +903,7 @@
     "message": "在游戏关闭后运行。"
   },
   "instance.settings.tabs.hooks.post-exit.enter": {
-    "message": "输入退出后运行的命令…"
+    "message": "输入退出后运行的命令……"
   },
   "instance.settings.tabs.hooks.pre-launch": {
     "message": "启动前"
@@ -465,7 +912,7 @@
     "message": "在实例启动前运行。"
   },
   "instance.settings.tabs.hooks.pre-launch.enter": {
-    "message": "输入启动前命令..."
+    "message": "输入启动前命令……"
   },
   "instance.settings.tabs.hooks.title": {
     "message": "游戏启动钩子"
@@ -477,7 +924,7 @@
     "message": "用于启动 Minecraft 的包装器命令。"
   },
   "instance.settings.tabs.hooks.wrapper.enter": {
-    "message": "输入封装命令..."
+    "message": "输入封装命令……"
   },
   "instance.settings.tabs.installation": {
     "message": "安装"
@@ -487,6 +934,24 @@
   },
   "instance.settings.tabs.java": {
     "message": "Java 及内存"
+  },
+  "instance.settings.tabs.java.custom-environment-variables": {
+    "message": "自定义环境变量"
+  },
+  "instance.settings.tabs.java.custom-java-arguments": {
+    "message": "自定义Java参数"
+  },
+  "instance.settings.tabs.java.custom-java-installation": {
+    "message": "自定义Java安装"
+  },
+  "instance.settings.tabs.java.custom-memory-allocation": {
+    "message": "自定义内存分配"
+  },
+  "instance.settings.tabs.java.enter-environment-variables": {
+    "message": "输入环境变量……"
+  },
+  "instance.settings.tabs.java.enter-java-arguments": {
+    "message": "输入 Java 参数……"
   },
   "instance.settings.tabs.java.environment-variables": {
     "message": "环境变量"
@@ -502,6 +967,9 @@
   },
   "instance.settings.tabs.java.java-memory": {
     "message": "内存分配"
+  },
+  "instance.settings.tabs.java.java-path-placeholder": {
+    "message": "/path/to/java"
   },
   "instance.settings.tabs.window": {
     "message": "游戏窗口"
@@ -522,7 +990,7 @@
     "message": "游戏启动时的窗口高度。"
   },
   "instance.settings.tabs.window.height.enter": {
-    "message": "输入高度…"
+    "message": "输入高度……"
   },
   "instance.settings.tabs.window.width": {
     "message": "宽度"
@@ -531,7 +999,7 @@
     "message": "游戏启动时的窗口宽度。"
   },
   "instance.settings.tabs.window.width.enter": {
-    "message": "输入宽度…"
+    "message": "输入宽度……"
   },
   "instance.worlds.a_minecraft_server": {
     "message": "Minecraft 服务器"
@@ -541,6 +1009,9 @@
   },
   "instance.worlds.copy_address": {
     "message": "复制地址"
+  },
+  "instance.worlds.create_shortcut": {
+    "message": "创建快捷方式"
   },
   "instance.worlds.dont_show_on_home": {
     "message": "在主界面隐藏"
@@ -574,6 +1045,24 @@
   },
   "instance.worlds.world_in_use": {
     "message": "世界正在使用中"
+  },
+  "minecraft-account.add-account": {
+    "message": "添加账户"
+  },
+  "minecraft-account.label": {
+    "message": "Minecraft 账户"
+  },
+  "minecraft-account.not-signed-in": {
+    "message": "未登录"
+  },
+  "minecraft-account.remove-account": {
+    "message": "移除账户"
+  },
+  "minecraft-account.select-account": {
+    "message": "选择账户"
+  },
+  "minecraft-account.sign-in": {
+    "message": "登录 Minecraft"
   },
   "search.filter.locked.instance": {
     "message": "由该实例提供"

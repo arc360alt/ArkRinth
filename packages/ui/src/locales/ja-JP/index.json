@@ -1,4 +1,7 @@
 {
+  "action.no-permission": {
+    "defaultMessage": "権限がありません"
+  },
   "affiliate.create.button": {
     "defaultMessage": "アフィリエイトリンクを作成"
   },
@@ -36,7 +39,7 @@
     "defaultMessage": "サーバー設定の読み込みに失敗しました"
   },
   "badge.alpha": {
-    "defaultMessage": "アルファ"
+    "defaultMessage": "Alpha"
   },
   "badge.beta": {
     "defaultMessage": "ベータ"
@@ -47,11 +50,14 @@
   "badge.new": {
     "defaultMessage": "New"
   },
+  "badge.release": {
+    "defaultMessage": "リリース"
+  },
   "billing.resubscribe-modal.cancel": {
     "defaultMessage": "キャンセル"
   },
   "billing.resubscribe-modal.cpus": {
-    "defaultMessage": "{sharedCpus} 共有CPU"
+    "defaultMessage": "CPU {sharedCpus}コア (共有)"
   },
   "billing.resubscribe-modal.description": {
     "defaultMessage": "<server-name>{serverName}</server-name> への再登録を行おうとしています。登録が再開され、サーバーは中断なく稼働し続けます。"
@@ -65,17 +71,8 @@
   "billing.resubscribe-modal.failed-load": {
     "defaultMessage": "サブスクリプション情報の読み込みに失敗しました。"
   },
-  "billing.resubscribe-modal.interval.five-days": {
-    "defaultMessage": "/5日"
-  },
-  "billing.resubscribe-modal.interval.monthly": {
-    "defaultMessage": "/月"
-  },
-  "billing.resubscribe-modal.interval.quarterly": {
-    "defaultMessage": "/四半期"
-  },
-  "billing.resubscribe-modal.interval.yearly": {
-    "defaultMessage": "/年"
+  "billing.resubscribe-modal.interval": {
+    "defaultMessage": "{intervalOption, select, fiveDays {/5日} monthly {/月} quarterly {/3ヵ月} yearly {/年} other {{interval}}}"
   },
   "billing.resubscribe-modal.next-charge": {
     "defaultMessage": "次回の請求は<charge-date>{date}</charge-date>です。"
@@ -84,19 +81,58 @@
     "defaultMessage": "プラン"
   },
   "billing.resubscribe-modal.ram": {
-    "defaultMessage": "メモリ{ramGb} GB"
+    "defaultMessage": "メモリ {ramGb}GB"
   },
   "billing.resubscribe-modal.resubscribe": {
-    "defaultMessage": "再登録"
+    "defaultMessage": "もう一度購読する"
   },
   "billing.resubscribe-modal.storage": {
-    "defaultMessage": "ストレージ{storageGb} GB"
+    "defaultMessage": "ストレージ {storageGb}GB"
   },
   "billing.resubscribe-modal.title": {
     "defaultMessage": "サーバーに再登録"
   },
+  "browse.filter-results": {
+    "defaultMessage": "絞り込み"
+  },
+  "browse.no-results": {
+    "defaultMessage": "検索が見つかりませんでした"
+  },
+  "browse.offline": {
+    "defaultMessage": "現在オフラインです。インターネットに接続してModrinthを閲覧しましょう！"
+  },
+  "browse.search.placeholder": {
+    "defaultMessage": "{projectType}を検索..."
+  },
+  "browse.selected-projects-floating-bar.aria-label": {
+    "defaultMessage": "選択中のプロジェクト"
+  },
+  "browse.selected-projects-floating-bar.install": {
+    "defaultMessage": "{count, number}件のプロジェクトをインストール"
+  },
+  "browse.selected-projects-floating-bar.selected-count": {
+    "defaultMessage": "{count, number}件のプロジェクトを選択中"
+  },
+  "browse.selected-projects-leave-modal.admonition-body": {
+    "defaultMessage": "{count, number}件のプロジェクトが選択されています。このままインストールしてよろしいですか？"
+  },
+  "browse.selected-projects-leave-modal.admonition-header": {
+    "defaultMessage": "選択中のプロジェクトはまだインストールされていません"
+  },
+  "browse.selected-projects-leave-modal.discard": {
+    "defaultMessage": "破棄"
+  },
+  "browse.selected-projects-leave-modal.header": {
+    "defaultMessage": "選択中のプロジェクトはまだインストールされていません"
+  },
+  "browse.view-prefix": {
+    "defaultMessage": "表示:"
+  },
   "button.accept": {
     "defaultMessage": "承認"
+  },
+  "button.add-server-to-instance": {
+    "defaultMessage": "インスタンスにサーバーを追加"
   },
   "button.affiliate-links": {
     "defaultMessage": "アフィリエイトリンク"
@@ -167,6 +203,9 @@
   "button.hide-snapshots": {
     "defaultMessage": "スナップショットを非表示"
   },
+  "button.install": {
+    "defaultMessage": "インストール"
+  },
   "button.max": {
     "defaultMessage": "最大"
   },
@@ -182,8 +221,14 @@
   "button.open-folder": {
     "defaultMessage": "フォルダーを開く"
   },
+  "button.open-in-browser": {
+    "defaultMessage": "ブラウザで開く"
+  },
   "button.open-in-folder": {
     "defaultMessage": "フォルダを開く"
+  },
+  "button.open-in-modrinth": {
+    "defaultMessage": "ブラウザで開く"
   },
   "button.play": {
     "defaultMessage": "プレイ"
@@ -195,7 +240,7 @@
     "defaultMessage": "Modパックを再インストール"
   },
   "button.remove": {
-    "defaultMessage": "削除"
+    "defaultMessage": "削除する"
   },
   "button.remove-image": {
     "defaultMessage": "画像を削除"
@@ -248,6 +293,9 @@
   "button.stop": {
     "defaultMessage": "停止"
   },
+  "button.switch-to-version": {
+    "defaultMessage": "バージョンを切り替える"
+  },
   "button.switch-version": {
     "defaultMessage": "バージョンを切り替え"
   },
@@ -275,8 +323,26 @@
   "changelog.product.web": {
     "defaultMessage": "プラットフォーム"
   },
+  "collection-widget.empty-collection": {
+    "defaultMessage": "このコレクションにはまだ何もありません。"
+  },
+  "collection-widget.loading-projects": {
+    "defaultMessage": "プロジェクトをロード中…"
+  },
+  "collection-widget.no-search-results": {
+    "defaultMessage": "該当するプロジェクトがありません。"
+  },
+  "collection-widget.search-placeholder": {
+    "defaultMessage": "プロジェクトを検索"
+  },
   "collections.label.private": {
     "defaultMessage": "非公開"
+  },
+  "content-type.content.lowercase": {
+    "defaultMessage": "コンテンツ"
+  },
+  "content.card.select-project": {
+    "defaultMessage": "{project}を選択"
   },
   "content.confirm-bulk-update.admonition-body": {
     "defaultMessage": "プロジェクトを互換性のある最新バージョンにアップデートしてもよろしいですか？ 1つずつアップデートすることをおすすめします。"
@@ -300,7 +366,7 @@
     "defaultMessage": "削除する前にご確認ください"
   },
   "content.confirm-deletion.delete-button": {
-    "defaultMessage": "{count}件の{itemType}を削除"
+    "defaultMessage": "{count, number}件の{itemType}を削除"
   },
   "content.confirm-deletion.header": {
     "defaultMessage": "{itemType}を削除"
@@ -329,6 +395,18 @@
   "content.confirm-unlink.unlink-button": {
     "defaultMessage": "リンクを解除"
   },
+  "content.dependency-warning.context.instance": {
+    "defaultMessage": "インスタンス"
+  },
+  "content.dependency-warning.context.server": {
+    "defaultMessage": "サーバー"
+  },
+  "content.dependency-warning.delete-anyway-button": {
+    "defaultMessage": "とにかく削除する"
+  },
+  "content.dependency-warning.deleting-label": {
+    "defaultMessage": "削除中"
+  },
   "content.diff-modal.added-count": {
     "defaultMessage": "{count} 件追加されました"
   },
@@ -350,6 +428,18 @@
   "content.diff-modal.updated-count": {
     "defaultMessage": "{count} 件更新されました"
   },
+  "content.filter.disabled": {
+    "defaultMessage": "無効化済み"
+  },
+  "content.filter.enabled": {
+    "defaultMessage": "有効化済み"
+  },
+  "content.filter.updates": {
+    "defaultMessage": "更新"
+  },
+  "content.filter.warnings": {
+    "defaultMessage": "警告"
+  },
   "content.inline-backup.backing-up": {
     "defaultMessage": "バックアップを作成中…"
   },
@@ -368,11 +458,17 @@
   "content.inline-backup.create-backup": {
     "defaultMessage": "バックアップを作成"
   },
+  "content.inline-backup.instance-label": {
+    "defaultMessage": "インスタンス"
+  },
   "content.inline-backup.shift-click-hint": {
     "defaultMessage": "Shiftを押しながらクリックすることで確認をスキップできます。"
   },
   "content.inline-backup.warning-body": {
-    "defaultMessage": "操作を進める前に、バックアップを作成することをおすすめします。もしも{type, select, server {ワールド} other {インスタンス}}に問題が発生した場合、バックアップから復元できます。"
+    "defaultMessage": "操作を進める前にバックアップを作成することをおすすめします。もし{type}に問題が発生しても、バックアップから復元できるようになります。"
+  },
+  "content.inline-backup.world-label": {
+    "defaultMessage": "ワールド"
   },
   "content.modpack-card.content-hint-description": {
     "defaultMessage": "あなたのModパックのコンテンツは、こちらで確認できます！"
@@ -396,7 +492,7 @@
     "defaultMessage": "{contentType}を検索またはアップロードしてみましょう"
   },
   "content.page-layout.empty.modpack-hint": {
-    "defaultMessage": "このModパックの一番上にコンテンツを追加する"
+    "defaultMessage": "このModパックに追加コンテンツを導入できます"
   },
   "content.page-layout.empty.no-content-installed": {
     "defaultMessage": "コンテンツがインストールされていません"
@@ -417,7 +513,7 @@
     "defaultMessage": "お待ちください"
   },
   "content.page-layout.search-placeholder": {
-    "defaultMessage": "{count}件の{contentType}を検索…"
+    "defaultMessage": "フォルダ内の{contentType}を検索..."
   },
   "content.page-layout.share.file-names": {
     "defaultMessage": "ファイル名"
@@ -452,9 +548,6 @@
   "content.page-layout.upload-files": {
     "defaultMessage": "ファイルをアップロード"
   },
-  "content.page-layout.uploading-files": {
-    "defaultMessage": "ファイルをアップロード中 ({completed} / {total})"
-  },
   "content.selection-bar.all-already-disabled": {
     "defaultMessage": "選択されたすべてのコンテンツは、既に無効化されています"
   },
@@ -486,16 +579,337 @@
     "defaultMessage": "{contentType}を更新中…"
   },
   "content.selection-bar.selected-count": {
-    "defaultMessage": "{count}件の{contentType}を選択中"
+    "defaultMessage": "{count, number}件の{contentType}を選択中"
   },
   "content.selection-bar.selected-count-simple": {
     "defaultMessage": "{count, number}項目を選択中"
+  },
+  "creation-flow.button.create-instance": {
+    "defaultMessage": "インスタンスを作成"
+  },
+  "creation-flow.button.create-world": {
+    "defaultMessage": "ワールドを作成"
+  },
+  "creation-flow.button.finish": {
+    "defaultMessage": "終了"
+  },
+  "creation-flow.button.import": {
+    "defaultMessage": "インポート"
+  },
+  "creation-flow.button.import-instances": {
+    "defaultMessage": "{count} 件のインスタンスをインポート"
+  },
+  "creation-flow.button.setup-server": {
+    "defaultMessage": "サーバーをセットアップ"
+  },
+  "creation-flow.modal.custom-setup.build-number.label": {
+    "defaultMessage": "ビルド番号"
+  },
+  "creation-flow.modal.custom-setup.build-number.placeholder": {
+    "defaultMessage": "ビルド番号を選択"
+  },
+  "creation-flow.modal.custom-setup.build-number.search-placeholder": {
+    "defaultMessage": "ビルド番号を検索"
+  },
+  "creation-flow.modal.custom-setup.content-loader.label": {
+    "defaultMessage": "コンテンツローダー"
+  },
+  "creation-flow.modal.custom-setup.game-version.placeholder": {
+    "defaultMessage": "ゲームバージョンを選択"
+  },
+  "creation-flow.modal.custom-setup.game-version.search-placeholder": {
+    "defaultMessage": "ゲームバージョンを検索…"
+  },
+  "creation-flow.modal.custom-setup.icon.remove": {
+    "defaultMessage": "アイコンを削除"
+  },
+  "creation-flow.modal.custom-setup.icon.select": {
+    "defaultMessage": "アイコンを選択"
+  },
+  "creation-flow.modal.custom-setup.loader-version-type.latest": {
+    "defaultMessage": "最新"
+  },
+  "creation-flow.modal.custom-setup.loader-version-type.other": {
+    "defaultMessage": "その他"
+  },
+  "creation-flow.modal.custom-setup.loader-version-type.stable": {
+    "defaultMessage": "安定"
+  },
+  "creation-flow.modal.custom-setup.loader-version.label": {
+    "defaultMessage": "ローダーのバージョン"
+  },
+  "creation-flow.modal.custom-setup.loader-version.placeholder": {
+    "defaultMessage": "ローダーのバージョンを選択"
+  },
+  "creation-flow.modal.custom-setup.loader-version.search-placeholder": {
+    "defaultMessage": "ローダーのバージョンを検索"
+  },
+  "creation-flow.modal.custom-setup.loader.label": {
+    "defaultMessage": "ローダー"
+  },
+  "creation-flow.modal.custom-setup.name.label": {
+    "defaultMessage": "名前"
+  },
+  "creation-flow.modal.custom-setup.name.placeholder": {
+    "defaultMessage": "インスタンス名を入力"
+  },
+  "creation-flow.modal.custom-setup.options.no-versions-available": {
+    "defaultMessage": "利用可能なバージョンがありません"
+  },
+  "creation-flow.modal.final-config.additional-settings.title": {
+    "defaultMessage": "追加の設定"
+  },
+  "creation-flow.modal.final-config.backup.before-reset-server.name": {
+    "defaultMessage": "サーバーのリセット前"
+  },
+  "creation-flow.modal.final-config.difficulty.easy": {
+    "defaultMessage": "イージー"
+  },
+  "creation-flow.modal.final-config.difficulty.hard": {
+    "defaultMessage": "ハード"
+  },
+  "creation-flow.modal.final-config.difficulty.label": {
+    "defaultMessage": "難易度"
+  },
+  "creation-flow.modal.final-config.difficulty.normal": {
+    "defaultMessage": "ノーマル"
+  },
+  "creation-flow.modal.final-config.difficulty.peaceful": {
+    "defaultMessage": "ピースフル"
+  },
+  "creation-flow.modal.final-config.game-version.placeholder": {
+    "defaultMessage": "ゲームバージョンを選択"
+  },
+  "creation-flow.modal.final-config.gamemode.creative": {
+    "defaultMessage": "クリエイティブ"
+  },
+  "creation-flow.modal.final-config.gamemode.hardcore": {
+    "defaultMessage": "ハードコア"
+  },
+  "creation-flow.modal.final-config.gamemode.label": {
+    "defaultMessage": "ゲームモード"
+  },
+  "creation-flow.modal.final-config.gamemode.survival": {
+    "defaultMessage": "サバイバル"
+  },
+  "creation-flow.modal.final-config.generate-structures.description": {
+    "defaultMessage": "村や要塞などの構造物が新しいチャンクに生成されるかを管理します"
+  },
+  "creation-flow.modal.final-config.generate-structures.label": {
+    "defaultMessage": "構造物を生成"
+  },
+  "creation-flow.modal.final-config.generator-settings-json.placeholder": {
+    "defaultMessage": "ジェネレーターの設定用JSONを入力"
+  },
+  "creation-flow.modal.final-config.generator-settings.custom": {
+    "defaultMessage": "カスタム"
+  },
+  "creation-flow.modal.final-config.generator-settings.default": {
+    "defaultMessage": "デフォルト"
+  },
+  "creation-flow.modal.final-config.generator-settings.description": {
+    "defaultMessage": "カスタムスーパーフラットの地層など、高度なワールドカスタマイズに使用されます"
+  },
+  "creation-flow.modal.final-config.generator-settings.flat": {
+    "defaultMessage": "フラット"
+  },
+  "creation-flow.modal.final-config.generator-settings.label": {
+    "defaultMessage": "ジェネレーターの設定"
+  },
+  "creation-flow.modal.final-config.generator-settings.placeholder": {
+    "defaultMessage": "ジェネレーターの設定を選択"
+  },
+  "creation-flow.modal.final-config.world-name.label": {
+    "defaultMessage": "ワールドの名前"
+  },
+  "creation-flow.modal.final-config.world-name.placeholder": {
+    "defaultMessage": "ワールドの名前を入力"
+  },
+  "creation-flow.modal.final-config.world-seed.description": {
+    "defaultMessage": "空欄にしてシードをランダムにします"
+  },
+  "creation-flow.modal.final-config.world-seed.label-with-optional": {
+    "defaultMessage": "ワールドのシード値 <optional>(任意)</optional>"
+  },
+  "creation-flow.modal.final-config.world-seed.placeholder": {
+    "defaultMessage": "ワールドのシード値を入力"
+  },
+  "creation-flow.modal.final-config.world-type.amplified": {
+    "defaultMessage": "アンプリファイド"
+  },
+  "creation-flow.modal.final-config.world-type.default": {
+    "defaultMessage": "デフォルト"
+  },
+  "creation-flow.modal.final-config.world-type.label": {
+    "defaultMessage": "ワールドタイプ"
+  },
+  "creation-flow.modal.final-config.world-type.large-biomes": {
+    "defaultMessage": "大きなバイオーム"
+  },
+  "creation-flow.modal.final-config.world-type.placeholder": {
+    "defaultMessage": "ワールドタイプを選択"
+  },
+  "creation-flow.modal.final-config.world-type.single-biome": {
+    "defaultMessage": "シングルバイオーム"
+  },
+  "creation-flow.modal.final-config.world-type.superflat": {
+    "defaultMessage": "スーパーフラット"
+  },
+  "creation-flow.modal.import-instance.action.add": {
+    "defaultMessage": "追加"
+  },
+  "creation-flow.modal.import-instance.custom-launcher.name": {
+    "defaultMessage": "カスタム ({pathName})"
+  },
+  "creation-flow.modal.import-instance.detecting-launcher-instances": {
+    "defaultMessage": "ランチャーのインスタンスを検出しています..."
+  },
+  "creation-flow.modal.import-instance.launcher-instances.title": {
+    "defaultMessage": "ランチャーのインスタンス"
+  },
+  "creation-flow.modal.import-instance.launcher-path.add": {
+    "defaultMessage": "ランチャーのパスを追加"
+  },
+  "creation-flow.modal.import-instance.launcher-path.placeholder": {
+    "defaultMessage": "ランチャーのパス"
+  },
+  "creation-flow.modal.import-instance.notification.no-instances-found.text": {
+    "defaultMessage": "指定されたパスではインポート可能なインスタンスは見つかりませんでした"
+  },
+  "creation-flow.modal.import-instance.notification.no-instances-found.title": {
+    "defaultMessage": "インスタンスは見つかりませんでした"
+  },
+  "creation-flow.modal.import-instance.search.placeholder": {
+    "defaultMessage": "インスタンス名を検索"
+  },
+  "creation-flow.modal.import-instance.selection.clear-all": {
+    "defaultMessage": "全ての選択を解除"
+  },
+  "creation-flow.modal.modpack.action.browse": {
+    "defaultMessage": "Modパックを探す"
+  },
+  "creation-flow.modal.modpack.action.import": {
+    "defaultMessage": "Modパックをインポート"
+  },
+  "creation-flow.modal.modpack.known-modpack.prompt": {
+    "defaultMessage": "インストールしたいMODパックは既に決まっていますか？"
+  },
+  "creation-flow.modal.modpack.search.no-results": {
+    "defaultMessage": "見つかりません"
+  },
+  "creation-flow.modal.modpack.search.placeholder": {
+    "defaultMessage": "Modパックを検索"
+  },
+  "creation-flow.modal.setup-type.instance.description": {
+    "defaultMessage": "インスタンスとは、特定のローダー、バージョン、およびModを備えたMinecraftの起動構成のことです"
+  },
+  "creation-flow.modal.setup-type.option.custom-setup.description": {
+    "defaultMessage": "ローダーとゲームのバージョンを選択して、最初から始めましょう"
+  },
+  "creation-flow.modal.setup-type.option.custom-setup.title": {
+    "defaultMessage": "カスタム設定"
+  },
+  "creation-flow.modal.setup-type.option.import-instance.description": {
+    "defaultMessage": "Prism、CurseForge、または同様のサービスからインスタンスをインポートします。"
+  },
+  "creation-flow.modal.setup-type.option.import-instance.title": {
+    "defaultMessage": "インスタンスをインポート"
+  },
+  "creation-flow.modal.setup-type.option.modpack-base.description": {
+    "defaultMessage": "Modrinthでモッドパックを閲覧するか、ファイルからインポートしてください。"
+  },
+  "creation-flow.modal.setup-type.option.modpack-base.title": {
+    "defaultMessage": "modpackをインストール"
+  },
+  "creation-flow.modal.setup-type.option.vanilla-minecraft.description": {
+    "defaultMessage": "MODやプラグインを一切使用していない、クラシックなMinecraft。"
+  },
+  "creation-flow.modal.setup-type.option.vanilla-minecraft.title": {
+    "defaultMessage": "マインクラフト"
+  },
+  "creation-flow.modal.setup-type.title.installation": {
+    "defaultMessage": "インストールタイプを選択してください"
+  },
+  "creation-flow.modal.setup-type.title.instance": {
+    "defaultMessage": "インスタンスタイプを選択してください"
+  },
+  "creation-flow.modal.setup-type.title.world": {
+    "defaultMessage": "ワールドタイプを選択してください"
+  },
+  "creation-flow.title.choose-modpack": {
+    "defaultMessage": "モッドパックを選択"
+  },
+  "creation-flow.title.create-instance": {
+    "defaultMessage": "インスタンスを作成する"
+  },
+  "creation-flow.title.create-world": {
+    "defaultMessage": "世界を作る"
+  },
+  "creation-flow.title.import-instance": {
+    "defaultMessage": "インスタンスをインポート"
+  },
+  "creation-flow.title.reset-server": {
+    "defaultMessage": "サーバーをリセット"
+  },
+  "creation-flow.title.set-up-server": {
+    "defaultMessage": "サーバーの設定"
+  },
+  "external-files.permissions-card.add-files-to-group": {
+    "defaultMessage": "ファイルを追加…"
+  },
+  "external-files.permissions-card.custom-license-option": {
+    "defaultMessage": "その他"
+  },
+  "external-files.permissions-card.editor.input-optional": {
+    "defaultMessage": "(任意)"
+  },
+  "external-files.permissions-card.editor.license-label": {
+    "defaultMessage": "ライセンス"
+  },
+  "external-files.permissions-card.editor.notes-label": {
+    "defaultMessage": "ノート"
+  },
+  "external-files.permissions-card.editor.notes-placeholder": {
+    "defaultMessage": "何かここに書いてください..."
+  },
+  "external-files.permissions-card.editor.select-license-label": {
+    "defaultMessage": "ライセンスを選んでください…"
+  },
+  "external-files.permissions-card.explanation-label": {
+    "defaultMessage": "説明"
+  },
+  "external-files.permissions-card.license.unknown": {
+    "defaultMessage": "不明"
+  },
+  "external-files.permissions-card.moderation-reason": {
+    "defaultMessage": "理由"
+  },
+  "external-files.permissions-card.notes-label": {
+    "defaultMessage": "ノート："
+  },
+  "external-files.permissions-card.notes-none": {
+    "defaultMessage": "無し"
+  },
+  "external-files.permissions-card.reason.license": {
+    "defaultMessage": "ライセンス"
+  },
+  "external-files.permissions-card.reason.my-project": {
+    "defaultMessage": "私のプロジェクト"
+  },
+  "external-files.permissions-card.updated-by-moderator": {
+    "defaultMessage": "モデレーター"
+  },
+  "external-project-license-status.no": {
+    "defaultMessage": "いいえ"
   },
   "files.conflict-modal.header": {
     "defaultMessage": "概要を書き出す"
   },
   "files.conflict-modal.overwrite-button": {
     "defaultMessage": "上書き"
+  },
+  "files.conflict-modal.overwrite-file-label": {
+    "defaultMessage": "以下のファイルは上書きされます\n <file-path>{path}</file-path>"
   },
   "files.conflict-modal.overwrite-many-warning": {
     "defaultMessage": "展開を行うと100個以上のファイルが上書きされます。該当ファイルの一部です。"
@@ -506,17 +920,14 @@
   "files.conflict-modal.overwritten-count": {
     "defaultMessage": "上書きファイル {count} 個"
   },
-  "files.conflict-modal.overwritten-label": {
-    "defaultMessage": "上書き済み"
-  },
   "files.conflict-modal.warning-header": {
     "defaultMessage": "ファイルが上書きされます"
   },
   "files.create-modal.create-button": {
-    "defaultMessage": "{type, select, directory {フォルダーを} other {ファイルを}}作成する"
+    "defaultMessage": "{type}を作成"
   },
   "files.create-modal.header": {
-    "defaultMessage": "{type, select, directory {フォルダーを} other {ファイルを}}作成する"
+    "defaultMessage": "{type}を作成"
   },
   "files.create-modal.placeholder-directory": {
     "defaultMessage": "例: my-folder"
@@ -530,8 +941,11 @@
   "files.delete-modal.header": {
     "defaultMessage": "ファイルを削除"
   },
-  "files.delete-modal.warning": {
-    "defaultMessage": "{type, select, directory {フォルダーと全ての内容が完全に削除されます。元に戻すことはできません。} other {ファイルが完全に削除されます。元に戻すことはできません。}}"
+  "files.delete-modal.warning.file": {
+    "defaultMessage": "このファイルは完全に削除され、元に戻すことはできません。"
+  },
+  "files.delete-modal.warning.folder": {
+    "defaultMessage": "このフォルダと中身のすべてのデータは完全に削除され、元に戻すことはできません。"
   },
   "files.editor.failed-to-open-text": {
     "defaultMessage": "ファイルの内容を読み込めませんでした。"
@@ -620,6 +1034,18 @@
   "files.image_viewer.zoom_out": {
     "defaultMessage": "縮小"
   },
+  "files.item-type.file": {
+    "defaultMessage": "ファイル"
+  },
+  "files.item-type.files": {
+    "defaultMessage": "ファイル"
+  },
+  "files.item-type.folder": {
+    "defaultMessage": "フォルダ"
+  },
+  "files.item-type.folders": {
+    "defaultMessage": "フォルダ"
+  },
   "files.layout.busy-warning": {
     "defaultMessage": "ファイル操作進行中は新たにファイル操作を行うことができません。"
   },
@@ -660,7 +1086,7 @@
     "defaultMessage": "例: /my-folder"
   },
   "files.move-modal.header": {
-    "defaultMessage": "{type, select, directory {フォルダを移動} other {ファイルを移動}}"
+    "defaultMessage": "{type}を移動"
   },
   "files.navbar.back-to-home": {
     "defaultMessage": "ホームに戻る"
@@ -704,14 +1130,20 @@
   "files.navbar.upload-from-zip-url": {
     "defaultMessage": ".zip URLからアップロード"
   },
+  "files.operations.current-file": {
+    "defaultMessage": "現在のファイル: {file}"
+  },
   "files.operations.extracted": {
     "defaultMessage": "{size} 展開済み"
   },
   "files.operations.extracting": {
     "defaultMessage": "{source} を展開中"
   },
-  "files.operations.failed": {
-    "defaultMessage": "失敗"
+  "files.operations.extracting-completed": {
+    "defaultMessage": "{source}の抽出が完了しました"
+  },
+  "files.operations.extracting-failed": {
+    "defaultMessage": "{source} の抽出に失敗しました"
   },
   "files.operations.modpack-from-url": {
     "defaultMessage": "modpackのURL"
@@ -777,7 +1209,7 @@
     "defaultMessage": "- 残り{count}"
   },
   "files.upload.drag-and-drop.drop-to-upload": {
-    "defaultMessage": "ここに{type, select,undefined {ファイル} other {{type}s}}ここにアップロードします"
+    "defaultMessage": "ここに{type}をドロップ"
   },
   "files.validation.name-invalid-directory": {
     "defaultMessage": "名前には、英数字、ハイフン、アンダースコア、またはスペースのみを含める必要があります。"
@@ -926,6 +1358,21 @@
   "form.placeholder.state": {
     "defaultMessage": "都道府県を入力"
   },
+  "format.bytes.0": {
+    "defaultMessage": "{count, number} B"
+  },
+  "format.bytes.1": {
+    "defaultMessage": "{count, number} KB"
+  },
+  "format.bytes.2": {
+    "defaultMessage": "{count, number} MB"
+  },
+  "format.bytes.3": {
+    "defaultMessage": "{count, number} GB"
+  },
+  "format.bytes.4": {
+    "defaultMessage": "{count, number} TB"
+  },
   "header.category.category": {
     "defaultMessage": "カテゴリ"
   },
@@ -961,6 +1408,9 @@
   },
   "hosting.content.failed-to-bulk-update": {
     "defaultMessage": "コンテンツの更新に失敗しました"
+  },
+  "hosting.content.failed-to-install": {
+    "defaultMessage": "インストールに失敗しました"
   },
   "hosting.content.failed-to-load-modpack-content": {
     "defaultMessage": "Modパックコンテンツの読み込みに失敗しました"
@@ -1133,17 +1583,14 @@
   "installation-settings.incompatible-content.loader-change-title": {
     "defaultMessage": "ローダーの交換は破壊的である"
   },
-  "installation-settings.linked-instance.title": {
-    "defaultMessage": "リンクされた{projectType, select, server {サーバープロジェクト} other {Modパック}}"
+  "installation-settings.linked.modpack": {
+    "defaultMessage": "Modパック"
   },
   "installation-settings.loader-version": {
     "defaultMessage": "{loader}のバージョン"
   },
   "installation-settings.platform-lock-tooltip": {
     "defaultMessage": "ローダーを切り替えるにはサーバをリセットする必要があります。"
-  },
-  "installation-settings.reinstall-modpack.description": {
-    "defaultMessage": "Modパックの再インストールすると、{type, select, server {サーバー} other {インスタンス}}のコンテンツを初期状態にリセットし、追加された全てのModやコンテンツは削除されます。"
   },
   "installation-settings.reinstall-modpack.title": {
     "defaultMessage": "Modパックを再インストール"
@@ -1172,11 +1619,11 @@
   "installation-settings.search-game-version": {
     "defaultMessage": "ゲームバージョンを検索…"
   },
+  "installation-settings.type.server": {
+    "defaultMessage": "サーバー"
+  },
   "installation-settings.unlink": {
     "defaultMessage": "リンクを解除"
-  },
-  "installation-settings.unlink.description": {
-    "defaultMessage": "永久にリンクを解除すると、{projectType, select, server {サーバー} other {インスタンス}}からのこの{type, select, server {サーバー} other {インスタンス}}との接続を解除し、ローダーとMinecraftのバージョンを変更できるようになりますが、将来の更新を受け取れなくなります。"
   },
   "installation-settings.verifying": {
     "defaultMessage": "承認中…"
@@ -1193,14 +1640,17 @@
   "instance.confirm-reinstall.reinstall-button": {
     "defaultMessage": "Modパックを再インストール"
   },
-  "instance.confirm-repair.body": {
-    "defaultMessage": "修復するとローダーとMinecraftの依存関係がコンテンツが削除されずに再インストールされます。{type, select, server {サーバーが正しく起動しない} other {ランチャー関連のエラーが原因でゲームが起動しない}}場合に、問題が解決する可能性があります。"
-  },
   "instance.confirm-repair.header": {
-    "defaultMessage": "{type, select, server {サーバー} other {インスタンス}}を修復"
+    "defaultMessage": "{type}を修復"
+  },
+  "instance.confirm-repair.instance-label": {
+    "defaultMessage": "インスタンス"
   },
   "instance.confirm-repair.repair-button": {
     "defaultMessage": "修復"
+  },
+  "instance.confirm-repair.server-label": {
+    "defaultMessage": "サーバー"
   },
   "instance.worlds.game_mode.adventure": {
     "defaultMessage": "アドベンチャーモード"
@@ -1216,12 +1666,6 @@
   },
   "instance.worlds.game_mode.unknown": {
     "defaultMessage": "不明なゲームモード"
-  },
-  "instances.confirm-leave-modal.body": {
-    "defaultMessage": "ファイルはまだアップロード中です。このページを離れるとアップロードがキャンセルされ、変更が失われます。"
-  },
-  "instances.confirm-leave-modal.upload-in-progress": {
-    "defaultMessage": "進行中のアップロード"
   },
   "instances.content-install.compatible-count": {
     "defaultMessage": "{count}件の互換性のあるインスタンス"
@@ -1306,6 +1750,9 @@
   },
   "instances.updater-modal.hide-incompatible": {
     "defaultMessage": "非互換を非表示"
+  },
+  "instances.updater-modal.incompatibility-warning-header": {
+    "defaultMessage": "バージョンを選択"
   },
   "instances.updater-modal.loading-changelog": {
     "defaultMessage": "変更履歴を読み込んでいます…"
@@ -1421,6 +1868,9 @@
   "label.filter-by": {
     "defaultMessage": "フィルター"
   },
+  "label.filters": {
+    "defaultMessage": "絞り込み"
+  },
   "label.followed-projects": {
     "defaultMessage": "フォロー中のプロジェクト"
   },
@@ -1430,11 +1880,17 @@
   "label.installation-info": {
     "defaultMessage": "インストール情報"
   },
+  "label.installed": {
+    "defaultMessage": "インストール済み"
+  },
   "label.installed-modpack": {
     "defaultMessage": "インストールされたModパック"
   },
   "label.installing": {
     "defaultMessage": "インストール中…"
+  },
+  "label.installing-content": {
+    "defaultMessage": "コンテンツのインストール"
   },
   "label.loading": {
     "defaultMessage": "読み込み中…"
@@ -1458,7 +1914,7 @@
     "defaultMessage": "通知"
   },
   "label.or": {
-    "defaultMessage": "か"
+    "defaultMessage": "または"
   },
   "label.password": {
     "defaultMessage": "パスワード"
@@ -1511,11 +1967,17 @@
   "label.select-all": {
     "defaultMessage": "全て選択"
   },
+  "label.selected": {
+    "defaultMessage": "選択済み"
+  },
   "label.selection-actions": {
     "defaultMessage": "選択アクション"
   },
   "label.server": {
     "defaultMessage": "サーバー"
+  },
+  "label.server-only": {
+    "defaultMessage": "サーバーのみ"
   },
   "label.servers": {
     "defaultMessage": "サーバー"
@@ -1553,8 +2015,14 @@
   "label.username": {
     "defaultMessage": "ユーザー名"
   },
+  "label.validating": {
+    "defaultMessage": "検証しています"
+  },
   "label.version": {
     "defaultMessage": "バージョン"
+  },
+  "label.view": {
+    "defaultMessage": "表示"
   },
   "label.visibility": {
     "defaultMessage": "公開範囲"
@@ -1638,7 +2106,7 @@
     "defaultMessage": "ロシア語"
   },
   "locale.sr-CS": {
-    "defaultMessage": "セルビア語 (ラテン)"
+    "defaultMessage": "セルビア語 (ラテン文字)"
   },
   "locale.sv-SE": {
     "defaultMessage": "スウェーデン語"
@@ -1660,6 +2128,135 @@
   },
   "locale.zh-TW": {
     "defaultMessage": "中国語 (繁体字)"
+  },
+  "markdown-editor.default-image-alt-text": {
+    "defaultMessage": "これを説明文に置き換えてください"
+  },
+  "markdown-editor.error-label": {
+    "defaultMessage": "エラー"
+  },
+  "markdown-editor.image-modal.description-field.description": {
+    "defaultMessage": "画像を見ることができない人にも理解できるよう説明してください。"
+  },
+  "markdown-editor.image-modal.description-field.placeholder": {
+    "defaultMessage": "画像の説明..."
+  },
+  "markdown-editor.image-modal.description-field.title": {
+    "defaultMessage": "説明 (Altテキスト)"
+  },
+  "markdown-editor.image-modal.header": {
+    "defaultMessage": "画像の追加"
+  },
+  "markdown-editor.image-modal.upload-mode.label": {
+    "defaultMessage": "画像のソース"
+  },
+  "markdown-editor.image-modal.upload-mode.link": {
+    "defaultMessage": "リンク"
+  },
+  "markdown-editor.image-modal.upload-mode.upload": {
+    "defaultMessage": "アップロード"
+  },
+  "markdown-editor.image-modal.upload.prompt": {
+    "defaultMessage": "ドラッグ&ドロップまたはクリックでファイルをアップロード"
+  },
+  "markdown-editor.image-modal.url-field.placeholder": {
+    "defaultMessage": "画像のURLを入力..."
+  },
+  "markdown-editor.insert-button": {
+    "defaultMessage": "追加"
+  },
+  "markdown-editor.link-modal.header": {
+    "defaultMessage": "リンクの追加"
+  },
+  "markdown-editor.link-modal.label-field.placeholder": {
+    "defaultMessage": "ラベルを入力..."
+  },
+  "markdown-editor.link-modal.label-field.title": {
+    "defaultMessage": "ラベル"
+  },
+  "markdown-editor.link-modal.url-field.placeholder": {
+    "defaultMessage": "リンクのURLを入力..."
+  },
+  "markdown-editor.markdown-formatting-support": {
+    "defaultMessage": "これは<markdown-link>マークダウン</markdown-link>をサポートしています。"
+  },
+  "markdown-editor.max-length.label": {
+    "defaultMessage": "最大の長さ："
+  },
+  "markdown-editor.max-length.unlimited": {
+    "defaultMessage": "無限"
+  },
+  "markdown-editor.max-length.value": {
+    "defaultMessage": "{currentLength}/{maxLength}"
+  },
+  "markdown-editor.placeholder": {
+    "defaultMessage": "何か書いてください…"
+  },
+  "markdown-editor.preview-label": {
+    "defaultMessage": "出力"
+  },
+  "markdown-editor.preview-toggle.label": {
+    "defaultMessage": "表示の切り替え"
+  },
+  "markdown-editor.toolbar.bold": {
+    "defaultMessage": "太字"
+  },
+  "markdown-editor.toolbar.bulleted-list": {
+    "defaultMessage": "番号無しリスト"
+  },
+  "markdown-editor.toolbar.code": {
+    "defaultMessage": "コード"
+  },
+  "markdown-editor.toolbar.heading-1": {
+    "defaultMessage": "見出し 1"
+  },
+  "markdown-editor.toolbar.heading-2": {
+    "defaultMessage": "見出し 2"
+  },
+  "markdown-editor.toolbar.heading-3": {
+    "defaultMessage": "見出し 3"
+  },
+  "markdown-editor.toolbar.image": {
+    "defaultMessage": "画像"
+  },
+  "markdown-editor.toolbar.italic": {
+    "defaultMessage": "斜体"
+  },
+  "markdown-editor.toolbar.link": {
+    "defaultMessage": "リンク"
+  },
+  "markdown-editor.toolbar.ordered-list": {
+    "defaultMessage": "番号付きリスト"
+  },
+  "markdown-editor.toolbar.quote": {
+    "defaultMessage": "引用"
+  },
+  "markdown-editor.toolbar.spoiler": {
+    "defaultMessage": "ネタバレ"
+  },
+  "markdown-editor.toolbar.strikethrough": {
+    "defaultMessage": "取り消し線"
+  },
+  "markdown-editor.toolbar.video": {
+    "defaultMessage": "動画"
+  },
+  "markdown-editor.url-label": {
+    "defaultMessage": "URL"
+  },
+  "markdown-editor.video-embed.title": {
+    "defaultMessage": "YouTubeプレイヤー"
+  },
+  "markdown-editor.video-modal.header": {
+    "defaultMessage": "Youtube動画の追加"
+  },
+  "markdown-editor.video-modal.url-field.description": {
+    "defaultMessage": "Youtube動画への有効なリンクを入力してください。"
+  },
+  "markdown-editor.video-modal.url-field.placeholder": {
+    "defaultMessage": "Youtube動画のURLを入力..."
+  },
+  "markdown-editor.video-modal.url-field.title": {
+    "defaultMessage": "Youtube動画のURL"
   },
   "modal.add-payment-method.action": {
     "defaultMessage": "支払い方法を追加する"
@@ -1713,7 +2310,7 @@
     "defaultMessage": "失敗"
   },
   "omorphia.component.badge.label.listed": {
-    "defaultMessage": "公開中"
+    "defaultMessage": "公開"
   },
   "omorphia.component.badge.label.moderator": {
     "defaultMessage": "モデレーター"
@@ -1750,9 +2347,6 @@
   },
   "omorphia.component.badge.label.unsafe": {
     "defaultMessage": "失敗"
-  },
-  "omorphia.component.badge.label.withheld": {
-    "defaultMessage": "非公開"
   },
   "omorphia.component.copy.action.copy": {
     "defaultMessage": "クリップボードにコードをコピー"
@@ -1810,9 +2404,6 @@
   },
   "payment-method.jcb": {
     "defaultMessage": "JCB"
-  },
-  "payment-method.mastercard": {
-    "defaultMessage": "MasterCard"
   },
   "payment-method.paypal": {
     "defaultMessage": "PayPal"
@@ -2567,6 +3158,18 @@
   "project.visibility.unlisted-by-staff": {
     "defaultMessage": "スタッフにより限定公開"
   },
+  "report.item-type.project": {
+    "defaultMessage": "プロジェクト"
+  },
+  "report.item-type.user": {
+    "defaultMessage": "ユーザー"
+  },
+  "report.item-type.version": {
+    "defaultMessage": "バージョン"
+  },
+  "s.bg": {
+    "defaultMessage": "バックグラウンドタスクが実行中です"
+  },
   "search.filter.locked.default": {
     "defaultMessage": "フィルターロック済み"
   },
@@ -2654,6 +3257,30 @@
   "search.server_content_type.vanilla": {
     "defaultMessage": "バニラ(Mod非導入)"
   },
+  "servers.access-page.activity-log-filter.action-group.server": {
+    "defaultMessage": "サーバー"
+  },
+  "servers.access-page.activity-log-filter.action-types": {
+    "defaultMessage": "アクション"
+  },
+  "servers.access-page.activity-log-filter.action.backup-deleted": {
+    "defaultMessage": "削除されたバックアップ"
+  },
+  "servers.admonitions.background-task-running": {
+    "defaultMessage": "バックグラウンドタスクが実行中です"
+  },
+  "servers.backups.admonition.backup-cancelled.description": {
+    "defaultMessage": "バックアップ{backupName}はキャンセルされました。"
+  },
+  "servers.backups.admonition.backup-cancelled.title": {
+    "defaultMessage": "バックアップがキャンセルされました"
+  },
+  "servers.backups.admonition.backup-completed.description": {
+    "defaultMessage": "{backupName} は正常に完了しました。"
+  },
+  "servers.backups.admonition.backup-completed.title": {
+    "defaultMessage": "バックアップが完了しました"
+  },
   "servers.backups.admonition.backup-failed.description": {
     "defaultMessage": "{backupName}の作成中に問題が発生しました。問題が継続する場合は再試行するかサポートに連絡してください。"
   },
@@ -2666,6 +3293,12 @@
   "servers.backups.admonition.backup-queued.title": {
     "defaultMessage": "待機中のバックアップ"
   },
+  "servers.backups.admonition.backup-timed-out.description": {
+    "defaultMessage": "{backupName} の作成がタイムアウトしました。もう一度お試しいただくか、問題が解決しない場合はサポートにお問い合わせください。"
+  },
+  "servers.backups.admonition.backup-timed-out.title": {
+    "defaultMessage": "バックアップがタイムアウトしました"
+  },
   "servers.backups.admonition.creating-backup.description": {
     "defaultMessage": "ワールドデータとサーバー構成を{backupName}に保存しています。これには数分かかることがあります。"
   },
@@ -2675,23 +3308,35 @@
   "servers.backups.admonition.fallback-name": {
     "defaultMessage": "保存したバックアップ"
   },
+  "servers.backups.admonition.restore-cancelled.description": {
+    "defaultMessage": "{backupName}からの復元はキャンセルされました。"
+  },
+  "servers.backups.admonition.restore-cancelled.title": {
+    "defaultMessage": "復元がキャンセルされました"
+  },
   "servers.backups.admonition.restore-failed.description": {
     "defaultMessage": "{backupName}からの復元中に問題が発生しました。問題が継続する場合は再試行するかサポートに連絡してください。"
   },
   "servers.backups.admonition.restore-failed.title": {
-    "defaultMessage": "バックアップからの復元に失敗"
+    "defaultMessage": "復元に失敗しました"
   },
   "servers.backups.admonition.restore-queued.description": {
     "defaultMessage": "{backupName}からの復元は待機中ですが、すぐに開始します。"
   },
   "servers.backups.admonition.restore-queued.title": {
-    "defaultMessage": "待機中のバックアップからの復元"
+    "defaultMessage": "復元キュー"
   },
   "servers.backups.admonition.restore-successful.description": {
     "defaultMessage": "あなたのサーバーは{backupName}から復元され、開始の準備ができています。"
   },
   "servers.backups.admonition.restore-successful.title": {
-    "defaultMessage": "バックアップからの復元に成功しました"
+    "defaultMessage": "修復完了"
+  },
+  "servers.backups.admonition.restore-timed-out.description": {
+    "defaultMessage": "{backupName}からの復元がタイムアウトしました。もう一度お試しいただくか、問題が解決しない場合はサポートにお問い合わせください。"
+  },
+  "servers.backups.admonition.restore-timed-out.title": {
+    "defaultMessage": "復元がタイムアウトしました"
   },
   "servers.backups.admonition.restoring-backup.description": {
     "defaultMessage": "{backupName}からサーバーを復元しています。これには数分かかる可能性があります。"
@@ -2699,17 +3344,17 @@
   "servers.backups.admonition.restoring-backup.title": {
     "defaultMessage": "バックアップから復元しています"
   },
+  "servers.backups.bulk-bar.aria-label": {
+    "defaultMessage": "{count, plural, one {選択したバックアップ1件に対する一括操作} other {選択したバックアップ#件に対する一括操作}}"
+  },
+  "servers.backups.bulk-bar.selected-count": {
+    "defaultMessage": "{count, plural,one {# バックアップが選択されました} other {# バックアップが選択されました}}"
+  },
   "servers.backups.item.auto": {
     "defaultMessage": "自動"
   },
   "servers.backups.item.backup-schedule": {
     "defaultMessage": "バックアップスケジュール"
-  },
-  "servers.backups.item.failed-to-create-backup": {
-    "defaultMessage": "バックアップの作成に失敗しました"
-  },
-  "servers.backups.item.failed-to-restore-backup": {
-    "defaultMessage": "バックアップからの復元に失敗しました"
   },
   "servers.backups.item.manual-backup": {
     "defaultMessage": "手動バックアップ"
@@ -2750,9 +3395,6 @@
   "servers.list-empty.no-servers-title": {
     "defaultMessage": "サーバーはまだありません"
   },
-  "servers.list-empty.one-click-mod-installs-description": {
-    "defaultMessage": "お好みのMODを選んでいただければ、あとはすべてこちらで対応いたします。"
-  },
   "servers.list-empty.one-click-mod-installs-title": {
     "defaultMessage": "ワンクリックでMODをインストール"
   },
@@ -2788,6 +3430,15 @@
   },
   "servers.listing.new-label": {
     "defaultMessage": "新規"
+  },
+  "servers.manage.your-servers-title": {
+    "defaultMessage": "あなたのサーバー"
+  },
+  "servers.medal-listing.new-server-label": {
+    "defaultMessage": "新しいサーバー"
+  },
+  "servers.medal-listing.server-icon-alt": {
+    "defaultMessage": "サーバーアイコン"
   },
   "servers.notice.dismiss": {
     "defaultMessage": "閉じる"
@@ -2831,8 +3482,14 @@
   "servers.purchase.step.plan.get-started": {
     "defaultMessage": "始めましょう"
   },
+  "servers.purchase.step.plan.large": {
+    "defaultMessage": "プレミアム"
+  },
   "servers.purchase.step.plan.large.desc": {
     "defaultMessage": "15〜25人、Modパックや重いModを導入するなら最適"
+  },
+  "servers.purchase.step.plan.medium": {
+    "defaultMessage": "レギュラー"
   },
   "servers.purchase.step.plan.medium.desc": {
     "defaultMessage": "6〜15人、複数のModを導入するなら最適"
@@ -2842,6 +3499,9 @@
   },
   "servers.purchase.step.plan.select": {
     "defaultMessage": "プランを選択"
+  },
+  "servers.purchase.step.plan.small": {
+    "defaultMessage": "ライト"
   },
   "servers.purchase.step.plan.small.desc": {
     "defaultMessage": "1〜5人、軽量なModを少し導入するなら最適"
@@ -2855,14 +3515,26 @@
   "servers.purchase.step.review.title": {
     "defaultMessage": "レビュー"
   },
+  "servers.region.australia": {
+    "defaultMessage": "オーストラリア"
+  },
   "servers.region.central-europe": {
     "defaultMessage": "中央ヨーロッパ"
   },
   "servers.region.custom.prompt": {
     "defaultMessage": "サーバーに必要なRAMはどのくらいですか？"
   },
-  "servers.region.north-america": {
-    "defaultMessage": "北アメリカ"
+  "servers.region.custom.prompt-ram-only": {
+    "defaultMessage": "メモリ"
+  },
+  "servers.region.north-america-central": {
+    "defaultMessage": "北米中部"
+  },
+  "servers.region.north-america-east": {
+    "defaultMessage": "北米東部"
+  },
+  "servers.region.north-america-west": {
+    "defaultMessage": "北米西部"
   },
   "servers.region.prompt": {
     "defaultMessage": "サーバーをどこに設置しますか？"
@@ -2875,6 +3547,12 @@
   },
   "servers.region.western-europe": {
     "defaultMessage": "西ヨーロッパ"
+  },
+  "servers.setup.onboarding.setup-server.button": {
+    "defaultMessage": "サーバーをセットアップ"
+  },
+  "servers.setup.onboarding.step.invite-friends.title": {
+    "defaultMessage": "フレンドを招待"
   },
   "servers.setup.rate-limit.text": {
     "defaultMessage": "レート制限に達しました。時間をおいて再試行してください。"
@@ -3126,7 +3804,7 @@
     "defaultMessage": "Kit PvP"
   },
   "tag.category.library": {
-    "defaultMessage": "前提Mod"
+    "defaultMessage": "ライブラリ"
   },
   "tag.category.lifesteal": {
     "defaultMessage": "ライフスティール"
@@ -3398,8 +4076,76 @@
   "tag.loader.waterfall": {
     "defaultMessage": "Waterfall"
   },
+  "time-frame-picker.apply": {
+    "defaultMessage": "適用"
+  },
+  "time-frame-picker.cancel": {
+    "defaultMessage": "キャンセル"
+  },
+  "time-frame-picker.option.today": {
+    "defaultMessage": "今日"
+  },
+  "time-frame-picker.option.yesterday": {
+    "defaultMessage": "昨日"
+  },
+  "time-frame-picker.selected-range": {
+    "defaultMessage": "選択"
+  },
+  "time-frame-picker.selecting-range": {
+    "defaultMessage": "選択"
+  },
+  "time-frame-picker.unit.days": {
+    "defaultMessage": "日"
+  },
+  "time-frame-picker.unit.hours": {
+    "defaultMessage": "時間"
+  },
+  "time-frame-picker.unit.months": {
+    "defaultMessage": "ヶ月"
+  },
+  "time-frame-picker.unit.weeks": {
+    "defaultMessage": "週間"
+  },
   "ui.component.unsaved-changes-popup.body": {
     "defaultMessage": "保存されていない変更があります。"
+  },
+  "ui.confirm-leave-modal.leave": {
+    "defaultMessage": "ページを離れる"
+  },
+  "ui.confirm-leave-modal.stay": {
+    "defaultMessage": "ページに残る"
+  },
+  "ui.confirm-leave-modal.title": {
+    "defaultMessage": "ページを離れますか？"
+  },
+  "user.profile.badge.moderator.name": {
+    "defaultMessage": "コンテンツモデレーター"
+  },
+  "version.content.name": {
+    "defaultMessage": "名前"
+  },
+  "version.content.version": {
+    "defaultMessage": "バージョン"
+  },
+  "version.file-type.unknown": {
+    "defaultMessage": "その他"
+  },
+  "version.section.content": {
+    "defaultMessage": "コンテンツ"
+  },
+  "version.section.content.search-placeholder": {
+    "defaultMessage": "コンテンツを検索…"
+  },
+  "version.section.files": {
+    "defaultMessage": "ファイル"
+  },
+  "version.supplementary-resources.file": {
+    "defaultMessage": "ファイル"
+  },
+  "version.supplementary-resources.size": {
+    "defaultMessage": "サイズ"
+  },
+  "version.supplementary-resources.type": {
+    "defaultMessage": "タイプ"
   }
 }
-

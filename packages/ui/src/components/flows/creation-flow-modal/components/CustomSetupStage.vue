@@ -10,13 +10,13 @@
 			<div class="flex flex-col gap-2">
 				<template v-if="!isOptiArkSetup">
 				<ButtonStyled type="outlined">
-					<button class="!border-surface-5" @click="triggerIconInput">
+					<button @click="triggerIconInput">
 						<UploadIcon />
 						{{ formatMessage(messages.selectIcon) }}
 					</button>
 				</ButtonStyled>
 				<ButtonStyled type="outlined">
-					<button class="!border-surface-5" :disabled="!ctx.instanceIcon.value" @click="removeIcon">
+					<button :disabled="!ctx.instanceIcon.value" @click="removeIcon">
 						<XIcon />
 						{{ formatMessage(messages.removeIcon) }}
 					</button>
@@ -123,6 +123,8 @@
 						v-if="!isPaperLike"
 						v-model="loaderVersionType"
 						:items="loaderVersionTypeItems"
+						:disabled-items="loaderVersionTypeDisabledItems"
+						:disabled-tooltip="'No such versions available'"
 						:format-label="formatLoaderVersionTypeLabel"
 					/>
 					<div v-if="isPaperLike || loaderVersionType === 'other'">
@@ -243,6 +245,11 @@ onMounted(() => {
 const tags = injectTags()
 
 const loaderVersionTypeItems: LoaderVersionType[] = ['stable', 'latest', 'other']
+
+const loaderVersionTypeDisabledItems = computed<LoaderVersionType[]>(() => {
+	const noStableVersions = !loaderVersionsData.value.some((v: LoaderVersionEntry) => v.stable)
+	return noStableVersions ? ['stable'] : []
+})
 
 const isPaperLike = computed(
 	() => selectedLoader.value === 'paper' || selectedLoader.value === 'purpur',
@@ -439,11 +446,13 @@ const gameVersionOptions = computed<ComboboxOption<string>[]>(() => {
 		const manifest = ctx.loaderVersionsCache.value[apiLoader]
 		if (!manifest) return []
 
-		const hasPlaceholder = manifest.some((x) => x.id === '${modrinth.gameVersion}')
+		const hasPlaceholder = manifest.gameVersions.some((x) => x.id === '${modrinth.gameVersion}')
 		const supportedVersions = new Set(
-			manifest
+			manifest.gameVersions
 				.filter(
-					(x) => x.id !== '${modrinth.gameVersion}' && (hasPlaceholder || x.loaders.length > 0),
+					(x) =>
+						x.id !== '${modrinth.gameVersion}' &&
+						(hasPlaceholder || x.loaders.length > 0 || !!x.versionGroup),
 				)
 				.map((x) => x.id),
 		)
@@ -533,14 +542,14 @@ function getLoaderVersionsForGameVersion(
 		apiLoader,
 		gameVersion,
 		hasManifest: !!manifest,
-		manifestLength: manifest?.length,
+		manifestLength: manifest?.gameVersions.length,
 	})
 	if (!manifest) return []
 
 	// Some loaders (e.g. Fabric) list all versions under a placeholder entry
-	const placeholder = manifest.find((x) => x.id === '${modrinth.gameVersion}')
+	const placeholder = manifest.gameVersions.find((x) => x.id === '${modrinth.gameVersion}')
 	if (placeholder) {
-		if (!manifest.some((x) => x.id === gameVersion)) return []
+		if (!manifest.gameVersions.some((x) => x.id === gameVersion)) return []
 		debug(
 			'getLoaderVersionsForGameVersion: using placeholder, loaders:',
 			placeholder.loaders.length,
@@ -548,7 +557,20 @@ function getLoaderVersionsForGameVersion(
 		return placeholder.loaders
 	}
 
-	const entry = manifest.find((x) => x.id === gameVersion)
+	const entry = manifest.gameVersions.find((x) => x.id === gameVersion)
+	if (entry?.versionGroup) {
+		const loaders =
+			manifest.versionGroups?.find((group) => group.id === entry.versionGroup)?.loaders ?? []
+		debug(
+			'getLoaderVersionsForGameVersion: version group for',
+			gameVersion,
+			':',
+			entry.versionGroup,
+			loaders.length + ' loaders',
+		)
+		return loaders
+	}
+
 	debug(
 		'getLoaderVersionsForGameVersion: entry for',
 		gameVersion,
@@ -652,6 +674,13 @@ function autoSelectLoaderVersion() {
 		'first:',
 		loaderVersionsData.value[0]?.id,
 	)
+	if (
+		loaderVersionType.value === 'stable' &&
+		loaderVersionTypeDisabledItems.value.includes('stable')
+	) {
+		debug("'stable' loader version type is disabled, switching to 'latest'...")
+		loaderVersionType.value = 'latest'
+	}
 	if (loaderVersionType.value === 'stable') {
 		const stable = loaderVersionsData.value.find((v) => v.stable)
 		selectedLoaderVersion.value = stable?.id ?? loaderVersionsData.value[0]?.id ?? null

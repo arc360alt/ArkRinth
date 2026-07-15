@@ -1,5 +1,6 @@
 import { AbstractModule } from '../../../core/abstract-module'
 import type { UploadHandle, UploadProgress } from '../../../types/upload'
+import { getNodeBaseUrl } from '../../../utils/node-url'
 import type { Archon } from '../../archon/types'
 import type { Kyros } from '../types'
 
@@ -11,7 +12,7 @@ export class KyrosFilesV0Module extends AbstractModule {
 	}
 
 	private getNodeBaseUrl(auth: NodeFsAuth): string {
-		return `https://${auth.url.replace(/\/modrinth\/v\d+\/fs\/?$/, '')}`
+		return getNodeBaseUrl(auth.url)
 	}
 
 	/**
@@ -94,6 +95,7 @@ export class KyrosFilesV0Module extends AbstractModule {
 	 * @param file - File to upload
 	 * @param options - Optional progress callback and feature overrides
 	 * @returns UploadHandle with promise, onProgress, and cancel
+	 * @deprecated Use `kyros.upload_sessions_v1` for bulk uploads so cancellation can remove staged files before finalize.
 	 */
 	public uploadFile(
 		path: string,

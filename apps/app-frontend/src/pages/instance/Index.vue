@@ -6,7 +6,7 @@
 		>
 			<ExportModal ref="exportModal" :instance="instance" />
 			<InstanceSettingsModal
-				:key="instance.path"
+				:key="instance.id"
 				ref="settingsModal"
 				:instance="instance"
 				:offline="offline"
@@ -19,7 +19,7 @@
 						:src="icon ? icon : undefined"
 						:alt="instance.name"
 						size="64px"
-						:tint-by="instance.path"
+						:tint-by="instance.id"
 					/>
 				</template>
 				<template #title>
@@ -32,14 +32,16 @@
 								{{ instance.loader }} {{ instance.game_version }}
 							</div>
 
-							<div class="w-1.5 h-1.5 rounded-full bg-surface-5"></div>
+							<template v-if="showInstancePlayTime">
+								<div class="w-1.5 h-1.5 rounded-full bg-surface-5"></div>
 
-							<div class="flex items-center gap-2 font-medium">
-								<template v-if="timePlayed > 0">
-									{{ timePlayedHumanized }}
-								</template>
-								<template v-else> Never played </template>
-							</div>
+								<div class="flex items-center gap-2 font-medium">
+									<template v-if="timePlayed > 0">
+										{{ timePlayedHumanized }}
+									</template>
+									<template v-else> Never played </template>
+								</div>
+							</template>
 						</template>
 
 						<template v-else>
@@ -76,7 +78,7 @@
 								<Avatar
 									:src="linkedProjectV3.icon_url"
 									:alt="linkedProjectV3.name"
-									:tint-by="instance.path"
+									:tint-by="instance.id"
 									size="24px"
 								/>
 								<router-link
@@ -188,12 +190,16 @@
 									{
 										id: 'open-folder',
 										action: () => {
-											if (instance) showProfileInFolder(instance.path)
+											if (instance) showInstanceInFolder(instance.id)
 										},
 									},
 									{
 										id: 'export-mrpack',
 										action: () => exportModal?.show(),
+									},
+									{
+										id: 'create-shortcut',
+										action: () => createShortcut(),
 									},
 								]"
 							>
@@ -202,6 +208,7 @@
 								<template #host-a-server> <ServerIcon /> Create a server </template>
 								<template #open-folder> <FolderOpenIcon /> Open folder </template>
 								<template #export-mrpack> <PackageIcon /> Export modpack </template>
+								<template #create-shortcut> <ExternalIcon /> Create shortcut </template>
 							</OverflowMenu>
 						</ButtonStyled>
 					</div>
@@ -212,13 +219,13 @@
 			<NavTabs :links="tabs" />
 		</div>
 		<div :class="['p-6 pt-4', { 'min-h-0 flex-1 overflow-y-auto': isFixedRender }]">
-			<RouterView
-				v-if="route.path.startsWith('/instance')"
-				v-slot="{ Component }"
-				:key="instance.path"
-			>
+			<RouterView v-slot="{ Component }" :key="instance.id" :route="displayedInstanceRoute">
 				<template v-if="Component">
-					<Suspense :key="instance.path">
+					<Suspense
+						:key="instance.id"
+						@pending="subpagePending = true"
+						@resolve="subpagePending = false"
+					>
 						<component
 							:is="Component"
 							:instance="instance"
@@ -228,6 +235,7 @@
 							:installed="instance.install_stage !== 'installed'"
 							:is-server-instance="isServerInstance"
 							:open-settings="() => settingsModal?.show(1)"
+							v-bind="contentSubpageProps"
 							@play="updatePlayState"
 							@stop="() => stopInstance('InstanceSubpage')"
 						></component>
@@ -295,42 +303,53 @@ import {
 	ServerPing,
 	ServerRecentPlays,
 	ServerRegion,
+	useLoadingBarToken,
 } from '@modrinth/ui'
 import { useQueryClient } from '@tanstack/vue-query'
 import { convertFileSrc } from '@tauri-apps/api/core'
 import dayjs from 'dayjs'
 import duration from 'dayjs/plugin/duration'
 import relativeTime from 'dayjs/plugin/relativeTime'
-import { computed, onUnmounted, ref, watch } from 'vue'
+import { computed, onUnmounted, ref, shallowRef, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 import ContextMenu from '@/components/ui/ContextMenu.vue'
 import ExportModal from '@/components/ui/ExportModal.vue'
 import InstanceSettingsModal from '@/components/ui/modal/InstanceSettingsModal.vue'
 import UpdateToPlayModal from '@/components/ui/modal/UpdateToPlayModal.vue'
+import {
+	fetchCachedServerStatus,
+	getFreshCachedServerStatus,
+} from '@/composables/instances/use-server-status-query'
 import { useInstanceConsole } from '@/composables/useInstanceConsole'
 import { trackEvent } from '@/helpers/analytics'
 import { get_project_v3 } from '@/helpers/cache.js'
-import { process_listener, profile_listener } from '@/helpers/events'
-import { get_by_profile_path } from '@/helpers/process'
-import { finish_install, get, get_full_path, kill, run } from '@/helpers/profile'
+import { instance_listener, process_listener } from '@/helpers/events'
+import { install_existing_instance, install_pack_to_existing_instance } from '@/helpers/install'
+import { get, get_full_path, kill, run } from '@/helpers/instance'
+import { type InstanceContentData, loadInstanceContentData } from '@/helpers/instance-content'
+import { get_by_instance_id } from '@/helpers/process'
 import type { GameInstance } from '@/helpers/types'
-import { showProfileInFolder } from '@/helpers/utils.js'
-import { get_server_status, refreshWorlds } from '@/helpers/worlds'
+import { createInstanceShortcut, showInstanceInFolder } from '@/helpers/utils.js'
+import { refreshWorlds, type ServerStatus } from '@/helpers/worlds'
 import { injectServerInstall } from '@/providers/server-install'
 import { handleSevereError } from '@/store/error.js'
-import { useBreadcrumbs } from '@/store/state'
+import { useBreadcrumbs, useTheming } from '@/store/state'
 
 dayjs.extend(duration)
 dayjs.extend(relativeTime)
 
-const { handleError } = injectNotificationManager()
+const { addNotification, handleError } = injectNotificationManager()
 const { playServerProject } = injectServerInstall()
 const queryClient = useQueryClient()
 const route = useRoute()
 
 const router = useRouter()
+const displayedInstanceRoute = shallowRef(router.currentRoute.value)
 const breadcrumbs = useBreadcrumbs()
+const themeStore = useTheming()
+const showInstancePlayTime = computed(() => themeStore.getFeatureFlag('show_instance_play_time'))
+const contentSubpageRouteNames = new Set(['Mods', 'ModsFilter'])
 
 const offline = ref(!navigator.onLine)
 window.addEventListener('offline', () => {
@@ -341,11 +360,15 @@ window.addEventListener('online', () => {
 })
 
 const instance = ref<GameInstance>()
+const preloadedContent = ref<InstanceContentData | null>(null)
 const playing = ref(false)
 const loading = ref(false)
+const subpagePending = ref(false)
 const stopping = ref(false)
 const exportModal = ref<InstanceType<typeof ExportModal>>()
 const updateToPlayModal = ref<InstanceType<typeof UpdateToPlayModal>>()
+
+useLoadingBarToken(subpagePending)
 
 const isServerInstance = ref(false)
 const linkedProjectV3 = ref<Labrinth.Projects.v3.Project>()
@@ -353,61 +376,116 @@ const selected = ref<unknown[]>([])
 
 const minecraftServer = computed(() => linkedProjectV3.value?.minecraft_server)
 const javaServerPingData = computed(() => linkedProjectV3.value?.minecraft_java_server?.ping?.data)
-const statusOnline = computed(() => !!javaServerPingData.value)
+const liveServerStatusOnline = ref(false)
+const statusOnline = computed(() => liveServerStatusOnline.value || !!javaServerPingData.value)
 const recentPlays = computed(
 	() => linkedProjectV3.value?.minecraft_java_server?.verified_plays_2w ?? undefined,
 )
 const playersOnline = ref<number | undefined>(undefined)
 const ping = ref<number | undefined>(undefined)
 const loadingServerPing = ref(false)
+const activeInstanceId = ref<string>()
+
+watch(
+	() => router.currentRoute.value,
+	(nextRoute) => {
+		if (nextRoute.path.startsWith('/instance')) {
+			displayedInstanceRoute.value = nextRoute
+		}
+	},
+	{ immediate: true },
+)
+
+function applyServerStatus(status: ServerStatus) {
+	playersOnline.value = status.players?.online
+	ping.value = status.ping
+	liveServerStatusOnline.value = true
+	loadingServerPing.value = true
+}
+
+function resetServerStatus() {
+	ping.value = undefined
+	playersOnline.value = undefined
+	liveServerStatusOnline.value = false
+	loadingServerPing.value = false
+}
+
+function isContentSubpageRoute(routeName = displayedInstanceRoute.value.name) {
+	return typeof routeName === 'string' && contentSubpageRouteNames.has(routeName)
+}
 
 async function fetchInstance() {
 	isServerInstance.value = false
 	linkedProjectV3.value = undefined
-	ping.value = undefined
-	playersOnline.value = undefined
-	loadingServerPing.value = false
+	preloadedContent.value = null
+	resetServerStatus()
 
-	instance.value = await get(route.params.id as string).catch(handleError)
+	const nextInstance = await get(route.params.id as string).catch(handleError)
+	let nextLinkedProjectV3: Labrinth.Projects.v3.Project | undefined
+	let nextIsServerInstance = false
 
-	if (!offline.value && instance.value?.linked_data && instance.value.linked_data.project_id) {
+	const contentPreloadPromise =
+		nextInstance && isContentSubpageRoute()
+			? loadInstanceContentData(nextInstance.id, undefined, handleError)
+			: Promise.resolve(null)
+
+	if (!offline.value && nextInstance?.link && nextInstance.link.project_id) {
 		try {
-			linkedProjectV3.value = await get_project_v3(
-				instance.value.linked_data.project_id,
-				'must_revalidate',
-			)
+			nextLinkedProjectV3 = await get_project_v3(nextInstance.link.project_id, 'must_revalidate')
 
-			if (linkedProjectV3.value?.minecraft_server != null) {
-				isServerInstance.value = true
+			if (nextLinkedProjectV3?.minecraft_server != null) {
+				nextIsServerInstance = true
 			}
 		} catch (error) {
 			handleError(error as Error)
 		}
 	}
 
-	fetchDeferredData()
+	const nextPreloadedContent = await contentPreloadPromise
 
-	if (instance.value) {
+	instance.value = nextInstance ?? undefined
+	linkedProjectV3.value = nextLinkedProjectV3
+	isServerInstance.value = nextIsServerInstance
+	preloadedContent.value = nextPreloadedContent
+	activeInstanceId.value = nextInstance?.id
+
+	fetchDeferredData(nextInstance?.id)
+
+	if (nextInstance) {
 		queryClient.prefetchQuery({
-			queryKey: ['worlds', instance.value.path],
-			queryFn: () => refreshWorlds(instance.value!.path),
+			queryKey: ['worlds', nextInstance.id],
+			queryFn: () => refreshWorlds(nextInstance.id),
 			staleTime: 30_000,
 		})
 	}
 }
 
-function fetchDeferredData() {
+function fetchDeferredData(instanceId?: string) {
 	const serverAddress = linkedProjectV3.value?.minecraft_java_server?.address
 	if (isServerInstance.value && serverAddress) {
-		get_server_status(serverAddress)
+		const cachedStatus = getFreshCachedServerStatus(queryClient, serverAddress)
+		if (cachedStatus) {
+			applyServerStatus(cachedStatus)
+		} else {
+			playersOnline.value = undefined
+			ping.value = undefined
+			loadingServerPing.value = false
+		}
+
+		fetchCachedServerStatus(queryClient, serverAddress)
 			.then((status) => {
-				playersOnline.value = status.players?.online
-				ping.value = status.ping
+				if (
+					activeInstanceId.value !== instanceId ||
+					linkedProjectV3.value?.minecraft_java_server?.address !== serverAddress
+				)
+					return
+				applyServerStatus(status)
 			})
 			.catch((error) => {
 				console.error(`Failed to fetch server status for ${serverAddress}:`, error)
 			})
 			.finally(() => {
+				if (activeInstanceId.value !== instanceId) return
 				loadingServerPing.value = true
 			})
 	} else {
@@ -419,7 +497,7 @@ function fetchDeferredData() {
 
 async function updatePlayState() {
 	if (!route.params.id) return
-	const runningProcesses = await get_by_profile_path(route.params.id as string).catch(handleError)
+	const runningProcesses = await get_by_instance_id(route.params.id as string).catch(handleError)
 
 	playing.value = Array.isArray(runningProcesses) && runningProcesses.length > 0
 }
@@ -434,7 +512,9 @@ watch(
 	},
 )
 
-const basePath = computed(() => `/instance/${encodeURIComponent(route.params.id as string)}`)
+const basePath = computed(
+	() => `/instance/${encodeURIComponent(displayedInstanceRoute.value.params.id as string)}`,
+)
 
 /**
  * Per-route layout mode.
@@ -445,9 +525,12 @@ const basePath = computed(() => `/instance/${encodeURIComponent(route.params.id 
  *   Used by tabs whose content (e.g. the log console) needs a bounded height to resolve `h-full`.
  */
 const renderMode = computed<'scroll' | 'fixed'>(() =>
-	route.meta.renderMode === 'fixed' ? 'fixed' : 'scroll',
+	displayedInstanceRoute.value.meta.renderMode === 'fixed' ? 'fixed' : 'scroll',
 )
 const isFixedRender = computed(() => renderMode.value === 'fixed')
+const contentSubpageProps = computed(() =>
+	isContentSubpageRoute() ? { preloadedContent: preloadedContent.value } : {},
+)
 
 const tabs = computed(() => [
 	{
@@ -481,8 +564,8 @@ if (instance.value) {
 	)
 	breadcrumbs.setContext({
 		name: instance.value.name,
-		link: route.path,
-		query: route.query,
+		link: displayedInstanceRoute.value.path,
+		query: displayedInstanceRoute.value.query,
 	})
 }
 
@@ -500,7 +583,7 @@ const startInstance = async (context: string) => {
 		await run(route.params.id as string)
 		playing.value = true
 	} catch (err) {
-		handleSevereError(err, { profilePath: route.params.id as string })
+		handleSevereError(err, { instanceId: route.params.id as string })
 	}
 	loading.value = false
 
@@ -526,10 +609,10 @@ const stopInstance = async (context: string) => {
 }
 
 const handlePlayServer = async () => {
-	if (!instance.value?.linked_data?.project_id) return
+	if (!instance.value?.link?.project_id) return
 	loading.value = true
 	try {
-		await playServerProject(instance.value.linked_data.project_id)
+		await playServerProject(instance.value.link.project_id)
 	} finally {
 		await updatePlayState()
 		loading.value = false
@@ -537,7 +620,39 @@ const handlePlayServer = async () => {
 }
 
 const repairInstance = async () => {
-	await finish_install(instance.value).catch(handleError)
+	if (
+		instance.value.install_stage !== 'pack_installed' &&
+		(instance.value.link?.type === 'modrinth_modpack' ||
+			instance.value.link?.type === 'server_project_modpack')
+	) {
+		await install_pack_to_existing_instance(instance.value.id, {
+			type: 'fromVersionId',
+			project_id: instance.value.link.project_id ?? instance.value.link.server_project_id ?? '',
+			version_id: instance.value.link.version_id ?? instance.value.link.content_version_id ?? '',
+			title: instance.value.name,
+		}).catch(handleError)
+	} else {
+		await install_existing_instance(instance.value.id, false).catch(handleError)
+	}
+}
+
+const createShortcut = async () => {
+	if (!instance.value) return
+	try {
+		const shortcutPath = await createInstanceShortcut(instance.value.name, instance.value.id)
+		if (!shortcutPath) return
+
+		addNotification({
+			type: 'success',
+			title: 'Shortcut created',
+		})
+	} catch (error: unknown) {
+		addNotification({
+			type: 'error',
+			title: `Error creating shortcut`,
+			text: `${error}`,
+		})
+	}
 }
 
 const handleRightClick = (event: MouseEvent) => {
@@ -590,11 +705,11 @@ const handleOptionsClick = async (args: { option: string; item: unknown }) => {
 			})
 			break
 		case 'open_folder':
-			if (instance.value) await showProfileInFolder(instance.value.path)
+			if (instance.value) await showInstanceInFolder(instance.value.id)
 			break
 		case 'copy_path': {
 			if (instance.value) {
-				const fullPath = await get_full_path(instance.value?.path)
+				const fullPath = await get_full_path(instance.value.id)
 				await navigator.clipboard.writeText(fullPath)
 			}
 			break
@@ -602,9 +717,9 @@ const handleOptionsClick = async (args: { option: string; item: unknown }) => {
 	}
 }
 
-const unlistenProfiles = await profile_listener(
-	async (event: { profile_path_id: string; event: string }) => {
-		if (event.profile_path_id !== route.params.id) return
+const unlistenInstances = await instance_listener(
+	async (event: { instance_id: string; event: string }) => {
+		if (event.instance_id !== route.params.id) return
 		if (event.event === 'removed' || route.path === '/') {
 			if (route.path !== '/') {
 				await router.push({ path: '/' })
@@ -618,20 +733,18 @@ const unlistenProfiles = await profile_listener(
 			}
 			return handleError(err)
 		})
-		if (!instance.value?.linked_data?.project_id) {
+		if (!instance.value?.link?.project_id) {
 			linkedProjectV3.value = undefined
 			isServerInstance.value = false
 		}
 	},
 )
 
-const unlistenProcesses = await process_listener(
-	(e: { event: string; profile_path_id: string }) => {
-		if (e.event === 'finished' && e.profile_path_id === route.params.id) {
-			playing.value = false
-		}
-	},
-)
+const unlistenProcesses = await process_listener((e: { event: string; instance_id: string }) => {
+	if (e.event === 'finished' && e.instance_id === route.params.id) {
+		playing.value = false
+	}
+})
 
 const icon = computed(() =>
 	instance.value?.icon_path ? convertFileSrc(instance.value.icon_path) : null,
@@ -663,10 +776,10 @@ const timePlayedHumanized = computed(() => {
 
 onUnmounted(() => {
 	unlistenProcesses()
-	unlistenProfiles()
-	const profilePath = route.params.id
-	if (profilePath) {
-		const { destroy } = useInstanceConsole(profilePath)
+	unlistenInstances()
+	const instanceId = displayedInstanceRoute.value.params.id
+	if (instanceId) {
+		const { destroy } = useInstanceConsole(instanceId)
 		destroy()
 	}
 })

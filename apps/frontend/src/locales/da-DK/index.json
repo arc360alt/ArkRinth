@@ -122,9 +122,6 @@
   "app-marketing.features.performance.infinite-mb": {
     "message": "∞ MB"
   },
-  "app-marketing.features.performance.infinite-times-infinite-mb": {
-    "message": "∞ * ∞ MB"
-  },
   "app-marketing.features.performance.less-than-150mb": {
     "message": "< 150 MB"
   },
@@ -257,50 +254,20 @@
   "auth.reset-password.title.long": {
     "message": "Nulstil din adgangskode"
   },
-  "auth.sign-in.2fa.description": {
-    "message": "Indtast en to-faktor-kode for at fortsætte."
-  },
-  "auth.sign-in.2fa.label": {
-    "message": "Indtast to-faktor-kode"
-  },
   "auth.sign-in.2fa.placeholder": {
     "message": "Indtast kode..."
-  },
-  "auth.sign-in.additional-options": {
-    "message": "<forgot-password-link>Glemt adgangskode?</forgot-password-link> • <create-account-link>Opret en konto</create-account-link>"
-  },
-  "auth.sign-in.sign-in-with": {
-    "message": "Log ind med"
   },
   "auth.sign-in.title": {
     "message": "Log ind"
   },
-  "auth.sign-in.use-password": {
-    "message": "Eller brug en adgangskode"
-  },
-  "auth.sign-up.action.create-account": {
-    "message": "Opret konto"
-  },
   "auth.sign-up.legal-dislaimer": {
     "message": "Ved at oprette en konto, accepterer du Modrinth's <terms-link>Vilkår</terms-link> og <privacy-policy-link>Privatlivspolitik</privacy-policy-link>."
-  },
-  "auth.sign-up.notification.password-mismatch.text": {
-    "message": "Adgangskoderne er ikke ens!"
   },
   "auth.sign-up.sign-in-option.title": {
     "message": "Har du allerede en konto?"
   },
-  "auth.sign-up.subscribe.label": {
-    "message": "Abonner på opdateringer om Modrinth"
-  },
   "auth.sign-up.title": {
     "message": "Tilmeld"
-  },
-  "auth.sign-up.title.create-account": {
-    "message": "Eller opret en konto selv"
-  },
-  "auth.sign-up.title.sign-up-with": {
-    "message": "Tilmeld dig med"
   },
   "auth.verify-email.action.account-settings": {
     "message": "Kontoindstillinger"
@@ -331,21 +298,6 @@
   },
   "auth.verify-email.title": {
     "message": "Bekræft E-mail"
-  },
-  "auth.welcome.checkbox.subscribe": {
-    "message": "Abonner på opdateringer om Modrinth"
-  },
-  "auth.welcome.description": {
-    "message": "Du er nu en del af det awesome fællesskab og skabere og udforskere der allerede bygger, downloader, og forbliver opdateret med fantastiske mods."
-  },
-  "auth.welcome.label.tos": {
-    "message": "Ved at oprette en konto, accepterer du Modrinth's <terms-link>Vilkår</terms-link> og <privacy-policy-link>Privatlivspolitik</privacy-policy-link>."
-  },
-  "auth.welcome.long-title": {
-    "message": "Velkommen til Modrinth!"
-  },
-  "auth.welcome.title": {
-    "message": "Velkommen"
   },
   "collection.button.edit-icon": {
     "message": "Rediger ikon"
@@ -950,9 +902,6 @@
   "frog.title": {
     "message": "Frø"
   },
-  "hosting-marketing.available-locations": {
-    "message": "Tilgængelig i Nord Amerika, Europa, og Sydøst Asien for bred dækning."
-  },
   "hosting-marketing.billing.monthly": {
     "message": "Betal hvert måned"
   },
@@ -1012,9 +961,6 @@
   },
   "hosting-marketing.faq.location": {
     "message": "Hvor er Modrinth Hosting servere placeret? Kan jeg vælge et område?"
-  },
-  "hosting-marketing.faq.location.answer": {
-    "message": "Vi har servere tilgængelig i Nord Amerika, Europa, og Sydøst Asien på nuværende tidspunkt som du kan vælge imellem under købet. Flere områder kommer i fremtiden! Hvis du gerne vil skifte til dit område, venligst kontakt support."
   },
   "hosting-marketing.faq.versions-loaders": {
     "message": "Hvilken Minecraft version og loaders kan blive brugt?"
@@ -1814,44 +1760,14 @@
   "project.description.title": {
     "message": "Beskrivelse"
   },
-  "project.download.game-version": {
-    "message": "Spille version: {version}"
-  },
-  "project.download.game-version-error": {
-    "message": "Fejl: ingen spil versioner fundet"
-  },
-  "project.download.game-version-tooltip": {
-    "message": "{title} er kun tilgængelig til {version}"
-  },
   "project.download.game-version-unsupported-tooltip": {
     "message": "{title} understøtter ikke {gameVersion} til {platform}"
-  },
-  "project.download.install-with-app": {
-    "message": "Installer med Modrinth App"
   },
   "project.download.no-app": {
     "message": "Har ikke Modrinth App?"
   },
-  "project.download.no-versions-available": {
-    "message": "Ingen versioner tilgængelig til {gameVersion} og {platform}."
-  },
-  "project.download.platform": {
-    "message": "Platform: {platform}"
-  },
-  "project.download.platform-error": {
-    "message": "Fejl: ingen platforme fundet"
-  },
-  "project.download.platform-tooltip": {
-    "message": "{title} er kun tilgængelig til {platform}"
-  },
   "project.download.platform-unsupported-tooltip": {
     "message": "{title} understøtter ikke {platform} til {gameVersion}"
-  },
-  "project.download.search-game-versions": {
-    "message": "Søg spil versioner..."
-  },
-  "project.download.search-game-versions-label": {
-    "message": "Søg spil versioner..."
   },
   "project.download.select-game-version": {
     "message": "Vælg spil version"
@@ -1919,12 +1835,6 @@
   "project.settings.title": {
     "message": "Indstillinger"
   },
-  "project.stats.downloads-label": {
-    "message": "download{count, plural, one {} other {s}}"
-  },
-  "project.stats.followers-label": {
-    "message": "følger{count, plural, one {} other {e}}"
-  },
   "project.status.archived.message": {
     "message": "{title} er blevet arkiveret. {title} vil ikke modtage flere opdateringer medmindre forfatteren beslutter sig for at fjerne projektet fra arkivet."
   },
@@ -1934,20 +1844,14 @@
   "report.already-reported": {
     "message": "Du har allerede rapporteret {title}"
   },
-  "report.already-reported-description": {
-    "message": "Du har allerede en åben anmeldelse for {item, select, project {dette projekt} version {denne version} user {denne bruger} other {dette indhold}}. Du kan tilføje flere detaljer til denne anmeldse hvis du har mere information at tilføje."
-  },
-  "report.back-to-item": {
-    "message": "Tilbage til {item, select, project {projekt} version {version} user {bruger} other {indhold}}"
-  },
   "report.body.description": {
     "message": "Inkluder links og billeder hvis muligt og relevant. Tomme eller upræcise rapporter vil blive lukket eller ignoreret."
   },
   "report.body.title": {
     "message": "Venligst tilføj mere information omkring din anmeldelse"
   },
-  "report.could-not-find": {
-    "message": "Kunne ikke finde {item, select, project {projekt} version {version} user {bruger} other {indhold}}"
+  "report.for.violation.description": {
+    "message": "Eksempler inkluderer ondsindet, spam, stødende, vildledende, misvisende og ulovligt indhold."
   },
   "report.not-for.dmca": {
     "message": "DMCA-fjernelser"
@@ -1955,17 +1859,14 @@
   "report.not-for.dmca.description": {
     "message": "Se vores <policy-link>Politik Om Pphavsret</policy-link>."
   },
+  "report.note.copyright.1": {
+    "message": "Bemærk venligst, at du *ikke* indsender en anmodning om fjernelse i henhold til DMCA, men derimod en anmeldelse af genuploadet indhold."
+  },
   "report.please-report": {
     "message": "Venligst anmeld:"
   },
-  "report.question.content-id": {
-    "message": "Hvad er IDet på {item, select, project {projektet} version {versionen} user {brugeren} other {indholdet}}?"
-  },
   "report.question.content-type": {
     "message": "Hvilket form for indhold anmelder du?"
-  },
-  "report.question.report-reason": {
-    "message": "Hvilke af Modrinths regler bryder {item, select, project {projektet} version {versionen} user {brugeren} other {indholdet}}?"
   },
   "report.submit": {
     "message": "Indsend anmeldelse"
@@ -2041,6 +1942,9 @@
   },
   "settings.display.project-list-layouts.shader": {
     "message": "Side til shaders"
+  },
+  "settings.display.sidebar.right-aligned-content-sidebar.description": {
+    "message": "Flytter sidebjælken til venstre for sidens indhold."
   },
   "settings.pats.modal.create.name.label": {
     "message": "Navn"

@@ -1,15 +1,216 @@
 {
+  "app.action-bar.downloading-java": {
+    "message": "Java {version}"
+  },
+  "app.action-bar.downloading-update": {
+    "message": "Scaricando l'aggiornamento"
+  },
+  "app.action-bar.downloads": {
+    "message": "Download"
+  },
+  "app.action-bar.hide-more-running-instances": {
+    "message": "Mostra meno istanze in esecuzione"
+  },
+  "app.action-bar.install.copied-details": {
+    "message": "Copiati"
+  },
+  "app.action-bar.install.copy-details": {
+    "message": "Copia dettagli"
+  },
+  "app.action-bar.install.dismiss": {
+    "message": "Ignora"
+  },
+  "app.action-bar.install.open-instance": {
+    "message": "Apri istanza"
+  },
+  "app.action-bar.install.retry": {
+    "message": "Riprova"
+  },
+  "app.action-bar.install.summary.app-closing": {
+    "message": "Annullato per app chiusa"
+  },
+  "app.action-bar.install.summary.bad-modpack-file": {
+    "message": "Impossibile leggere il pacchetto"
+  },
+  "app.action-bar.install.summary.canceled": {
+    "message": "Annullato"
+  },
+  "app.action-bar.install.summary.cleanup-incomplete": {
+    "message": "La pulizia è stata interrotta"
+  },
+  "app.action-bar.install.summary.content-download-failed": {
+    "message": "Impossibile scaricare i file"
+  },
+  "app.action-bar.install.summary.corrupt-download": {
+    "message": "Il file scaricato è corrotto"
+  },
+  "app.action-bar.install.summary.could-not-save-files": {
+    "message": "Impossibile salvare i file"
+  },
+  "app.action-bar.install.summary.download-failed": {
+    "message": "Il download è stato interrotto"
+  },
+  "app.action-bar.install.summary.instance-not-found": {
+    "message": "L'istanza non è stata trovata"
+  },
+  "app.action-bar.install.summary.invalid-file-path": {
+    "message": "Percorso del file errato"
+  },
+  "app.action-bar.install.summary.invalid-modpack": {
+    "message": "Dati del pacchetto non validi"
+  },
+  "app.action-bar.install.summary.invalid-modpack-files": {
+    "message": "Metadati del pacchetto non validi"
+  },
+  "app.action-bar.install.summary.java-setup-failed": {
+    "message": "La configurazione di Java è stata interrotta"
+  },
+  "app.action-bar.install.summary.loader-setup-failed": {
+    "message": "Il loader non è stato configurato"
+  },
+  "app.action-bar.install.summary.local-data-error": {
+    "message": "Impossibile aggiornare i dati locali"
+  },
+  "app.action-bar.install.summary.minecraft-setup-failed": {
+    "message": "Minecraft non è stato configurato"
+  },
+  "app.action-bar.install.summary.modrinth-unreachable": {
+    "message": "Impossibile collegarsi a Modrinth"
+  },
+  "app.action-bar.install.summary.no-write-permission": {
+    "message": "Permessi di scrittura mancanti"
+  },
+  "app.action-bar.install.summary.pack-download-failed": {
+    "message": "Impossibile scaricare il pacchetto"
+  },
+  "app.action-bar.install.summary.unexpected-error": {
+    "message": "Qualcosa è andato storto"
+  },
+  "app.action-bar.install.unknown-instance": {
+    "message": "Istanza sconosciuta"
+  },
+  "app.action-bar.installs": {
+    "message": "Installazioni"
+  },
+  "app.action-bar.make-primary-instance": {
+    "message": "Rendi primaria"
+  },
+  "app.action-bar.no-instances-running": {
+    "message": "Nessuna istanza in esecuzione"
+  },
+  "app.action-bar.offline": {
+    "message": "Offline"
+  },
+  "app.action-bar.primary-instance": {
+    "message": "Primaria"
+  },
+  "app.action-bar.reload-to-update": {
+    "message": "Ricarica per aggiornare"
+  },
+  "app.action-bar.show-more-running-instances": {
+    "message": "Mostra più istanze in esecuzione"
+  },
+  "app.action-bar.stop-instance": {
+    "message": "Ferma l'istanza"
+  },
+  "app.action-bar.update": {
+    "message": "Aggiorna"
+  },
+  "app.action-bar.view-active-downloads": {
+    "message": "Mostra i download attivi"
+  },
+  "app.action-bar.view-instance": {
+    "message": "Mostra l'istanza"
+  },
+  "app.action-bar.view-logs": {
+    "message": "Mostra i log"
+  },
+  "app.appearance-settings.advanced-rendering.description": {
+    "message": "Abilita alcuni effetti come la sfocatura, ma può causare problemi di prestazioni senza accelerazione hardware."
+  },
+  "app.appearance-settings.advanced-rendering.title": {
+    "message": "Rendering avanzato"
+  },
+  "app.appearance-settings.color-theme.description": {
+    "message": "Scegli il tema che Modrinth App userà su questo dispositivo."
+  },
+  "app.appearance-settings.color-theme.title": {
+    "message": "Tema"
+  },
+  "app.appearance-settings.default-landing-page.description": {
+    "message": "Imposta la pagina che si aprirà all'avvio del launcher."
+  },
+  "app.appearance-settings.default-landing-page.home": {
+    "message": "Home"
+  },
+  "app.appearance-settings.default-landing-page.library": {
+    "message": "Libreria"
+  },
+  "app.appearance-settings.default-landing-page.title": {
+    "message": "Pagina di avvio"
+  },
+  "app.appearance-settings.hide-nametag.description": {
+    "message": "Rimuove il nametag sopra la testa del giocatore nella pagina delle skin."
+  },
+  "app.appearance-settings.hide-nametag.title": {
+    "message": "Nascondi il nome"
+  },
+  "app.appearance-settings.jump-back-into-worlds.description": {
+    "message": "Elenca i mondi recenti nella sezione \"Avvio rapido\" della pagina Home."
+  },
+  "app.appearance-settings.jump-back-into-worlds.title": {
+    "message": "Avvio rapido nei mondi"
+  },
+  "app.appearance-settings.minimize-launcher.description": {
+    "message": "Riduci il launcher a icona quando si avvia Minecraft."
+  },
+  "app.appearance-settings.minimize-launcher.title": {
+    "message": "Riduci a icona"
+  },
+  "app.appearance-settings.native-decorations.description": {
+    "message": "Usa la cornice di sistema (riavvio necessario)."
+  },
+  "app.appearance-settings.native-decorations.title": {
+    "message": "Decorazioni native"
+  },
+  "app.appearance-settings.select-option": {
+    "message": "Seleziona"
+  },
+  "app.appearance-settings.show-play-time.description": {
+    "message": "Mostra quanto tempo hai speso giocando a un'istanza."
+  },
+  "app.appearance-settings.show-play-time.title": {
+    "message": "Mostra le ore di gioco"
+  },
+  "app.appearance-settings.skip-non-essential-warnings.description": {
+    "message": "Salta automaticamente le conferme a basso rischio, come l'installazione di pacchetti di mod duplicati, la normale eliminazione di contenuti, gli aggiornamenti simultanei, lo scollegare i pacchetti di mod e le richieste di riparazione. Le avvertenze verranno comunque mostrate."
+  },
+  "app.appearance-settings.skip-non-essential-warnings.title": {
+    "message": "Salta le conferme poco importanti"
+  },
+  "app.appearance-settings.toggle-sidebar.description": {
+    "message": "Mostra o nascondi la barra laterale."
+  },
+  "app.appearance-settings.toggle-sidebar.title": {
+    "message": "Abilita la barra laterale"
+  },
+  "app.appearance-settings.unknown-pack-warning.description": {
+    "message": "Mostrerà un avviso prima di installare un file Modrinth Pack (.mrpack) non proveniente da Modrinth, a causa dei possibili rischi."
+  },
+  "app.appearance-settings.unknown-pack-warning.title": {
+    "message": "Avvisami se installo pacchetti sconosciuti"
+  },
   "app.auth-servers.unreachable.body": {
     "message": "I server di autenticazione di Minecraft stanno riscontrando problemi. Controlla la tua connessione a Internet e riprova più tardi."
   },
   "app.auth-servers.unreachable.header": {
     "message": "Impossibile raggiungere i server di autenticazione"
   },
-  "app.browse.add-server-to-instance": {
-    "message": "Aggiungi server all'istanza"
-  },
   "app.browse.add-servers-to-instance": {
-    "message": "Aggiungi i server alla tua istanza"
+    "message": "Aggiungendo il server all'istanza"
+  },
+  "app.browse.add-to-an-instance": {
+    "message": "Aggiungi a un'istanza"
   },
   "app.browse.add-to-instance": {
     "message": "Aggiungi all'istanza"
@@ -23,6 +224,9 @@
   "app.browse.already-added": {
     "message": "Già aggiunto"
   },
+  "app.browse.back-to-instance": {
+    "message": "Torna all'istanza"
+  },
   "app.browse.discover-content": {
     "message": "Esplora i contenuti"
   },
@@ -30,13 +234,19 @@
     "message": "Esplora i server"
   },
   "app.browse.hide-added-servers": {
-    "message": "Nascondi server aggiunti"
+    "message": "Nascondi server già aggiunti"
   },
-  "app.browse.hide-installed-content": {
-    "message": "Nascondi contenuti installati"
+  "app.browse.project-type.modpacks": {
+    "message": "Pacchetti di mod"
   },
-  "app.browse.install-content-to-instance": {
-    "message": "Installa contenuti nell'istanza"
+  "app.browse.server-instance-content-warning": {
+    "message": "Aggiungere dei contenuti potrebbe causare problemi entrando nel server. Inoltre, qualsiasi contenuto aggiunto sarà perso quando aggiorni i contenuti dell'istanza."
+  },
+  "app.browse.server.installing": {
+    "message": "Installazione"
+  },
+  "app.content-install.no-compatible-versions": {
+    "message": "Nessuna versione disponibile soddisfa {compatibilityLabel}. Puoi selezionare una versione da installare comunque. Le dipendenze non verranno scaricate automaticamente."
   },
   "app.export-modal.description-placeholder": {
     "message": "Inserisci descrizione del pacchetto..."
@@ -53,14 +263,65 @@
   "app.export-modal.modpack-name-placeholder": {
     "message": "Nome del pacchetto"
   },
-  "app.export-modal.select-files-label": {
-    "message": "Seleziona i file e le cartelle da includere nel pacchetto"
-  },
   "app.export-modal.version-number-label": {
     "message": "Numero di versione"
   },
   "app.export-modal.version-number-placeholder": {
     "message": "1.0.0"
+  },
+  "app.install.phase.downloading_content": {
+    "message": "Download dei contenuti"
+  },
+  "app.install.phase.downloading_minecraft": {
+    "message": "Download di Minecraft"
+  },
+  "app.install.phase.downloading_pack_file": {
+    "message": "Download del pacchetto"
+  },
+  "app.install.phase.extracting_overrides": {
+    "message": "Estrazione delle sovrascritture"
+  },
+  "app.install.phase.finalizing": {
+    "message": "Finalizzazione"
+  },
+  "app.install.phase.preparing_instance": {
+    "message": "In coda per l'installazione"
+  },
+  "app.install.phase.preparing_java": {
+    "message": "Preparazione di Java"
+  },
+  "app.install.phase.preparing_java.downloading": {
+    "message": "Download di Java {version}"
+  },
+  "app.install.phase.preparing_java.extracting": {
+    "message": "Estrazione di Java {version}"
+  },
+  "app.install.phase.preparing_java.fetching-metadata": {
+    "message": "Recupero di Java {version}"
+  },
+  "app.install.phase.preparing_java.resolving": {
+    "message": "Preparazione di Java {version}"
+  },
+  "app.install.phase.preparing_java.validating": {
+    "message": "Validazione di Java {version}"
+  },
+  "app.install.phase.reading_pack_manifest": {
+    "message": "Lettura del manifesto"
+  },
+  "app.install.phase.resolving_loader": {
+    "message": "Risoluzione del loader"
+  },
+  "app.install.phase.resolving_minecraft": {
+    "message": "Risoluzione di Minecraft"
+  },
+  "app.install.phase.resolving_pack": {
+    "message": "Risoluzione dei contenuti"
+  },
+  "app.install.phase.rolling_back": {
+    "message": "Annullamento"
+  },
+  "app.install.phase.running_loader_processors": {
+    "message": "Esecuzione dei processori del loader"
   },
   "app.instance.confirm-delete.admonition-body": {
     "message": "Tutti i dati della tua istanza verranno eliminati permanentemente, inclusi i tuoi mondi, configurazioni e tutti i contenuti installati."
@@ -86,14 +347,20 @@
   "app.instance.modpack-already-installed.instance": {
     "message": "Istanza"
   },
+  "app.instance.mods.bulk-update.downloading-projects": {
+    "message": "{current, number}/{total, number} progetti scaricati..."
+  },
+  "app.instance.mods.bulk-update.finishing": {
+    "message": "Finalizzando l'aggiornamento..."
+  },
+  "app.instance.mods.bulk-update.resolving-versions": {
+    "message": "Risolvendo le versioni..."
+  },
   "app.instance.mods.content-type-project": {
     "message": "progetto"
   },
   "app.instance.mods.project-was-added": {
     "message": "\"{name}\" è stato aggiunto"
-  },
-  "app.instance.mods.projects-were-added": {
-    "message": "{count} progetti aggiunti"
   },
   "app.instance.mods.share-text": {
     "message": "Guarda le mod che uso nel mio pacchetto!"
@@ -110,11 +377,17 @@
   "app.instance.worlds.browse-servers": {
     "message": "Esplora i server"
   },
-  "app.instance.worlds.delete-world-description": {
-    "message": "\"{name}\" verrà **eliminato permanentemente** e non ci sarà modo di recuperarlo."
+  "app.instance.worlds.delete-world-modal.delete-button": {
+    "message": "Elimina mondo"
   },
-  "app.instance.worlds.delete-world-title": {
-    "message": "Vuoi davvero eliminare questo mondo per sempre?"
+  "app.instance.worlds.delete-world-modal.title": {
+    "message": "Eliminare il mondo"
+  },
+  "app.instance.worlds.delete-world-modal.warning-body": {
+    "message": "Questo mondo verrà eliminato permanentemente da questa istanza. Questa azione non può essere annullata."
+  },
+  "app.instance.worlds.delete-world-modal.warning-header": {
+    "message": "Eliminare {name}"
   },
   "app.instance.worlds.filter-modded": {
     "message": "Moddato"
@@ -134,23 +407,20 @@
   "app.instance.worlds.no-worlds-heading": {
     "message": "Nessun server o mondo aggiunto"
   },
-  "app.instance.worlds.remove-server-description": {
-    "message": "\"{name}\" sarà rimosso dalla tua lista, inclusa quella nel gioco, e non ci sarà modo di recuperarlo."
+  "app.instance.worlds.remove-server-modal.remove-button": {
+    "message": "Rimuovi server"
   },
-  "app.instance.worlds.remove-server-description-with-address": {
-    "message": "\"{name}\" ({address}) sarà rimosso dalla tua lista, inclusa quella nel gioco, e non ci sarà modo di recuperarlo."
+  "app.instance.worlds.remove-server-modal.title": {
+    "message": "Rimuovere il server"
   },
-  "app.instance.worlds.remove-server-title": {
-    "message": "Vuoi davvero rimuovere {name}?"
+  "app.instance.worlds.remove-server-modal.warning-body": {
+    "message": "Questo server verrà rimosso dalla tua lista di server nell'app e nel gioco. Potrai aggiungerlo nuovamente se conosci l'indirizzo."
+  },
+  "app.instance.worlds.remove-server-modal.warning-header": {
+    "message": "Rimuovere {name}"
   },
   "app.instance.worlds.search-worlds-placeholder": {
     "message": "Cerca tra {count} mondi..."
-  },
-  "app.instance.worlds.this-server": {
-    "message": "questo server"
-  },
-  "app.modal.install-to-play.content-required": {
-    "message": "Contenuto richiesto"
   },
   "app.modal.install-to-play.header": {
     "message": "Installa per continuare"
@@ -161,17 +431,8 @@
   "app.modal.install-to-play.mod-count": {
     "message": "{count} mod"
   },
-  "app.modal.install-to-play.required-modpack": {
-    "message": "Pacchetto di mod richiesto"
-  },
-  "app.modal.install-to-play.server-requires-mods": {
-    "message": "Questo server richiede alcune mod. Clicca Installa per scaricarle direttamente da Modrinth, poi sarai pronto a giocare."
-  },
   "app.modal.install-to-play.shared-instance": {
     "message": "Istanza condivisa"
-  },
-  "app.modal.install-to-play.shared-server-instance": {
-    "message": "Istanza del server condivisa"
   },
   "app.modal.install-to-play.view-contents": {
     "message": "Mostra contenuti"
@@ -179,11 +440,32 @@
   "app.modal.update-to-play.header": {
     "message": "Aggiorna per continuare"
   },
-  "app.modal.update-to-play.update-required": {
-    "message": "Aggiornamento richiesto"
-  },
   "app.modal.update-to-play.update-required-description": {
     "message": "{name} richiede degli aggiornamenti. Installa l'ultima versione per poter giocare."
+  },
+  "app.project.install-button.already-installed": {
+    "message": "Questo progetto è già stato installato"
+  },
+  "app.project.install-button.switch-version": {
+    "message": "Cambia versione"
+  },
+  "app.project.install-context.back-to-browse": {
+    "message": "Torna a Esplora"
+  },
+  "app.project.install-context.install-content-to-instance": {
+    "message": "Installa il contenuto nell'istanza"
+  },
+  "app.project.version.all-versions": {
+    "message": "Tutte le versioni"
+  },
+  "app.project.version.download-in-browser": {
+    "message": "Scarica col browser"
+  },
+  "app.project.version.installing": {
+    "message": "Installazione"
+  },
+  "app.project.versions.already-installed": {
+    "message": "Già installate"
   },
   "app.settings.developer-mode-enabled": {
     "message": "Modalità sviluppatore attiva."
@@ -209,8 +491,155 @@
   "app.settings.tabs.resource-management": {
     "message": "Gestione delle risorse"
   },
-  "app.update-popup.body": {
-    "message": "Modrinth App v{version} è pronta per essere installata! Ricarica per aggiornare ora, o avverrà in automatico alla chiusura dell'app."
+  "app.skins.add-button": {
+    "message": "Nuova skin"
+  },
+  "app.skins.add-button.drag-and-drop": {
+    "message": "Trascina qui"
+  },
+  "app.skins.apply-button": {
+    "message": "Applica"
+  },
+  "app.skins.delete-button": {
+    "message": "Elimina"
+  },
+  "app.skins.delete-modal.description": {
+    "message": "Questa skin sarà rimossa per sempre. Quest'azione non può essere annullata."
+  },
+  "app.skins.delete-modal.title": {
+    "message": "Vuoi davvero eliminare questa skin?"
+  },
+  "app.skins.dropped-file-error.text": {
+    "message": "Non è stato possibile leggere il file trascinato."
+  },
+  "app.skins.dropped-file-error.title": {
+    "message": "Impossibile processare il file"
+  },
+  "app.skins.edit-button": {
+    "message": "Modifica"
+  },
+  "app.skins.modal.add-skin-button": {
+    "message": "Aggiungi"
+  },
+  "app.skins.modal.add-title": {
+    "message": "Aggiungi una skin"
+  },
+  "app.skins.modal.arm-style-section": {
+    "message": "Modello"
+  },
+  "app.skins.modal.arm-style-slim": {
+    "message": "Snello"
+  },
+  "app.skins.modal.arm-style-wide": {
+    "message": "Largo"
+  },
+  "app.skins.modal.cape-fallback-name": {
+    "message": "Mantello"
+  },
+  "app.skins.modal.cape-section": {
+    "message": "Mantello"
+  },
+  "app.skins.modal.edit-title": {
+    "message": "Modifica la skin"
+  },
+  "app.skins.modal.make-edit-first-tooltip": {
+    "message": "Modifica prima la skin!"
+  },
+  "app.skins.modal.no-cape-tooltip": {
+    "message": "Nessun mantello"
+  },
+  "app.skins.modal.none-cape-option": {
+    "message": "Nessuno"
+  },
+  "app.skins.modal.replace-texture-button": {
+    "message": "Cambia"
+  },
+  "app.skins.modal.save-skin-button": {
+    "message": "Salva"
+  },
+  "app.skins.modal.saving-tooltip": {
+    "message": "Salvando..."
+  },
+  "app.skins.modal.texture-section": {
+    "message": "Aspetto"
+  },
+  "app.skins.modal.upload-skin-first-tooltip": {
+    "message": "Carica prima una skin!"
+  },
+  "app.skins.preview.edit-button": {
+    "message": "Modifica"
+  },
+  "app.skins.previewing-badge": {
+    "message": "Anteprima"
+  },
+  "app.skins.rate-limit.text": {
+    "message": "Stai cambiando skin troppo spesso. I server di Mojang hanno limitato le nostre richieste. Aspetta un momento prima di riprovare."
+  },
+  "app.skins.rate-limit.title": {
+    "message": "Rallenta!"
+  },
+  "app.skins.reorder-error.text": {
+    "message": "L'ordine delle skin non è stato salvato."
+  },
+  "app.skins.reorder-error.title": {
+    "message": "Errore nel riordine delle skin"
+  },
+  "app.skins.section.builders-and-biomes": {
+    "message": "Builders & Biomes"
+  },
+  "app.skins.section.chaos-cubed": {
+    "message": "Chaos Cubed"
+  },
+  "app.skins.section.chase-the-skies": {
+    "message": "Chase the Skies"
+  },
+  "app.skins.section.default-skins": {
+    "message": "Skin predefinite"
+  },
+  "app.skins.section.minecon-earth-2017": {
+    "message": "MINECON Earth 2017"
+  },
+  "app.skins.section.modrinth": {
+    "message": "Modrinth"
+  },
+  "app.skins.section.modrinth-pride": {
+    "message": "Pride Modrinth"
+  },
+  "app.skins.section.modrinth-pride.tooltip": {
+    "message": "Hai ottenuto queste skin per aver donato alla raccolta fondi per il Pride durante il Pride Month."
+  },
+  "app.skins.section.mounts-of-mayhem": {
+    "message": "Mounts of Mayhem"
+  },
+  "app.skins.section.saved-skins": {
+    "message": "Skin salvate"
+  },
+  "app.skins.section.striding-hero": {
+    "message": "Striding Hero"
+  },
+  "app.skins.section.the-copper-age": {
+    "message": "The Copper Age"
+  },
+  "app.skins.section.the-garden-awakens": {
+    "message": "The Garden Awakens"
+  },
+  "app.skins.section.tiny-takeover": {
+    "message": "Tiny Takeover"
+  },
+  "app.skins.sign-in.button": {
+    "message": "Accedi"
+  },
+  "app.skins.sign-in.description": {
+    "message": "Accedi col tuo account Minecraft per poter gestire le skin qui."
+  },
+  "app.skins.sign-in.rinthbot-alt": {
+    "message": "Modrinth Bot emozionato"
+  },
+  "app.skins.sign-in.title": {
+    "message": "Effettua l'accesso"
+  },
+  "app.skins.title": {
+    "message": "Seleziona una skin"
   },
   "app.update-popup.body.download-complete": {
     "message": "Modrinth App v{version} è stata scaricata. Ricarica per aggiornare ora, o avverrà in automatico alla chiusura dell'app."
@@ -242,15 +671,6 @@
   "app.update.complete-toast.title": {
     "message": "La versione {version} è stata installata con successo!"
   },
-  "app.update.download-update": {
-    "message": "Scarica aggiornamento"
-  },
-  "app.update.downloading-update": {
-    "message": "Scaricando l'aggiornamento ({percent}%)"
-  },
-  "app.update.reload-to-update": {
-    "message": "Ricarica per installare l'aggiornamento"
-  },
   "app.world.server-modal.placeholder-address": {
     "message": "example.modrinth.gg"
   },
@@ -273,7 +693,7 @@
     "message": "Stringi un'amicizia"
   },
   "friends.action.view-friend-requests": {
-    "message": "{count} {count, plural, one {richiesta} other {richieste}} d''amicizia"
+    "message": "{count, plural, one {# richiesta} other {# richieste}} d''amicizia"
   },
   "friends.add-friend.submit": {
     "message": "Invia richiesta d'amicizia"
@@ -324,7 +744,7 @@
     "message": "Nessuna amicizia corrisponde a ''{query}''"
   },
   "friends.search-friends-placeholder": {
-    "message": "Cerca amicizie..."
+    "message": "Cerca tra le amicizie..."
   },
   "friends.section.heading": {
     "message": "{title} - {count}"
@@ -363,7 +783,7 @@
     "message": "Mondo di Minecraft"
   },
   "instance.edit-world.reset-icon": {
-    "message": "Resetta icona"
+    "message": "Ripristina icona"
   },
   "instance.edit-world.title": {
     "message": "Modifica mondo"
@@ -423,7 +843,7 @@
     "message": "Cambia icona"
   },
   "instance.settings.tabs.general.edit-icon.select": {
-    "message": "Seleziona icona"
+    "message": "Scegli un'icona"
   },
   "instance.settings.tabs.general.library-groups": {
     "message": "Gruppi della libreria"
@@ -439,6 +859,30 @@
   },
   "instance.settings.tabs.general.name": {
     "message": "Nome"
+  },
+  "instance.settings.tabs.general.update-channel": {
+    "message": "Canale di aggiornamento"
+  },
+  "instance.settings.tabs.general.update-channel.alpha": {
+    "message": "Alpha"
+  },
+  "instance.settings.tabs.general.update-channel.alpha.description": {
+    "message": "Le versioni stabili, beta e alpha saranno mostrate come aggiornamenti disponibili."
+  },
+  "instance.settings.tabs.general.update-channel.beta": {
+    "message": "Beta"
+  },
+  "instance.settings.tabs.general.update-channel.beta.description": {
+    "message": "Le versioni stabili e beta saranno mostrate come aggiornamenti disponibili."
+  },
+  "instance.settings.tabs.general.update-channel.release": {
+    "message": "Stabile"
+  },
+  "instance.settings.tabs.general.update-channel.release.description": {
+    "message": "Solo le versioni stabili saranno mostrate come aggiornamenti disponibili."
+  },
+  "instance.settings.tabs.general.update-channel.select": {
+    "message": "Seleziona il canale di aggiornamento"
   },
   "instance.settings.tabs.hooks": {
     "message": "Hook di avvio"
@@ -488,6 +932,24 @@
   "instance.settings.tabs.java": {
     "message": "Java e memoria"
   },
+  "instance.settings.tabs.java.custom-environment-variables": {
+    "message": "Personalizzate"
+  },
+  "instance.settings.tabs.java.custom-java-arguments": {
+    "message": "Personalizzati"
+  },
+  "instance.settings.tabs.java.custom-java-installation": {
+    "message": "Personalizzata"
+  },
+  "instance.settings.tabs.java.custom-memory-allocation": {
+    "message": "Personalizzata"
+  },
+  "instance.settings.tabs.java.enter-environment-variables": {
+    "message": "Inserisci le variabili d'ambiente..."
+  },
+  "instance.settings.tabs.java.enter-java-arguments": {
+    "message": "Inserisci gli argomenti JVM..."
+  },
   "instance.settings.tabs.java.environment-variables": {
     "message": "Variabili d'ambiente"
   },
@@ -502,6 +964,9 @@
   },
   "instance.settings.tabs.java.java-memory": {
     "message": "Memoria allocata"
+  },
+  "instance.settings.tabs.java.java-path-placeholder": {
+    "message": "/percorso/di/java"
   },
   "instance.settings.tabs.window": {
     "message": "Finestra"
@@ -542,6 +1007,9 @@
   "instance.worlds.copy_address": {
     "message": "Copia indirizzo"
   },
+  "instance.worlds.create_shortcut": {
+    "message": "Crea collegamento"
+  },
   "instance.worlds.dont_show_on_home": {
     "message": "Non mostrare nella home"
   },
@@ -574,6 +1042,24 @@
   },
   "instance.worlds.world_in_use": {
     "message": "Mondo già in uso"
+  },
+  "minecraft-account.add-account": {
+    "message": "Aggiungi account"
+  },
+  "minecraft-account.label": {
+    "message": "Account di Minecraft"
+  },
+  "minecraft-account.not-signed-in": {
+    "message": "Accesso non effettuato"
+  },
+  "minecraft-account.remove-account": {
+    "message": "Rimuovi account"
+  },
+  "minecraft-account.select-account": {
+    "message": "Seleziona un account"
+  },
+  "minecraft-account.sign-in": {
+    "message": "Accedi a Minecraft"
   },
   "search.filter.locked.instance": {
     "message": "Determinato dall'istanza"

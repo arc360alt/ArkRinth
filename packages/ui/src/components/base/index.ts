@@ -21,14 +21,19 @@ export type { ComboboxOption } from './Combobox.vue'
 export { default as Combobox } from './Combobox.vue'
 export { default as ContentPageHeader } from './ContentPageHeader.vue'
 export { default as CopyCode } from './CopyCode.vue'
+export { default as DatePicker } from './DatePicker.vue'
 export { default as DoubleIcon } from './DoubleIcon.vue'
 export { default as DropArea } from './DropArea.vue'
+export type { DropdownFilterBarCategory, DropdownFilterBarOption } from './DropdownFilterBar.vue'
+export { default as DropdownFilterBar } from './DropdownFilterBar.vue'
 export { default as DropdownSelect } from './DropdownSelect.vue'
 export { default as DropzoneFileInput } from './DropzoneFileInput.vue'
 export { default as EmptyState } from './EmptyState.vue'
 export { default as EnvironmentIndicator } from './EnvironmentIndicator.vue'
 export { default as ErrorInformationCard } from './ErrorInformationCard.vue'
 export { default as FileInput } from './FileInput.vue'
+export type { FileTreeSelectItem } from './FileTreeSelect.vue'
+export { default as FileTreeSelect } from './FileTreeSelect.vue'
 export type { FilterBarOption } from './FilterBar.vue'
 export { default as FilterBar } from './FilterBar.vue'
 export type { FilterPillOption } from './FilterPills.vue'
@@ -47,7 +52,11 @@ export { default as LoadingBar } from './LoadingBar.vue'
 export { default as LoadingIndicator } from './LoadingIndicator.vue'
 export { default as ManySelect } from './ManySelect.vue'
 export { default as MarkdownEditor } from './MarkdownEditor.vue'
-export type { MultiSelectOption } from './MultiSelect.vue'
+export type {
+	MultiSelectItem,
+	MultiSelectOption,
+	MultiSelectSectionHeader,
+} from './MultiSelect.vue'
 export { default as MultiSelect } from './MultiSelect.vue'
 export type { MaybeCtxFn, StageButtonConfig, StageConfigInput } from './MultiStageModal.vue'
 export { default as MultiStageModal, resolveCtxFn } from './MultiStageModal.vue'
@@ -74,10 +83,20 @@ export type { StackedAdmonitionItem, StackedAdmonitionType } from './StackedAdmo
 export { default as StackedAdmonitions } from './StackedAdmonitions.vue'
 export { default as StatItem } from './StatItem.vue'
 export { default as StyledInput } from './StyledInput.vue'
-export type { TableColumn } from './Table.vue'
+export type { SortDirection, TableColumn } from './Table.vue'
 export { default as Table } from './Table.vue'
+export type { TabsTab, TabsValue } from './Tabs.vue'
+export { default as Tabs } from './Tabs.vue'
 export { default as TagItem } from './TagItem.vue'
 export { default as TagTagItem } from './TagTagItem.vue'
+export type {
+	TimeFrameLastUnit,
+	TimeFrameLastUnitOption,
+	TimeFrameMode,
+	TimeFramePickerSelection,
+	TimeFramePreset,
+} from './TimeFramePicker.vue'
+export { default as TimeFramePicker } from './TimeFramePicker.vue'
 export { default as Timeline } from './Timeline.vue'
 export { default as Toggle } from './Toggle.vue'
 export { default as UnsavedChangesPopup } from './UnsavedChangesPopup.vue'

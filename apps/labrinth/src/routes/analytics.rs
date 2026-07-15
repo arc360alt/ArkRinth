@@ -46,20 +46,26 @@ pub const FILTERED_HEADERS: &[&str] = &[
     "x-vercel-ip-country",
 ];
 
-pub fn config(cfg: &mut web::ServiceConfig) {
+pub fn config(cfg: &mut actix_web::web::ServiceConfig) {
     cfg.service(page_view_ingest)
         .service(playtime_ingest)
         .service(minecraft_server_play_ingest);
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, utoipa::ToSchema)]
 pub struct UrlInput {
     url: String,
 }
 
 //this route should be behind the cloudflare WAF to prevent non-browsers from calling it
-#[post("view")]
-async fn page_view_ingest(
+#[utoipa::path(
+	context_path = "/analytics",
+	tag = "analytics",
+	request_body = UrlInput,
+	responses((status = NO_CONTENT))
+)]
+#[post("/view")]
+pub async fn page_view_ingest(
     req: HttpRequest,
     analytics_queue: web::Data<Arc<AnalyticsQueue>>,
     session_queue: web::Data<AuthQueue>,
@@ -171,7 +177,7 @@ async fn page_view_ingest(
     Ok(HttpResponse::NoContent().body(""))
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Debug, utoipa::ToSchema)]
 pub struct PlaytimeInput {
     seconds: u16,
     loader: String,
@@ -179,8 +185,14 @@ pub struct PlaytimeInput {
     parent: Option<crate::models::ids::VersionId>,
 }
 
-#[post("playtime")]
-async fn playtime_ingest(
+#[utoipa::path(
+	context_path = "/analytics",
+	tag = "analytics",
+	request_body = serde_json::Value,
+	responses((status = NO_CONTENT))
+)]
+#[post("/playtime")]
+pub async fn playtime_ingest(
     req: HttpRequest,
     analytics_queue: web::Data<Arc<AnalyticsQueue>>,
     session_queue: web::Data<AuthQueue>,
@@ -249,18 +261,23 @@ struct MinecraftProfile {
     name: String,
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, utoipa::ToSchema)]
 pub struct MinecraftJavaServerPlayInput {
     project_id: ProjectId,
-    username: Option<String>,
-    server_id: Option<String>,
-    minecraft_uuid: Option<Uuid>,
+    username: String,
+    server_id: String,
 }
 
 pub const MINECRAFT_SERVER_PLAYS: &str = "minecraft_server_plays";
 
-#[post("minecraft-server-play")]
-async fn minecraft_server_play_ingest(
+#[utoipa::path(
+	context_path = "/analytics",
+	tag = "analytics",
+	request_body = MinecraftJavaServerPlayInput,
+	responses((status = NO_CONTENT))
+)]
+#[post("/minecraft-server-play")]
+pub async fn minecraft_server_play_ingest(
     req: HttpRequest,
     analytics_queue: web::Data<Arc<AnalyticsQueue>>,
     session_queue: web::Data<AuthQueue>,
@@ -292,44 +309,36 @@ async fn minecraft_server_play_ingest(
         )));
     }
 
-    let minecraft_uuid = if let (Some(username), Some(server_id)) =
-        (&play_input.username, &play_input.server_id)
+    let has_joined = http
+        .get("https://sessionserver.mojang.com/session/minecraft/hasJoined")
+        .query(&[
+            ("username", play_input.username.as_str()),
+            ("serverId", play_input.server_id.as_str()),
+        ])
+        .send()
+        .await
+        .wrap_internal_err("failed to contact Mojang session server")?;
+
+    if has_joined.status() == reqwest::StatusCode::NO_CONTENT
+        || !has_joined.status().is_success()
     {
-        let has_joined = http
-            .get("https://sessionserver.mojang.com/session/minecraft/hasJoined")
-            .query(&[
-                ("username", username.as_str()),
-                ("serverId", server_id.as_str()),
-            ])
-            .send()
-            .await
-            .wrap_internal_err("failed to contact Mojang session server")?;
+        return Err(ApiError::Request(eyre!(
+            "Minecraft session verification failed"
+        )));
+    }
 
-        if has_joined.status() == reqwest::StatusCode::NO_CONTENT
-            || !has_joined.status().is_success()
-        {
-            return Err(ApiError::Request(eyre!(
-                "Minecraft session verification failed"
-            )));
-        }
+    let profile = has_joined
+        .json::<MinecraftProfile>()
+        .await
+        .wrap_internal_err("invalid Mojang session response")?;
 
-        let profile = has_joined
-            .json::<MinecraftProfile>()
-            .await
-            .wrap_internal_err("invalid Mojang session response")?;
+    if profile.name != play_input.username {
+        return Err(ApiError::Request(eyre!(
+            "returned Mojang profile name does not match username"
+        )));
+    }
 
-        if profile.name != *username {
-            return Err(ApiError::Request(eyre!(
-                "returned Mojang profile name does not match username"
-            )));
-        }
-
-        profile.id
-    } else {
-        play_input
-            .minecraft_uuid
-            .wrap_request_err("missing `minecraft_uuid`")?
-    };
+    let minecraft_uuid = profile.id;
 
     let conn_info = req.connection_info().peer_addr().map(|x| x.to_string());
     let headers = req

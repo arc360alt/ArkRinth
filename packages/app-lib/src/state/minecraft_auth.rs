@@ -20,7 +20,6 @@ use serde_json::json;
 use sha2::Digest;
 use std::borrow::Cow;
 use std::collections::HashMap;
-use std::collections::hash_map::Entry;
 use std::future::Future;
 use std::hash::{BuildHasherDefault, DefaultHasher};
 use std::io;
@@ -217,6 +216,34 @@ pub(super) static PROFILE_CACHE: Mutex<
     HashMap<Uuid, ProfileCacheEntry, BuildHasherDefault<DefaultHasher>>,
 > = Mutex::const_new(HashMap::with_hasher(BuildHasherDefault::new()));
 
+const ONLINE_PROFILE_CACHE_MAX_AGE: std::time::Duration =
+    std::time::Duration::from_secs(60);
+const ONLINE_PROFILE_LIVE_STATE_MAX_AGE: std::time::Duration =
+    std::time::Duration::from_secs(5);
+const ONLINE_PROFILE_AUTH_ERROR_BACKOFF: std::time::Duration =
+    std::time::Duration::from_secs(60);
+
+#[derive(Debug, Clone, Copy)]
+enum OnlineProfileCacheIntent {
+    NormalRead,
+    LiveStateRead,
+    RefreshFromMojang,
+}
+
+impl OnlineProfileCacheIntent {
+    fn max_age(self) -> std::time::Duration {
+        match self {
+            Self::NormalRead => ONLINE_PROFILE_CACHE_MAX_AGE,
+            Self::LiveStateRead => ONLINE_PROFILE_LIVE_STATE_MAX_AGE,
+            Self::RefreshFromMojang => std::time::Duration::ZERO,
+        }
+    }
+
+    fn can_use_stale_on_fetch_error(self) -> bool {
+        matches!(self, Self::LiveStateRead)
+    }
+}
+
 impl Credentials {
     /// Refreshes the authentication tokens for this user if they are expired, or
     /// very close to expiration.
@@ -268,6 +295,7 @@ impl Credentials {
         Ok(())
     }
 
+    /// Returns online profile data when the cached copy is still recent enough.
     #[tracing::instrument(skip(self))]
     pub async fn online_profile(&self) -> Option<Arc<MinecraftProfile>> {
         // If this is an offline account, never attempt to fetch an online profile
@@ -337,17 +365,18 @@ impl Credentials {
                                 last_attempt: Instant::now(),
                             });
 
-                            return None;
-                        }
-                        Err(err) => {
-                            tracing::warn!(
-                                "Failed to fetch online profile for UUID {}: {err}",
-                                self.offline_profile.id
-                            );
+                None
+            }
+            Err(err) => {
+                tracing::warn!(
+                    "Failed to fetch online profile for UUID {}: {err}",
+                    self.offline_profile.id
+                );
 
-                            return None;
-                        }
-                    }
+                if cache_intent.can_use_stale_on_fetch_error() {
+                    stale_profile
+                } else {
+                    None
                 }
             }
         }
@@ -711,6 +740,8 @@ impl DeviceTokenPair {
 const MICROSOFT_CLIENT_ID: &str = "00000000402b5328";
 const AUTH_REPLY_URL: &str = "https://login.live.com/oauth20_desktop.srf";
 const REQUESTED_SCOPE: &str = "service::user.auth.xboxlive.com::MBI_SSL";
+pub const MINECRAFT_SERVICES_USER_AGENT: &str =
+    "Modrinth App (support@modrinth.com; https://modrinth.com/app)";
 
 pub struct RequestWithDate<T> {
     pub date: DateTime<Utc>,
@@ -1045,6 +1076,7 @@ async fn minecraft_token(
         INSECURE_REQWEST_CLIENT
             .post("https://api.minecraftservices.com/launcher/login")
             .header("Accept", "application/json")
+            .header("User-Agent", MINECRAFT_SERVICES_USER_AGENT)
             .json(&json!({
                 "platform": "PC_LAUNCHER",
                 "xtoken": format!("XBL3.0 x={uhs};{token}"),
@@ -1218,10 +1250,10 @@ impl MinecraftProfile {
     /// from the Mojang API: the vanilla launcher was seen refreshing profile
     /// data every 60 seconds when re-entering the skin selection screen, and
     /// external applications may change this data at any time.
-    fn is_fresh(&self) -> bool {
+    fn is_fresh(&self, max_age: std::time::Duration) -> bool {
         self.fetch_time.is_some_and(|last_profile_fetch_time| {
             Instant::now().saturating_duration_since(last_profile_fetch_time)
-                < std::time::Duration::from_secs(60)
+                < max_age
         })
     }
 
@@ -1273,6 +1305,7 @@ async fn minecraft_profile(
         INSECURE_REQWEST_CLIENT
             .get("https://api.minecraftservices.com/minecraft/profile")
             .header("Accept", "application/json")
+            .header("User-Agent", MINECRAFT_SERVICES_USER_AGENT)
             .bearer_auth(token)
             // Profiles may be refreshed periodically in response to user actions,
             // so we want each refresh to be fast
@@ -1321,12 +1354,13 @@ async fn minecraft_entitlements(
     token: &str,
 ) -> Result<MinecraftEntitlements, MinecraftAuthenticationError> {
     let res = auth_retry(|| {
-        INSECURE_REQWEST_CLIENT
-            .get(format!("https://api.minecraftservices.com/entitlements/license?requestId={}", Uuid::new_v4()))
-            .header("Accept", "application/json")
-            .bearer_auth(token)
-            .send()
-    })
+		INSECURE_REQWEST_CLIENT
+			.get(format!("https://api.minecraftservices.com/entitlements/license?requestId={}", Uuid::new_v4()))
+			.header("Accept", "application/json")
+			.header("User-Agent", MINECRAFT_SERVICES_USER_AGENT)
+			.bearer_auth(token)
+			.send()
+	})
     .await.map_err(|source| MinecraftAuthenticationError::Request { source, step: MinecraftAuthStep::MinecraftEntitlements })?;
 
     let status = res.status();

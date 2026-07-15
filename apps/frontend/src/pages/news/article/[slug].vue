@@ -1,7 +1,13 @@
 <script setup lang="ts">
 import { GitGraphIcon, RssIcon } from '@modrinth/assets'
 import { articles as rawArticles } from '@modrinth/blog'
-import { Avatar, ButtonStyled, injectModrinthClient, useFormatDateTime } from '@modrinth/ui'
+import {
+	ArticleBody,
+	Avatar,
+	ButtonStyled,
+	injectModrinthClient,
+	useFormatDateTime,
+} from '@modrinth/ui'
 import { useQuery } from '@tanstack/vue-query'
 import dayjs from 'dayjs'
 import { computed, onMounted } from 'vue'
@@ -108,7 +114,7 @@ onMounted(() => {
 </script>
 
 <template>
-	<div class="page experimental-styles-within py-6">
+	<div class="page py-6">
 		<div
 			class="flex flex-wrap items-center justify-between gap-4 border-0 border-b-[1px] border-solid border-divider px-6 pb-6"
 		>
@@ -122,7 +128,7 @@ onMounted(() => {
 						<RssIcon />
 					</a>
 				</ButtonStyled>
-				<ButtonStyled circular icon-only>
+				<ButtonStyled circular>
 					<a v-tooltip="`Changelog`" href="/news/changelog" aria-label="Changelog">
 						<GitGraphIcon />
 					</a>
@@ -169,7 +175,7 @@ onMounted(() => {
 				class="aspect-video w-full rounded-xl border-[1px] border-solid border-button-border object-cover sm:rounded-2xl"
 				:alt="article.title"
 			/>
-			<div class="markdown-body" v-html="article.html" />
+			<ArticleBody :html="article.html" />
 			<h3
 				class="mb-0 mt-4 border-0 border-t-[1px] border-solid border-divider pt-4 text-base font-extrabold sm:text-lg"
 			>

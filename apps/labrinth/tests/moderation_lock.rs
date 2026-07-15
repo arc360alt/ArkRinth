@@ -24,11 +24,13 @@ async fn set_project_processing(
     pool: &labrinth::database::PgPool,
     redis: &labrinth::database::redis::RedisPool,
 ) {
-    sqlx::query("UPDATE mods SET status = 'processing' WHERE id = $1")
-        .bind(project_id)
-        .execute(pool)
-        .await
-        .expect("failed to set project to processing status");
+    sqlx::query!(
+        "UPDATE mods SET status = 'processing' WHERE id = $1",
+        project_id
+    )
+    .execute(pool)
+    .await
+    .expect("failed to set project to processing status");
 
     DBProject::clear_cache(
         DBProjectId(project_id),
@@ -42,11 +44,11 @@ async fn set_project_processing(
 
 /// Back-date a lock's `locked_at` so it appears expired.
 async fn expire_lock(project_id: i64, pool: &labrinth::database::PgPool) {
-    sqlx::query(
+    sqlx::query!(
         "UPDATE moderation_locks SET locked_at = NOW() - ($1::bigint * INTERVAL '1 minute') - INTERVAL '1 second' WHERE project_id = $2",
+        LOCK_EXPIRY_MINUTES,
+        project_id,
     )
-    .bind(LOCK_EXPIRY_MINUTES)
-    .bind(project_id)
     .execute(pool)
     .await
     .expect("failed to expire lock");
@@ -769,9 +771,9 @@ async fn test_http_delete_all_locks_admin() {
     .await;
 }
 
-/// Moderator without a lock cannot move a project out of processing (401 + lock message).
+/// Moderator without a lock can move a project out of processing when nobody else has a lock.
 #[actix_rt::test]
-async fn test_complete_review_requires_lock() {
+async fn test_complete_review_without_lock_succeeds() {
     with_test_environment(None, |test_env: TestEnvironment<common::api_v3::ApiV3>| async move {
         let api = &test_env.api;
         let alpha_id = &test_env.dummy.project_alpha.project_id;
@@ -793,8 +795,8 @@ async fn test_complete_review_requires_lock() {
         let resp = api.call(req).await;
         assert_eq!(
             resp.status(),
-            StatusCode::UNAUTHORIZED,
-            "moderator without lock should not be able to complete review: {}",
+            StatusCode::NO_CONTENT,
+            "moderator without lock should be able to complete review when no active lock exists: {}",
             String::from_utf8_lossy(test::read_body(resp).await.as_ref())
         );
     })
@@ -849,7 +851,7 @@ async fn test_complete_review_blocked_when_other_holds_lock() {
 }
 
 #[actix_rt::test]
-async fn test_complete_review_fails_when_lock_expired() {
+async fn test_complete_review_succeeds_when_other_lock_expired() {
     with_test_environment(
         None,
         |test_env: TestEnvironment<common::api_v3::ApiV3>| async move {
@@ -858,7 +860,6 @@ async fn test_complete_review_fails_when_lock_expired() {
             let project_id = DBProjectId(
                 test_env.dummy.project_alpha.project_id_parsed.0 as i64,
             );
-            let mod_id = DBUserId(MOD_USER_ID_PARSED);
             let pool = &test_env.db.pool;
 
             set_project_processing(
@@ -868,7 +869,11 @@ async fn test_complete_review_fails_when_lock_expired() {
                 &test_env.db.redis_pool,
             )
             .await;
-            DBModerationLock::acquire(project_id, mod_id, pool)
+            DBModerationLock::acquire(
+                project_id,
+                DBUserId(ADMIN_USER_ID_PARSED),
+                pool,
+            )
                 .await
                 .unwrap()
                 .unwrap();
@@ -881,7 +886,12 @@ async fn test_complete_review_fails_when_lock_expired() {
                 .to_request();
 
             let resp = api.call(req).await;
-            assert_eq!(resp.status(), StatusCode::UNAUTHORIZED);
+            assert_eq!(
+                resp.status(),
+                StatusCode::NO_CONTENT,
+                "moderator should be able to complete review when another moderator's lock expired: {}",
+                String::from_utf8_lossy(test::read_body(resp).await.as_ref())
+            );
         },
     )
     .await;

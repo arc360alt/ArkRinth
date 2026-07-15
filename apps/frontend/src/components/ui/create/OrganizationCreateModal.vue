@@ -59,13 +59,13 @@
 				{{ formatMessage(messages.ownershipInfo) }}
 			</p>
 			<div class="flex justify-end gap-2">
-				<ButtonStyled class="w-24">
+				<ButtonStyled type="outlined">
 					<button @click="hide">
 						<XIcon aria-hidden="true" />
 						{{ formatMessage(commonMessages.cancelButton) }}
 					</button>
 				</ButtonStyled>
-				<ButtonStyled color="brand" class="w-40">
+				<ButtonStyled color="brand">
 					<button :disabled="hasHitLimit" @click="createOrganization">
 						<PlusIcon aria-hidden="true" />
 						{{ formatMessage(messages.createOrganization) }}
@@ -88,6 +88,8 @@ import {
 	useVIntl,
 } from '@modrinth/ui'
 import { ref } from 'vue'
+
+import { generateUrlSlug } from '~/utils/slugs'
 
 import CreateLimitAlert from './CreateLimitAlert.vue'
 
@@ -148,7 +150,7 @@ async function createOrganization(): Promise<void> {
 		const value = {
 			name: name.value.trim(),
 			description: description.value.trim(),
-			slug: slug.value.trim().replace(/ +/g, ''),
+			slug: slug.value.trim(),
 		}
 
 		const result: any = await useBaseFetch('organization', {
@@ -183,12 +185,7 @@ function hide(): void {
 
 function updateSlug(): void {
 	if (!manualSlug.value) {
-		slug.value = name.value
-			.trim()
-			.toLowerCase()
-			.replaceAll(' ', '-')
-			.replaceAll(/[^a-zA-Z0-9!@$()`.+,_"-]/g, '')
-			.replaceAll(/--+/gm, '-')
+		slug.value = generateUrlSlug(name.value)
 	}
 }
 

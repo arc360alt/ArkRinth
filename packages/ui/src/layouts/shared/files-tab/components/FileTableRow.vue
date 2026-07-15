@@ -42,41 +42,49 @@
 			<span class="hidden w-[160px] text-nowrap text-sm text-secondary @[800px]:block">
 				{{ formattedModifiedDate }}
 			</span>
-			<div class="flex min-w-[51px] shrink-0 items-center justify-end">
-				<ButtonStyled circular type="transparent">
-					<TeleportOverflowMenu :options="menuOptions">
-						<MoreHorizontalIcon class="h-5 w-5 bg-transparent" />
-						<template #copy-filename
-							><ClipboardCopyIcon />
-							{{ formatMessage(commonMessages.copyFilenameButton) }}</template
-						>
-						<template #copy-full-path
-							><ClipboardCopyIcon />
-							{{ formatMessage(commonMessages.copyFullPathButton) }}</template
-						>
-						<template #open-in-folder
-							><FolderOpenIcon /> {{ formatMessage(commonMessages.openInFolderButton) }}</template
-						>
-						<template #extract
-							><PackageOpenIcon /> {{ formatMessage(commonMessages.extractButton) }}</template
-						>
-						<template #rename
-							><EditIcon /> {{ formatMessage(commonMessages.renameButton) }}</template
-						>
-						<template #move
-							><RightArrowIcon /> {{ formatMessage(commonMessages.moveButton) }}</template
-						>
-						<template #download
-							><DownloadIcon />
-							{{
-								ctx.downloadButtonLabel ?? formatMessage(commonMessages.downloadButton)
-							}}</template
-						>
-						<template #delete
-							><TrashIcon /> {{ formatMessage(commonMessages.deleteLabel) }}</template
-						>
-					</TeleportOverflowMenu>
-				</ButtonStyled>
+			<div class="grid min-w-[51px] shrink-0 items-center justify-items-end">
+				<span
+					aria-hidden="true"
+					class="invisible col-start-1 row-start-1 text-nowrap font-semibold"
+				>
+					{{ formatMessage(commonMessages.actionsLabel) }}
+				</span>
+				<div class="col-start-1 row-start-1 flex justify-end">
+					<ButtonStyled circular type="transparent">
+						<TeleportOverflowMenu :options="menuOptions">
+							<MoreHorizontalIcon class="h-5 w-5 bg-transparent" />
+							<template #copy-filename
+								><ClipboardCopyIcon />
+								{{ formatMessage(commonMessages.copyFilenameButton) }}</template
+							>
+							<template #copy-full-path
+								><ClipboardCopyIcon />
+								{{ formatMessage(commonMessages.copyFullPathButton) }}</template
+							>
+							<template #open-in-folder
+								><FolderOpenIcon /> {{ formatMessage(commonMessages.openInFolderButton) }}</template
+							>
+							<template #extract
+								><PackageOpenIcon /> {{ formatMessage(commonMessages.extractButton) }}</template
+							>
+							<template #rename
+								><EditIcon /> {{ formatMessage(commonMessages.renameButton) }}</template
+							>
+							<template #move
+								><RightArrowIcon /> {{ formatMessage(commonMessages.moveButton) }}</template
+							>
+							<template #download
+								><DownloadIcon />
+								{{
+									ctx.downloadButtonLabel ?? formatMessage(commonMessages.downloadButton)
+								}}</template
+							>
+							<template #delete
+								><TrashIcon /> {{ formatMessage(commonMessages.deleteLabel) }}</template
+							>
+						</TeleportOverflowMenu>
+					</ButtonStyled>
+				</div>
 			</div>
 		</div>
 	</li>
@@ -104,16 +112,13 @@ import { computed, ref } from 'vue'
 import ButtonStyled from '#ui/components/base/ButtonStyled.vue'
 import Checkbox from '#ui/components/base/Checkbox.vue'
 import TeleportOverflowMenu from '#ui/components/base/TeleportOverflowMenu.vue'
+import { useFormatBytes } from '#ui/composables'
 import { useFormatDateTime } from '#ui/composables/format-date-time'
 import { defineMessages, useVIntl } from '#ui/composables/i18n'
 import { injectNotificationManager } from '#ui/providers/web-notifications'
 import { getFileExtensionIcon } from '#ui/utils/auto-icons'
 import { commonMessages } from '#ui/utils/common-messages'
-import {
-	getFileExtension,
-	isEditableFile as isEditableFileExt,
-	isImageFile,
-} from '#ui/utils/file-extensions'
+import { canOpenInFileEditor, getFileExtension } from '#ui/utils/file-extensions'
 
 import {
 	fileDragActive,
@@ -124,6 +129,7 @@ import {
 } from '../composables/file-drag-state'
 import { injectFileManager } from '../providers/file-manager'
 import type { FileItem } from '../types'
+import { joinDisplayPath } from '../utils'
 
 const { formatMessage } = useVIntl()
 const { addNotification } = injectNotificationManager()
@@ -164,8 +170,6 @@ const isDropTarget = computed(
 )
 const isDragSource = computed(() => fileDragActive.value && fileDragData.value?.path === props.path)
 
-const units = Object.freeze(['B', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB'])
-
 const formatDateTime = useFormatDateTime({
 	year: '2-digit',
 	month: '2-digit',
@@ -173,6 +177,7 @@ const formatDateTime = useFormatDateTime({
 	hour: 'numeric',
 	minute: 'numeric',
 })
+const formatBytes = useFormatBytes()
 
 const containerClasses = computed(() => {
 	const dropTarget = isDropTarget.value
@@ -196,8 +201,7 @@ const fileExtension = computed(() => getFileExtension(props.name))
 const isZip = computed(() => fileExtension.value === 'zip')
 
 function getFullPath() {
-	const basePath = ctx.basePath?.value
-	return basePath ? `${basePath}/${props.path}`.replace(/\/+/g, '/') : props.path
+	return joinDisplayPath(ctx.basePath?.value, props.path)
 }
 
 const menuOptions = computed(() => {
@@ -295,8 +299,7 @@ const formattedCreationDate = computed(() => {
 
 const isEditableFile = computed(() => {
 	if (props.type === 'file') {
-		const ext = fileExtension.value
-		return !props.name.includes('.') || isEditableFileExt(ext) || isImageFile(ext)
+		return canOpenInFileEditor(props.name)
 	}
 	return false
 })
@@ -307,12 +310,7 @@ const formattedSize = computed(() => {
 	}
 
 	if (props.size === undefined) return ''
-	const bytes = props.size
-	if (bytes === 0) return '0 B'
-
-	const exponent = Math.min(Math.floor(Math.log(bytes) / Math.log(1024)), units.length - 1)
-	const size = (bytes / Math.pow(1024, exponent)).toFixed(2)
-	return `${size} ${units[exponent]}`
+	return formatBytes(props.size)
 })
 
 function openContextMenu(event: MouseEvent) {

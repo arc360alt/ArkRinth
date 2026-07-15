@@ -198,13 +198,22 @@ impl PayoutSourceAlertType {
                 threshold,
                 current_balance,
             } => format!(
-                "\u{1f6a8} *Payout Source Alert*\n\nPayout source '{source}' has an available balance under the ${threshold} threshold.\nBalance: ${current_balance}."
+"\u{1f6a8} *Payout Source Alert*
+
+Payout source '{source}' has an available balance under the ${threshold} threshold.
+Balance: ${current_balance}."
             ),
             PayoutSourceAlertType::CheckFailure {
                 source,
                 display_error,
             } => format!(
-                "\u{1f6a8} *Payout Source Alert*\n\nFAILED TO CHECK payout source '{source}' balance.\nError: {display_error}"
+"\u{1f6a8} *Payout Source Alert*
+
+Failed to check payout source '{source}' balance.
+Error:
+```
+{display_error}
+```"
             ),
         }
     }
@@ -509,10 +518,10 @@ fn get_gv_range(
     mut all_game_versions: Vec<MinecraftGameVersion>,
 ) -> Vec<String> {
     // both -> least to greatest
-    game_versions.sort_by(|a, b| a.created.cmp(&b.created));
+    game_versions.sort_by_key(|a| a.created);
     game_versions.dedup_by(|a, b| a.version == b.version);
 
-    all_game_versions.sort_by(|a, b| a.created.cmp(&b.created));
+    all_game_versions.sort_by_key(|a| a.created);
 
     let all_releases = all_game_versions
         .iter()

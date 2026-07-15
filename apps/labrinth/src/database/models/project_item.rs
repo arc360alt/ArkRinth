@@ -6,6 +6,7 @@ use super::{DBUser, ids::*};
 use crate::database::models::DatabaseError;
 use crate::database::redis::RedisPool;
 use crate::database::{PgTransaction, models};
+use crate::file_hosting::FileHost;
 use crate::models::exp;
 use crate::models::ids::ProjectId;
 use crate::models::projects::{
@@ -187,6 +188,8 @@ impl ProjectBuilder {
     pub async fn insert(
         self,
         transaction: &mut PgTransaction<'_>,
+        redis: &RedisPool,
+        file_host: &dyn FileHost,
         http: &reqwest::Client,
     ) -> Result<DBProjectId, DatabaseError> {
         let project_struct = DBProject {
@@ -235,7 +238,7 @@ impl ProjectBuilder {
 
         for mut version in self.initial_versions {
             version.project_id = self.project_id;
-            version.insert(&mut *transaction, http).await?;
+            version.insert(transaction, redis, file_host, http).await?;
         }
 
         LinkUrl::insert_many_projects(
@@ -861,7 +864,7 @@ impl DBProject {
                         } = loaders_ptypes_games.remove(&project_id).map(|x|x.1).unwrap_or_default();
                         // Each version is a tuple of (DBVersionId, DateTime<Utc>)
                         let mut versions = versions.remove(&project_id).map(|x| x.1).unwrap_or_default();
-                        versions.sort_by(|a, b| a.1.cmp(&b.1));
+                        versions.sort_by_key(|a| a.1);
                         let mut gallery = mods_gallery.remove(&project_id).map(|x| x.1).unwrap_or_default();
                         let urls = links.remove(&project_id).map(|x| x.1).unwrap_or_default();
                         let version_fields = version_fields.remove(&project_id).map(|x| x.1).unwrap_or_default();
@@ -925,7 +928,7 @@ impl DBProject {
                             games,
                             versions: versions.into_iter().map(|x| x.0).collect(),
                             gallery_items: {
-                                gallery.sort_by(|a, b| a.ordering.cmp(&b.ordering));
+                                gallery.sort_by_key(|a| a.ordering);
                                 gallery
                             },
                             urls,

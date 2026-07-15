@@ -1,7 +1,11 @@
-import type { Labrinth } from '@modrinth/api-client/src/modules/types'
-import type { Ref } from 'vue'
+import type { Labrinth } from '@modrinth/api-client'
+import type { DeepReadonly, Ref } from 'vue'
 
 import { createContext } from '.'
+
+export const PROJECT_DEP_MARKER_QUERY = { dep: '1' } as const
+
+export type CdnDownloadReason = 'standalone' | 'dependency'
 
 export interface ProjectPageContext {
 	// Data refs
@@ -13,9 +17,12 @@ export interface ProjectPageContext {
 	// Lazy version loading (client-side only)
 	versions: Ref<Labrinth.Versions.v2.Version[] | null>
 	versionsLoading: Ref<boolean>
+	versionsLoaded: Ref<boolean>
 	// Lazy dependencies loading (client-side only)
 	dependencies: Ref<Labrinth.Projects.v2.DependencyInfo | null>
 	dependenciesLoading: Ref<boolean>
+
+	cdnDownloadReason: DeepReadonly<Ref<CdnDownloadReason>>
 
 	// Invalidate all project queries (auto-refetches active ones)
 	invalidate: () => Promise<void>

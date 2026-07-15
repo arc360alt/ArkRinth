@@ -1,7 +1,7 @@
 <template>
 	<ServersUpgradeModalWrapper ref="upgradeModal" />
 	<ResubscribeModal ref="pyroResubscribeModal" @resubscribe="handlePyroResubscribeConfirm" />
-	<section class="universal-card experimental-styles-within">
+	<section class="universal-card">
 		<h2>{{ formatMessage(messages.subscriptionTitle) }}</h2>
 		<p>{{ formatMessage(messages.subscriptionDescription) }}</p>
 		<div class="universal-card recessed">
@@ -84,11 +84,9 @@
 						>
 							<span class="opacity-70">{{ formatMessage(messages.nextLabel) }}</span>
 							<span class="font-semibold text-contrast">
-								{{ formatPrice(midasCharge.amount, midasCharge.currency_code) }}
-							</span>
-							<span>
 								{{
-									formatMessage(messages.slashInterval, {
+									formatMessage(messages.pricePerInterval, {
+										price: formatPrice(midasCharge.amount, midasCharge.currency_code),
 										interval: getIntervalNounLabel(midasCharge.subscription_interval),
 									})
 								}}
@@ -144,7 +142,7 @@
 							>
 								{{
 									formatMessage(messages.switchesToBillingOn, {
-										interval: getIntervalAdjectiveLabel(midasCharge.subscription_interval),
+										interval: midasCharge.subscription_interval,
 										date: formatDate(midasCharge.due),
 									})
 								}}
@@ -239,10 +237,10 @@
 								{{
 									changingInterval
 										? formatMessage(messages.switchingToInterval, {
-												interval: getIntervalAdjectiveLabel(oppositeInterval),
+												interval: oppositeInterval,
 											})
 										: formatMessage(messages.switchToInterval, {
-												interval: getIntervalAdjectiveLabel(oppositeInterval),
+												interval: oppositeInterval,
 											})
 								}}
 							</button>
@@ -375,20 +373,20 @@
 											<span class="leading-none text-contrast">
 												{{
 													getProductPrice(getPyroProduct(subscription), subscription.interval)
-														? formatPrice(
-																getProductPrice(getPyroProduct(subscription), subscription.interval)
-																	.prices.intervals[subscription.interval],
-																getProductPrice(getPyroProduct(subscription), subscription.interval)
-																	.currency_code,
-															)
+														? formatMessage(messages.pricePerInterval, {
+																price: formatPrice(
+																	getProductPrice(
+																		getPyroProduct(subscription),
+																		subscription.interval,
+																	).prices.intervals[subscription.interval],
+																	getProductPrice(
+																		getPyroProduct(subscription),
+																		subscription.interval,
+																	).currency_code,
+																),
+																interval: getIntervalNounLabel(subscription.interval),
+															})
 														: ''
-												}}
-											</span>
-											<span class="leading-none">
-												{{
-													formatMessage(messages.slashInterval, {
-														interval: getIntervalNounLabel(subscription.interval),
-													})
 												}}
 											</span>
 										</h3>
@@ -407,15 +405,11 @@
 											<span class="opacity-70">{{ formatMessage(messages.nextLabel) }}</span>
 											<span class="font-semibold text-contrast">
 												{{
-													formatPrice(
-														getPyroCharge(subscription).amount,
-														getPyroCharge(subscription).currency_code,
-													)
-												}}
-											</span>
-											<span>
-												{{
-													formatMessage(messages.slashInterval, {
+													formatMessage(messages.pricePerInterval, {
+														price: formatPrice(
+															getPyroCharge(subscription).amount,
+															getPyroCharge(subscription).currency_code,
+														),
 														interval: getIntervalNounLabel(
 															getPyroCharge(subscription).subscription_interval ||
 																subscription.interval,
@@ -453,9 +447,7 @@
 											>
 												{{
 													formatMessage(messages.switchesToBillingOn, {
-														interval: getIntervalAdjectiveLabel(
-															getPyroCharge(subscription).subscription_interval,
-														),
+														interval: getPyroCharge(subscription).subscription_interval,
 														date: formatDate(getPyroCharge(subscription).due),
 													})
 												}}
@@ -533,7 +525,7 @@
 		</div>
 	</section>
 
-	<section class="universal-card experimental-styles-within">
+	<section class="universal-card">
 		<ConfirmModal
 			ref="modal_confirm"
 			:title="formatMessage(deleteModalMessages.title)"
@@ -573,12 +565,16 @@
 			<div class="header__title">
 				<h2 class="text-2xl">{{ formatMessage(messages.paymentMethodTitle) }}</h2>
 			</div>
-			<nuxt-link class="btn" to="/settings/billing/charges">
-				<HistoryIcon /> {{ formatMessage(messages.paymentMethodHistory) }}
-			</nuxt-link>
-			<button class="btn" @click="addPaymentMethod">
-				<PlusIcon /> {{ formatMessage(messages.paymentMethodAdd) }}
-			</button>
+			<ButtonStyled>
+				<nuxt-link to="/settings/billing/charges">
+					<HistoryIcon /> {{ formatMessage(messages.paymentMethodHistory) }}
+				</nuxt-link>
+			</ButtonStyled>
+			<ButtonStyled>
+				<button @click="addPaymentMethod">
+					<PlusIcon /> {{ formatMessage(messages.paymentMethodAdd) }}
+				</button>
+			</ButtonStyled>
 		</div>
 		<div
 			v-if="!paymentMethods || paymentMethods.length === 0"
@@ -637,41 +633,43 @@
 						</div>
 					</div>
 				</div>
-				<OverflowMenu
-					:dropdown-id="`${baseId}-payment-method-overflow-${index}`"
-					class="btn icon-only transparent"
-					:options="
-						[
-							{
-								id: 'primary',
-								action: () => editPaymentMethod(index, true),
-							},
-							{
-								id: 'remove',
-								action: () => {
-									removePaymentMethodIndex = index
-									$refs.modal_confirm.show()
+				<ButtonStyled circular type="transparent">
+					<OverflowMenu
+						:dropdown-id="`${baseId}-payment-method-overflow-${index}`"
+						class="btn-dropdown-animation !w-10"
+						:options="
+							[
+								{
+									id: 'primary',
+									action: () => editPaymentMethod(index, true),
 								},
-								color: 'red',
-								hoverOnly: true,
-							},
-						].slice(primaryPaymentMethodId === method.id ? 1 : 0, 2)
-					"
-				>
-					<MoreVerticalIcon />
-					<template #primary>
-						<StarIcon />
-						{{ formatMessage(messages.paymentMethodMakePrimary) }}
-					</template>
-					<template #edit>
-						<EditIcon />
-						{{ formatMessage(commonMessages.editButton) }}
-					</template>
-					<template #remove>
-						<TrashIcon />
-						{{ formatMessage(commonMessages.deleteLabel) }}
-					</template>
-				</OverflowMenu>
+								{
+									id: 'remove',
+									action: () => {
+										removePaymentMethodIndex = index
+										$refs.modal_confirm.show()
+									},
+									color: 'red',
+									hoverOnly: true,
+								},
+							].slice(primaryPaymentMethodId === method.id ? 1 : 0, 2)
+						"
+					>
+						<MoreVerticalIcon />
+						<template #primary>
+							<StarIcon />
+							{{ formatMessage(messages.paymentMethodMakePrimary) }}
+						</template>
+						<template #edit>
+							<EditIcon />
+							{{ formatMessage(commonMessages.editButton) }}
+						</template>
+						<template #remove>
+							<TrashIcon />
+							{{ formatMessage(commonMessages.deleteLabel) }}
+						</template>
+					</OverflowMenu>
+				</ButtonStyled>
 			</div>
 		</div>
 	</section>
@@ -841,25 +839,9 @@ const messages = defineMessages({
 		id: 'settings.billing.interval.quarter',
 		defaultMessage: 'quarter',
 	},
-	intervalQuarterly: {
-		id: 'settings.billing.interval.quarterly.adjective',
-		defaultMessage: 'quarterly',
-	},
-	intervalMonthly: {
-		id: 'settings.billing.interval.monthly',
-		defaultMessage: 'monthly',
-	},
-	intervalYearly: {
-		id: 'settings.billing.interval.yearly',
-		defaultMessage: 'yearly',
-	},
 	pricePerInterval: {
 		id: 'settings.billing.price.per-interval',
 		defaultMessage: '{price} / {interval}',
-	},
-	slashInterval: {
-		id: 'settings.billing.price.slash-interval',
-		defaultMessage: '/{interval}',
 	},
 	nextLabel: {
 		id: 'settings.billing.next',
@@ -924,7 +906,8 @@ const messages = defineMessages({
 	},
 	switchesToBillingOn: {
 		id: 'settings.billing.switches-to-billing-on',
-		defaultMessage: 'Switches to {interval} billing on {date}',
+		defaultMessage:
+			'Switches to {interval, select, monthly {monthly} yearly {yearly} other {{interval}}} billing on {date}',
 	},
 	orYearlySave: {
 		id: 'settings.billing.or-yearly-save',
@@ -936,11 +919,13 @@ const messages = defineMessages({
 	},
 	switchToInterval: {
 		id: 'settings.billing.switch.to-interval',
-		defaultMessage: 'Switch to {interval}',
+		defaultMessage:
+			'Switch to {interval, select, monthly {monthly} yearly {yearly} other {{interval}}}',
 	},
 	switchingToInterval: {
 		id: 'settings.billing.switch.switching-to-interval',
-		defaultMessage: 'Switching to {interval}',
+		defaultMessage:
+			'Switching to {interval, select, monthly {monthly} yearly {yearly} other {{interval}}}',
 	},
 	monthlyBillingAdditionalPerYearTooltip: {
 		id: 'settings.billing.switch.tooltip.monthly-additional-per-year',
@@ -1031,14 +1016,6 @@ function getIntervalNounLabel(interval) {
 		: interval === 'quarterly'
 			? formatMessage(messages.intervalQuarter)
 			: formatMessage(messages.intervalMonth)
-}
-
-function getIntervalAdjectiveLabel(interval) {
-	return interval === 'yearly'
-		? formatMessage(messages.intervalYearly)
-		: interval === 'quarterly'
-			? formatMessage(messages.intervalQuarterly)
-			: formatMessage(messages.intervalMonthly)
 }
 
 const queryClient = useQueryClient()

@@ -1,7 +1,7 @@
 <script setup>
-import { Intercom, shutdown as shutdownIntercom } from '@intercom/messenger-js-sdk'
 import {
 	AuthFeature,
+	ModrinthApiError,
 	NodeAuthFeature,
 	nodeAuthState,
 	PanelVersionFeature,
@@ -11,7 +11,6 @@ import {
 import {
 	ChangeSkinIcon,
 	CompassIcon,
-	DownloadIcon,
 	ExternalIcon,
 	HomeIcon,
 	LeftArrowIcon,
@@ -33,6 +32,7 @@ import {
 	ButtonStyled,
 	commonMessages,
 	ContentInstallModal,
+	ContentUpdaterModal,
 	CreationFlowModal,
 	defineMessages,
 	I18nDebugPanel,
@@ -40,16 +40,17 @@ import {
 	NotificationPanel,
 	OverflowMenu,
 	PopupNotificationPanel,
-	ProgressSpinner,
 	provideModalBehavior,
 	provideModrinthClient,
 	provideNotificationManager,
 	providePageContext,
 	providePopupNotificationManager,
 	useDebugLogger,
+	useFormatBytes,
+	useHostingIntercom,
 	useVIntl,
 } from '@modrinth/ui'
-import { formatBytes, renderString } from '@modrinth/utils'
+import { renderString } from '@modrinth/utils'
 import { useQuery, useQueryClient } from '@tanstack/vue-query'
 import { getVersion } from '@tauri-apps/api/app'
 import { invoke } from '@tauri-apps/api/core'
@@ -68,7 +69,6 @@ import Breadcrumbs from '@/components/ui/Breadcrumbs.vue'
 import ErrorModal from '@/components/ui/ErrorModal.vue'
 import FriendsList from '@/components/ui/friends/FriendsList.vue'
 import AddServerToInstanceModal from '@/components/ui/install_flow/AddServerToInstanceModal.vue'
-import IncompatibilityWarningModal from '@/components/ui/install_flow/IncompatibilityWarningModal.vue'
 import UnknownPackWarningModal from '@/components/ui/install_flow/UnknownPackWarningModal.vue'
 import MinecraftAuthErrorModal from '@/components/ui/minecraft-auth-error-modal/MinecraftAuthErrorModal.vue'
 import AppSettingsModal from '@/components/ui/modal/AppSettingsModal.vue'
@@ -86,12 +86,14 @@ import { hide_ads_window, init_ads_window, show_ads_window } from '@/helpers/ads
 import { debugAnalytics, initAnalytics, trackEvent } from '@/helpers/analytics'
 import { check_reachable } from '@/helpers/auth.js'
 import { get_user, get_version } from '@/helpers/cache.js'
-import { command_listener, warning_listener } from '@/helpers/events.js'
+import { command_listener, notification_listener, warning_listener } from '@/helpers/events.js'
+import { install_create_modpack_instance, install_get_modpack_preview } from '@/helpers/install'
+import { list, run } from '@/helpers/instance'
 import { cancelLogin, get as getCreds, login, logout } from '@/helpers/mr_auth.ts'
-import { create_profile_and_install_from_file } from '@/helpers/pack'
-import { list } from '@/helpers/profile.js'
+import { mergeUrlQuery, parseModrinthLink } from '@/helpers/project-links.ts'
 import { get as getSettings, set as setSettings } from '@/helpers/settings.ts'
 import { get_opening_command, initialize_state } from '@/helpers/state'
+import { hasActivePride26Midas, hasMidasBadge } from '@/helpers/user-campaigns.ts'
 import {
 	areUpdatesEnabled,
 	enqueueUpdateForInstallation,
@@ -99,8 +101,20 @@ import {
 	getUpdateSize,
 	isDev,
 	isNetworkMetered,
+	setRestartAfterPendingUpdate,
 } from '@/helpers/utils.js'
+import { start_join_server, start_join_singleplayer_world } from '@/helpers/worlds.ts'
 import i18n from '@/i18n.config'
+import {
+	appUpdateState,
+	downloadAvailableAppUpdate,
+	getNextAppUpdatePopupTime,
+	installAvailableAppUpdate,
+	markAppUpdateActionable,
+	markAppUpdatePopupShown,
+	openAppUpdateChangelog,
+	setAppUpdateActions,
+} from '@/providers/app-update.ts'
 import { createContentInstall, provideContentInstall } from '@/providers/content-install'
 import {
 	provideAppUpdateDownloadProgress,
@@ -119,6 +133,42 @@ import { AppNotificationManager } from './providers/app-notifications'
 import { AppPopupNotificationManager } from './providers/app-popup-notifications'
 
 const themeStore = useTheming()
+const router = useRouter()
+const route = useRoute()
+const APP_LEFT_NAV_WIDTH = '4rem'
+const APP_SIDEBAR_WIDTH = 300
+const INTERCOM_BUBBLE_DEFAULT_PADDING = 20
+const PRIDE_FUNDRAISER_END_DATE = new Date('2026-07-01T00:00:00Z').getTime()
+const credentials = ref()
+const sidebarToggled = ref(true)
+const unsubscribeSidebarToggle = themeStore.$subscribe(() => {
+	sidebarToggled.value = !themeStore.toggleSidebar
+})
+const forceSidebar = computed(
+	() => route.path.startsWith('/browse') || route.path.startsWith('/project'),
+)
+const sidebarVisible = computed(() => sidebarToggled.value || forceSidebar.value)
+const hostingRouteActive = computed(() => route.path.startsWith('/hosting'))
+const prideFundraiserEnabled = computed(
+	() => themeStore.getFeatureFlag('pride_fundraiser') && Date.now() < PRIDE_FUNDRAISER_END_DATE,
+)
+const hostingIntercomIdentityKey = computed(() => {
+	const rawServerId = route.params.id
+	const serverId = Array.isArray(rawServerId) ? rawServerId[0] : rawServerId
+	const userId = credentials.value?.user_id ?? credentials.value?.user?.id ?? 'anonymous'
+	return `${userId}:${serverId ?? 'hosting'}`
+})
+const hostingIntercom = useHostingIntercom({
+	enabled: computed(() => hostingRouteActive.value && !!credentials.value?.session),
+	appId: 'ykeritl9',
+	fetchToken: fetchIntercomToken,
+	identityKey: hostingIntercomIdentityKey,
+	horizontalPadding: computed(() =>
+		sidebarVisible.value
+			? APP_SIDEBAR_WIDTH + INTERCOM_BUBBLE_DEFAULT_PADDING
+			: INTERCOM_BUBBLE_DEFAULT_PADDING,
+	),
+})
 
 const notificationManager = new AppNotificationManager()
 provideNotificationManager(notificationManager)
@@ -128,8 +178,9 @@ const popupNotificationManager = new AppPopupNotificationManager()
 providePopupNotificationManager(popupNotificationManager)
 const { addPopupNotification } = popupNotificationManager
 
+const appVersion = getVersion()
 const tauriApiClient = new TauriModrinthClient({
-	userAgent: `modrinth/theseus/${getVersion()} (support@modrinth.com)`,
+	userAgent: async () => `modrinth/theseus/${await appVersion} (support@modrinth.com)`,
 	labrinthBaseUrl: config.labrinthBaseUrl,
 	archonBaseUrl: config.archonBaseUrl,
 	features: [
@@ -149,9 +200,20 @@ const tauriApiClient = new TauriModrinthClient({
 	],
 })
 provideModrinthClient(tauriApiClient)
+const { data: authenticatedModrinthUser } = useQuery({
+	queryKey: computed(() => ['authenticated-user', 'campaigns', credentials.value?.user?.id]),
+	queryFn: () => tauriApiClient.labrinth.users_v3.getAuthenticated(),
+	enabled: () => !!credentials.value?.session,
+	retry: false,
+})
 providePageContext({
 	hierarchicalSidebarAvailable: ref(true),
 	showAds: ref(false),
+	floatingActionBarOffsets: {
+		left: ref(APP_LEFT_NAV_WIDTH),
+		right: computed(() => (sidebarVisible.value ? `${APP_SIDEBAR_WIDTH}px` : '0px')),
+	},
+	intercomBubble: hostingIntercom.intercomBubble,
 	featureFlags: {
 		serverRamAsBytesAlwaysOn: computed(() =>
 			themeStore.getFeatureFlag('server_ram_as_bytes_always_on'),
@@ -181,6 +243,7 @@ const {
 
 const news = ref([])
 const availableSurvey = ref(false)
+const displayedServerInviteNotifications = new Set()
 
 const offline = ref(!navigator.onLine)
 window.addEventListener('offline', () => {
@@ -246,6 +309,8 @@ onUnmounted(async () => {
 })
 
 const { formatMessage } = useVIntl()
+const formatBytes = useFormatBytes()
+
 const messages = defineMessages({
 	updateInstalledToastTitle: {
 		id: 'app.update.complete-toast.title',
@@ -254,18 +319,6 @@ const messages = defineMessages({
 	updateInstalledToastText: {
 		id: 'app.update.complete-toast.text',
 		defaultMessage: 'Click here to view the changelog.',
-	},
-	reloadToUpdate: {
-		id: 'app.update.reload-to-update',
-		defaultMessage: 'Reload to install update',
-	},
-	downloadUpdate: {
-		id: 'app.update.download-update',
-		defaultMessage: 'Download update',
-	},
-	downloadingUpdate: {
-		id: 'app.update.downloading-update',
-		defaultMessage: 'Downloading update ({percent}%)',
 	},
 	authUnreachableHeader: {
 		id: 'app.auth-servers.unreachable.header',
@@ -285,6 +338,7 @@ async function setupApp() {
 		locale,
 		telemetry,
 		collapsed_navigation,
+		hide_nametag_skins_page,
 		advanced_rendering,
 		onboarded,
 		default_page,
@@ -315,6 +369,7 @@ async function setupApp() {
 	themeStore.setThemeState(theme)
 	themeStore.collapsedNavigation = collapsed_navigation
 	themeStore.advancedRendering = advanced_rendering
+	themeStore.hideNametagSkinsPage = hide_nametag_skins_page
 	themeStore.toggleSidebar = toggle_sidebar
 	themeStore.devMode = developer_mode
 	themeStore.featureFlags = feature_flags
@@ -421,9 +476,6 @@ const handleClose = async () => {
 	await saveWindowState(StateFlags.ALL)
 	await getCurrentWindow().close()
 }
-
-const router = useRouter()
-const route = useRoute()
 
 const loading = setupLoadingStateProvider()
 loading.setEnabled(false)
@@ -555,6 +607,16 @@ const {
 	handleModpackDuplicateCreateAnyway: handleContentInstallModpackDuplicateCreateAnyway,
 	handleModpackDuplicateGoToInstance: handleContentInstallModpackDuplicateGoToInstance,
 	setIncompatibilityWarningModal: setContentIncompatibilityWarningModal,
+	incompatibilityWarningVersions: contentInstallIncompatibilityWarningVersions,
+	incompatibilityWarningCurrentGameVersion: contentInstallIncompatibilityWarningCurrentGameVersion,
+	incompatibilityWarningCurrentLoader: contentInstallIncompatibilityWarningCurrentLoader,
+	incompatibilityWarningProjectType: contentInstallIncompatibilityWarningProjectType,
+	incompatibilityWarningProjectIconUrl: contentInstallIncompatibilityWarningProjectIconUrl,
+	incompatibilityWarningProjectName: contentInstallIncompatibilityWarningProjectName,
+	incompatibilityWarningMessage: contentInstallIncompatibilityWarningMessage,
+	incompatibilityWarningInstalling: contentInstallIncompatibilityWarningInstalling,
+	handleIncompatibilityWarningInstall: handleContentInstallIncompatibilityWarningInstall,
+	handleIncompatibilityWarningCancel: handleContentInstallIncompatibilityWarningCancel,
 } = contentInstall
 
 const serverInstall = createServerInstall({ router, handleError, popupNotificationManager })
@@ -574,9 +636,13 @@ const incompatibilityWarningModal = ref()
 const installToPlayModal = ref()
 const updateToPlayModal = ref()
 
-const credentials = ref()
-
 const modrinthLoginFlowWaitModal = ref()
+
+watch(incompatibilityWarningModal, (modal) => {
+	if (modal) {
+		setContentIncompatibilityWarningModal(modal)
+	}
+})
 
 setupAuthProvider(credentials, async (_redirectPath) => {
 	await signIn()
@@ -634,33 +700,16 @@ async function logOut() {
 	await fetchCredentials()
 }
 
-const MIDAS_BITFLAG = 1 << 0
 const hasPlus = computed(
 	() =>
-		credentials.value &&
-		credentials.value.user &&
-		(credentials.value.user.badges & MIDAS_BITFLAG) === MIDAS_BITFLAG,
+		!!credentials.value?.user &&
+		(hasMidasBadge(credentials.value.user) ||
+			hasActivePride26Midas(authenticatedModrinthUser.value?.campaigns?.pride_26)),
 )
 
-const sidebarToggled = ref(true)
-
-themeStore.$subscribe(() => {
-	sidebarToggled.value = !themeStore.toggleSidebar
-})
-
-const forceSidebar = computed(
-	() => route.path.startsWith('/browse') || route.path.startsWith('/project'),
-)
-const sidebarVisible = computed(() => sidebarToggled.value || forceSidebar.value)
 const showAd = computed(
 	() => sidebarVisible.value && !hasPlus.value && credentials.value !== undefined,
 )
-const hostingRouteActive = computed(() => route.path.startsWith('/hosting'))
-const INTERCOM_DEFAULT_PADDING = 20
-const INTERCOM_APP_SIDEBAR_WIDTH = 300
-
-let intercomBooting = false
-let intercomBooted = false
 
 async function fetchIntercomToken() {
 	const creds = await getCreds()
@@ -669,8 +718,10 @@ async function fetchIntercomToken() {
 	}
 
 	const params = new URLSearchParams()
-	if (route.path.startsWith('/hosting/manage/') && typeof route.params.id === 'string') {
-		params.set('server_id', route.params.id)
+	const rawServerId = route.params.id
+	const serverId = Array.isArray(rawServerId) ? rawServerId[0] : rawServerId
+	if (route.path.startsWith('/hosting/manage/') && typeof serverId === 'string') {
+		params.set('server_id', serverId)
 	}
 	const query = params.size > 0 ? `?${params.toString()}` : ''
 
@@ -685,72 +736,6 @@ async function fetchIntercomToken() {
 	}
 	return await response.json()
 }
-
-async function bootIntercom() {
-	if (
-		intercomBooting ||
-		intercomBooted ||
-		!hostingRouteActive.value ||
-		!credentials.value?.session
-	) {
-		return
-	}
-
-	intercomBooting = true
-	console.debug('[APP][INTERCOM] initializing secure support chat')
-	try {
-		const { token } = await fetchIntercomToken()
-		Intercom({
-			app_id: 'ykeritl9',
-			intercom_user_jwt: token,
-			session_duration: 1000 * 60 * 60 * 24,
-			alignment: 'right',
-			horizontal_padding: sidebarVisible.value
-				? INTERCOM_APP_SIDEBAR_WIDTH + INTERCOM_DEFAULT_PADDING
-				: INTERCOM_DEFAULT_PADDING,
-			vertical_padding: INTERCOM_DEFAULT_PADDING,
-		})
-		intercomBooted = true
-	} catch (error) {
-		console.warn('[APP][INTERCOM] failed to initialize secure support chat', error)
-	} finally {
-		intercomBooting = false
-	}
-}
-
-function shutdownHostingIntercom() {
-	if (!intercomBooted && !intercomBooting) return
-	shutdownIntercom()
-	intercomBooting = false
-	intercomBooted = false
-}
-
-watch(
-	sidebarVisible,
-	(visible) => {
-		if (intercomBooted) {
-			window.Intercom?.('update', {
-				horizontal_padding: visible
-					? INTERCOM_APP_SIDEBAR_WIDTH + INTERCOM_DEFAULT_PADDING
-					: INTERCOM_DEFAULT_PADDING,
-				vertical_padding: INTERCOM_DEFAULT_PADDING,
-			})
-		}
-	},
-	{ immediate: true },
-)
-
-watch(
-	[hostingRouteActive, credentials],
-	([active]) => {
-		if (active) {
-			void bootIntercom()
-		} else {
-			shutdownHostingIntercom()
-		}
-	},
-	{ immediate: true },
-)
 
 watch(showAd, () => {
 	if (!showAd.value) {
@@ -779,18 +764,116 @@ const accounts = ref(null)
 provide('accountsCard', accounts)
 
 command_listener(handleCommand)
+notification_listener(handleLiveNotification)
+
+async function markLiveNotificationRead(notification) {
+	try {
+		await tauriApiClient.labrinth.notifications_v2.markAsRead(notification.id)
+	} catch (error) {
+		if (error instanceof ModrinthApiError && error.statusCode === 404) {
+			console.warn(`notification ${notification.id} could not be marked as read`, error)
+			return
+		}
+		throw error
+	}
+}
+
+async function respondToServerInvite(notification, action) {
+	const serverId = notification.body?.server_id
+	if (typeof serverId !== 'string') {
+		throw new Error('Missing server ID for invite notification.')
+	}
+
+	await tauriApiClient.request(`/servers/${serverId}/invites/${action}`, {
+		api: 'archon',
+		version: 1,
+		method: 'POST',
+	})
+	await markLiveNotificationRead(notification)
+
+	return serverId
+}
+
+async function acceptServerInviteNotification(notification) {
+	try {
+		const serverId = await respondToServerInvite(notification, 'accept')
+		await router.push(`/hosting/manage/${encodeURIComponent(serverId)}`)
+		queryClient.invalidateQueries({ queryKey: ['servers'] })
+	} catch (error) {
+		handleError(error)
+	}
+}
+
+async function declineServerInviteNotification(notification) {
+	try {
+		await respondToServerInvite(notification, 'decline')
+	} catch (error) {
+		handleError(error)
+	}
+}
+
+function openServerInviteInviterProfile(inviterName) {
+	if (!inviterName) return
+	openUrl(`${config.siteUrl}/user/${encodeURIComponent(inviterName)}`)
+}
+
+async function handleLiveNotification(notification) {
+	if (notification?.body?.type !== 'server_invite' || notification.read) return
+	if (displayedServerInviteNotifications.has(notification.id)) return
+
+	displayedServerInviteNotifications.add(notification.id)
+
+	const serverName =
+		typeof notification.body.server_name === 'string' ? notification.body.server_name : 'a server'
+	const inviterId = notification.body.invited_by
+	const invitedBy =
+		typeof inviterId === 'string' ? await get_user(inviterId, 'bypass').catch(() => null) : null
+
+	addPopupNotification({
+		title: serverName,
+		autoCloseMs: null,
+		toast: {
+			type: 'server-invite',
+			actorName: invitedBy?.username ?? null,
+			actorAvatarUrl: invitedBy?.avatar_url ?? null,
+			entityName: serverName,
+			onAccept: () => acceptServerInviteNotification(notification),
+			onDecline: () => declineServerInviteNotification(notification),
+			onOpenActor: () => openServerInviteInviterProfile(invitedBy?.username ?? null),
+		},
+	})
+}
+
 async function handleCommand(e) {
 	if (!e) return
 
 	if (e.event === 'RunMRPack') {
 		// RunMRPack should directly install a local mrpack given a path
 		if (e.path.endsWith('.mrpack')) {
-			await create_profile_and_install_from_file(e.path, (createProfile, fileName) =>
-				unknownPackWarningModal.value?.show(createProfile, fileName),
-			).catch(handleError)
+			const location = { type: 'fromFile', path: e.path }
+			const preview = await install_get_modpack_preview(location).catch(handleError)
+			if (preview?.unknownFile || preview?.externalFilesInModpack.length > 0) {
+				const splitPath = e.path.split(/[\\/]/)
+				const fileName = splitPath ? splitPath[splitPath.length - 1] : e.path
+				unknownPackWarningModal.value?.show(
+					() => install_create_modpack_instance(location).then(() => undefined),
+					fileName,
+					preview.externalFilesInModpack,
+				)
+			} else {
+				await install_create_modpack_instance(location).catch(handleError)
+			}
 			trackEvent('InstanceCreate', {
 				source: 'CreationModalFileDrop',
 			})
+		}
+	} else if (e.event === 'LaunchInstance') {
+		if (e.server) {
+			await start_join_server(e.id, e.server).catch(handleError)
+		} else if (e.singleplayer_world) {
+			await start_join_singleplayer_world(e.id, e.singleplayer_world).catch(handleError)
+		} else {
+			await run(e.id).catch(handleError)
 		}
 	} else if (e.event === 'InstallServer') {
 		await router.push(`/project/${e.id}`)
@@ -812,20 +895,21 @@ async function handleCommand(e) {
 }
 
 const appUpdateDownload = {
-	progress: ref(0),
+	progress: appUpdateState.progress,
 	version: ref(),
 }
 let unlistenUpdateDownload
 
-const downloadProgress = computed(() => appUpdateDownload.progress.value)
-const downloadPercent = computed(() => Math.trunc(appUpdateDownload.progress.value * 100))
-
-const metered = ref(true)
-const finishedDownloading = ref(false)
-const restarting = ref(false)
-const availableUpdate = ref(null)
-const updateSize = ref(null)
-const updatesEnabled = ref(true)
+const {
+	metered,
+	finishedDownloading,
+	downloading,
+	restarting,
+	availableUpdate,
+	updateSize,
+	updatesEnabled,
+} = appUpdateState
+let delayedUpdatePopupTimeout = null
 
 const updatePopupMessages = defineMessages({
 	updateAvailable: {
@@ -835,11 +919,6 @@ const updatePopupMessages = defineMessages({
 	downloadComplete: {
 		id: 'app.update-popup.download-complete',
 		defaultMessage: 'Download complete',
-	},
-	body: {
-		id: 'app.update-popup.body',
-		defaultMessage:
-			'Modrinth App v{version} is ready to install! Reload to update now, or automatically when you close Modrinth App.',
 	},
 	meteredBody: {
 		id: 'app.update-popup.body.metered',
@@ -856,7 +935,7 @@ const updatePopupMessages = defineMessages({
 	},
 	reload: {
 		id: 'app.update-popup.reload',
-		defaultMessage: 'Reload',
+		defaultMessage: 'Reload to update',
 	},
 	download: {
 		id: 'app.update-popup.download',
@@ -867,6 +946,106 @@ const updatePopupMessages = defineMessages({
 		defaultMessage: 'Changelog',
 	},
 })
+
+function clearDelayedUpdatePopup() {
+	if (delayedUpdatePopupTimeout !== null) {
+		clearTimeout(delayedUpdatePopupTimeout)
+		delayedUpdatePopupTimeout = null
+	}
+}
+
+function getCurrentUpdatePromptStage() {
+	return finishedDownloading.value ? 'downloaded' : 'available'
+}
+
+function scheduleDelayedUpdatePopup() {
+	clearDelayedUpdatePopup()
+
+	const version = availableUpdate.value?.version
+	if (!version) {
+		return
+	}
+
+	const nextPopupTime = getNextAppUpdatePopupTime(version, getCurrentUpdatePromptStage())
+	if (nextPopupTime === null) {
+		return
+	}
+
+	const delay = nextPopupTime - Date.now()
+	if (delay <= 0) {
+		showDelayedUpdatePopup()
+		return
+	}
+
+	delayedUpdatePopupTimeout = setTimeout(showDelayedUpdatePopup, Math.min(delay, 2_147_483_647))
+}
+
+function showDelayedUpdatePopup() {
+	const update = availableUpdate.value
+	if (!update) {
+		return
+	}
+
+	const stage = getCurrentUpdatePromptStage()
+	const nextPopupTime = getNextAppUpdatePopupTime(update.version, stage)
+	if (nextPopupTime === null) {
+		return
+	}
+
+	if (Date.now() < nextPopupTime) {
+		scheduleDelayedUpdatePopup()
+		return
+	}
+
+	if (metered.value && !finishedDownloading.value) {
+		addPopupNotification({
+			title: formatMessage(updatePopupMessages.updateAvailable),
+			text: formatMessage(updatePopupMessages.meteredBody, { version: update.version }),
+			type: 'info',
+			autoCloseMs: null,
+			buttons: [
+				{
+					label: formatMessage(updatePopupMessages.download, {
+						size: formatBytes(updateSize.value ?? 0),
+					}),
+					action: () => downloadAvailableAppUpdate(),
+					color: 'brand',
+				},
+				{
+					label: formatMessage(updatePopupMessages.changelog),
+					action: () => openAppUpdateChangelog(),
+					keepOpen: true,
+				},
+			],
+		})
+	} else if (finishedDownloading.value) {
+		addPopupNotification({
+			title: formatMessage(updatePopupMessages.downloadComplete),
+			text: formatMessage(updatePopupMessages.downloadedBody, {
+				version: update.version,
+			}),
+			type: 'success',
+			autoCloseMs: null,
+			buttons: [
+				{
+					label: formatMessage(updatePopupMessages.reload),
+					action: () => installAvailableAppUpdate(),
+					color: 'brand',
+				},
+				{
+					label: formatMessage(updatePopupMessages.changelog),
+					action: () => openAppUpdateChangelog(),
+					keepOpen: true,
+				},
+			],
+		})
+	} else {
+		scheduleDelayedUpdatePopup()
+		return
+	}
+
+	markAppUpdatePopupShown(update.version, stage)
+}
 
 async function checkUpdates() {
 	if (!(await areUpdatesEnabled())) {
@@ -891,11 +1070,15 @@ async function checkUpdates() {
 
 		if (isExistingUpdate) {
 			console.log('Update is already known')
+			scheduleDelayedUpdatePopup()
 			return
 		}
 
 		appUpdateDownload.progress.value = 0
 		finishedDownloading.value = false
+		downloading.value = false
+		updateSize.value = null
+		availableUpdate.value = update
 
 		console.log(`Update ${update.version} is available.`)
 
@@ -905,33 +1088,11 @@ async function checkUpdates() {
 			downloadUpdate(update)
 		} else {
 			console.log(`Metered connection detected, not auto-downloading update.`)
-			getUpdateSize(update.rid).then((size) => {
-				updateSize.value = size
-				addPopupNotification({
-					title: formatMessage(updatePopupMessages.updateAvailable),
-					text: formatMessage(updatePopupMessages.meteredBody, { version: update.version }),
-					type: 'info',
-					autoCloseMs: null,
-					buttons: [
-						{
-							label: formatMessage(updatePopupMessages.download, {
-								size: formatBytes(updateSize.value ?? 0),
-							}),
-							action: () => downloadAvailableUpdate(),
-							color: 'brand',
-						},
-						{
-							label: formatMessage(updatePopupMessages.changelog),
-							action: () => openUrl('https://modrinth.com/news/changelog?filter=app'),
-						},
-					],
-				})
-			})
+			markAppUpdateActionable(update.version)
+			scheduleDelayedUpdatePopup()
 		}
 
 		getUpdateSize(update.rid).then((size) => (updateSize.value = size))
-
-		availableUpdate.value = update
 	}
 
 	await performCheck()
@@ -953,12 +1114,17 @@ async function checkLinuxUpdates() {
 		const latestVersion = updates?.version
 
 		if (latestVersion && latestVersion !== currentVersion) {
-			addPopupNotification({
-				title: formatMessage(updatePopupMessages.updateAvailable),
-				text: formatMessage(updatePopupMessages.linuxBody, { version: latestVersion }),
-				type: 'info',
-				autoCloseMs: null,
-			})
+			markAppUpdateActionable(latestVersion)
+			const nextPopupTime = getNextAppUpdatePopupTime(latestVersion)
+			if (nextPopupTime !== null && Date.now() >= nextPopupTime) {
+				addPopupNotification({
+					title: formatMessage(updatePopupMessages.updateAvailable),
+					text: formatMessage(updatePopupMessages.linuxBody, { version: latestVersion }),
+					type: 'info',
+					autoCloseMs: null,
+				})
+				markAppUpdatePopupShown(latestVersion)
+			}
 		}
 	} catch (e) {
 		console.error('Failed to check for updates:', e)
@@ -972,57 +1138,86 @@ async function downloadAvailableUpdate() {
 async function downloadUpdate(versionToDownload) {
 	if (!versionToDownload) {
 		handleError(`Failed to download update: no version available`)
+		return
 	}
 
-	if (appUpdateDownload.progress.value !== 0) {
+	if (downloading.value || appUpdateDownload.progress.value !== 0) {
 		console.error(`Update ${versionToDownload.version} already downloading`)
 		return
 	}
 
 	console.log(`Downloading update ${versionToDownload.version}`)
+	downloading.value = true
 
 	try {
-		enqueueUpdateForInstallation(versionToDownload.rid).then(() => {
-			finishedDownloading.value = true
-			unlistenUpdateDownload?.().then(() => {
-				unlistenUpdateDownload = null
+		enqueueUpdateForInstallation(versionToDownload.rid)
+			.then(() => {
+				downloading.value = false
+				finishedDownloading.value = true
+				unlistenUpdateDownload?.().then(() => {
+					unlistenUpdateDownload = null
+				})
+				console.log('Finished downloading!')
+				markAppUpdateActionable(versionToDownload.version, 'downloaded')
+				scheduleDelayedUpdatePopup()
 			})
-			console.log('Finished downloading!')
-
-			addPopupNotification({
-				title: formatMessage(updatePopupMessages.downloadComplete),
-				text: formatMessage(updatePopupMessages.downloadedBody, {
-					version: versionToDownload.version,
-				}),
-				type: 'success',
-				autoCloseMs: null,
-				buttons: [
-					{
-						label: formatMessage(updatePopupMessages.reload),
-						action: () => installUpdate(),
-						color: 'brand',
-					},
-					{
-						label: formatMessage(updatePopupMessages.changelog),
-						action: () => openUrl('https://modrinth.com/news/changelog?filter=app'),
-					},
-				],
+			.catch((e) => {
+				downloading.value = false
+				appUpdateDownload.progress.value = 0
+				handleError(e)
 			})
-		})
 		unlistenUpdateDownload = await subscribeToDownloadProgress(
 			appUpdateDownload,
 			versionToDownload.version,
 		)
 	} catch (e) {
+		downloading.value = false
+		appUpdateDownload.progress.value = 0
 		handleError(e)
 	}
 }
 
 async function installUpdate() {
 	restarting.value = true
+
+	try {
+		await setRestartAfterPendingUpdate(true)
+	} catch (e) {
+		restarting.value = false
+		handleError(e)
+		return
+	}
 	setTimeout(async () => {
 		await handleClose()
 	}, 250)
+}
+
+setAppUpdateActions({
+	download: downloadAvailableUpdate,
+	install: installUpdate,
+	changelog: () => openUrl('https://modrinth.com/news/changelog?filter=app'),
+})
+
+async function openModrinthProjectLinkInApp(parsed) {
+	const { slug, pathSuffix, url } = parsed
+	const loadToken = loading.begin()
+	try {
+		const { id } = await tauriApiClient.labrinth.projects_v2.check(slug)
+		const query = mergeUrlQuery(route.query, url)
+		await router.push({
+			path: `/project/${id}${pathSuffix}`,
+			query,
+			hash: url.hash || undefined,
+		})
+	} catch (err) {
+		if (err instanceof ModrinthApiError && err.statusCode === 404) {
+			openUrl(url.href)
+		} else {
+			handleError(err)
+		}
+	} finally {
+		loading.end(loadToken)
+	}
 }
 
 function handleClick(e) {
@@ -1037,7 +1232,12 @@ function handleClick(e) {
 				!target.href.startsWith('https://tauri.localhost') &&
 				!target.href.startsWith('http://tauri.localhost')
 			) {
-				openUrl(target.href)
+				const parsed = parseModrinthLink(target.href)
+				if (target.target !== '_blank' && parsed) {
+					void openModrinthProjectLinkInApp(parsed)
+				} else {
+					openUrl(target.href)
+				}
 			}
 			e.preventDefault()
 			break
@@ -1139,12 +1339,11 @@ async function processPendingSurveys() {
 	const creds = await getCreds().catch(handleError)
 	const userId = creds?.user_id
 
-	const instances = await list().catch(handleError)
-	const isActivePlayer =
-		instances.findIndex(
-			(instance) =>
-				isWithinLastTwoWeeks(instance.last_played) && !isWithinLastTwoWeeks(instance.created),
-		) >= 0
+	const instances = (await list().catch(handleError)) ?? []
+	const isActivePlayer = instances.some(
+		(instance) =>
+			isWithinLastTwoWeeks(instance.last_played) && !isWithinLastTwoWeeks(instance.created),
+	)
 
 	let surveys = []
 	try {
@@ -1178,7 +1377,7 @@ provideAppUpdateDownloadProgress(appUpdateDownload)
 	<div id="teleports"></div>
 	<div
 		v-if="stateInitialized"
-		class="app-grid-layout experimental-styles-within relative"
+		class="app-grid-layout relative"
 		:class="{ 'disable-advanced-rendering': !themeStore.advancedRendering }"
 	>
 		<Transition name="fade">
@@ -1231,7 +1430,7 @@ provideAppUpdateDownloadProgress(appUpdateDownload)
 			>
 				<CompassIcon />
 			</NavButton>
-			<NavButton v-tooltip.right="'Skins (Beta)'" to="/skins">
+			<NavButton v-tooltip.right="'Skin selector'" to="/skins">
 				<ChangeSkinIcon />
 			</NavButton>
 			<NavButton
@@ -1267,33 +1466,6 @@ provideAppUpdateDownloadProgress(appUpdateDownload)
 				<PlusIcon />
 			</NavButton>
 			<div class="flex flex-grow"></div>
-			<Transition name="nav-button-animated">
-				<div v-if="availableUpdate && !restarting && (finishedDownloading || metered)">
-					<NavButton
-						v-tooltip.right="
-							formatMessage(
-								finishedDownloading
-									? messages.reloadToUpdate
-									: downloadProgress === 0
-										? messages.downloadUpdate
-										: messages.downloadingUpdate,
-								{
-									percent: downloadPercent,
-								},
-							)
-						"
-						:to="finishedDownloading ? installUpdate : downloadAvailableUpdate"
-					>
-						<ProgressSpinner
-							v-if="downloadProgress > 0 && downloadProgress < 1"
-							class="text-brand"
-							:progress="downloadProgress"
-						/>
-						<RefreshCwIcon v-else-if="finishedDownloading" class="text-brand" />
-						<DownloadIcon v-else class="text-brand" />
-					</NavButton>
-				</div>
-			</Transition>
 			<NavButton
 				v-tooltip.right="formatMessage(commonMessages.settingsLabel)"
 				:to="() => $refs.settingsModal.show()"
@@ -1378,7 +1550,7 @@ provideAppUpdateDownloadProgress(appUpdateDownload)
 	</div>
 	<div
 		v-if="stateInitialized"
-		class="app-contents experimental-styles-within"
+		class="app-contents"
 		:class="{
 			'sidebar-enabled': sidebarVisible,
 			'disable-advanced-rendering': !themeStore.advancedRendering,
@@ -1472,7 +1644,7 @@ provideAppUpdateDownloadProgress(appUpdateDownload)
 					<div class="p-4 border-0 border-b-[1px] border-[--brand-gradient-border] border-solid">
 						<h3 class="text-base text-primary font-medium m-0">Playing as</h3>
 						<suspense>
-							<AccountsCard ref="accounts" mode="small" />
+							<AccountsCard ref="accounts" />
 						</suspense>
 					</div>
 					<div class="p-4 border-0 border-b-[1px] border-[--brand-gradient-border] border-solid">
@@ -1512,14 +1684,29 @@ provideAppUpdateDownloadProgress(appUpdateDownload)
 		@go-to-instance="handleModpackDuplicateGoToInstance"
 	/>
 	<AddServerToInstanceModal ref="addServerToInstanceModal" />
-	<IncompatibilityWarningModal ref="incompatibilityWarningModal" />
+	<ContentUpdaterModal
+		ref="incompatibilityWarningModal"
+		mode="incompatibility-warning"
+		:versions="contentInstallIncompatibilityWarningVersions"
+		:current-game-version="contentInstallIncompatibilityWarningCurrentGameVersion"
+		:current-loader="contentInstallIncompatibilityWarningCurrentLoader"
+		current-version-id=""
+		:is-app="true"
+		:project-type="contentInstallIncompatibilityWarningProjectType"
+		:project-icon-url="contentInstallIncompatibilityWarningProjectIconUrl"
+		:project-name="contentInstallIncompatibilityWarningProjectName"
+		:warning="contentInstallIncompatibilityWarningMessage"
+		:action-loading="contentInstallIncompatibilityWarningInstalling"
+		@update="handleContentInstallIncompatibilityWarningInstall"
+		@cancel="handleContentInstallIncompatibilityWarningCancel"
+	/>
 	<ModpackAlreadyInstalledModal
 		ref="contentInstallModpackAlreadyInstalledModal"
 		@create-anyway="handleContentInstallModpackDuplicateCreateAnyway"
 		@go-to-instance="handleContentInstallModpackDuplicateGoToInstance"
 	/>
-	<InstallToPlayModal ref="installToPlayModal" />
-	<UpdateToPlayModal ref="updateToPlayModal" />
+	<InstallToPlayModal ref="installToPlayModal" :show-external-warnings="false" />
+	<UpdateToPlayModal ref="updateToPlayModal" :show-external-warnings="false" />
 </template>
 
 <style lang="scss" scoped>
@@ -1543,11 +1730,15 @@ provideAppUpdateDownloadProgress(appUpdateDownload)
 
 .app-grid-navbar {
 	grid-area: nav;
+	position: relative;
+	z-index: 2;
 }
 
 .app-grid-statusbar {
 	grid-area: status;
 	padding-right: var(--window-controls-width, 0px);
+	position: relative;
+	z-index: 2;
 }
 
 [data-tauri-drag-region-exclude] {
@@ -1615,6 +1806,12 @@ provideAppUpdateDownloadProgress(appUpdateDownload)
 	&.app-contents::before {
 		box-shadow: none;
 	}
+
+	*,
+	:deep(*) {
+		box-shadow: none !important;
+		--tw-drop-shadow:;
+	}
 }
 
 .app-sidebar::before {
@@ -1633,10 +1830,11 @@ provideAppUpdateDownloadProgress(appUpdateDownload)
 	height: 100%;
 	overflow: auto;
 	overflow-x: hidden;
+	scrollbar-gutter: stable;
 }
 
 .app-contents::before {
-	z-index: 1;
+	z-index: 30;
 	content: '';
 	position: fixed;
 	left: var(--left-bar-width);

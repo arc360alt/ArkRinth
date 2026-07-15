@@ -18,13 +18,14 @@
 				]"
 				@click="() => (closeOnClickOutside && closable ? hide() : {})"
 			/>
-			<div class="modal-container experimental-styles-within" :class="{ shown: visible }">
+			<div class="modal-container" :class="{ shown: visible }">
 				<div
 					ref="modalBodyRef"
 					role="dialog"
 					aria-modal="true"
 					:aria-labelledby="headerId"
 					class="modal-body flex flex-col bg-bg-raised rounded-2xl border border-solid border-surface-5"
+					v-bind="$attrs"
 					@keydown="handleKeyDown"
 				>
 					<div
@@ -83,6 +84,7 @@
 
 						<div
 							ref="scrollContainer"
+							data-modal-content
 							:class="[
 								'flex-1 min-h-0',
 								props.noPadding ? '' : 'overflow-y-auto p-6 !pb-1 sm:pb-6',
@@ -111,7 +113,9 @@
 
 					<div
 						v-else
+						data-modal-content
 						:class="[
+							'min-h-0',
 							props.noPadding ? '' : 'overflow-y-auto p-6',
 							{ 'pt-12': props.mergeHeader && closable && !props.noPadding },
 						]"
@@ -119,7 +123,11 @@
 						<slot> You just lost the game.</slot>
 					</div>
 
-					<div v-if="$slots.actions" class="p-4 pt-0">
+					<div
+						v-if="$slots.actions"
+						:class="{ 'pt-4 border-0 border-t border-solid border-surface-5': actionsDivider }"
+						class="p-4"
+					>
 						<slot name="actions" />
 					</div>
 				</div>
@@ -162,6 +170,7 @@ const props = withDefaults(
 		header?: string
 		hideHeader?: boolean
 		onHide?: () => void
+		onAfterHide?: () => void
 		onShow?: () => void
 		mergeHeader?: boolean
 		scrollable?: boolean
@@ -174,6 +183,7 @@ const props = withDefaults(
 		width?: string
 		/** Disables all close actions (close button, ESC key, click outside). */
 		disableClose?: boolean
+		actionsDivider?: boolean
 	}>(),
 	{
 		type: true,
@@ -187,6 +197,7 @@ const props = withDefaults(
 		header: undefined,
 		hideHeader: false,
 		onHide: () => {},
+		onAfterHide: () => {},
 		onShow: () => {},
 		mergeHeader: false,
 		// TODO: migrate all modals to use scrollable and remove this prop
@@ -196,6 +207,7 @@ const props = withDefaults(
 		maxWidth: undefined,
 		width: undefined,
 		disableClose: false,
+		actionsDivider: false,
 	},
 )
 
@@ -260,8 +272,11 @@ function show(event?: MouseEvent) {
 }
 
 function hide() {
-	if (props.disableClose) return
+	if (props.disableClose) {
+		return
+	}
 	props.onHide?.()
+	resetMousePosition()
 	visible.value = false
 	popModal()
 	if (modalStackSize() === 0) {
@@ -276,13 +291,26 @@ function hide() {
 	previousFocusEl = null
 	setTimeout(() => {
 		open.value = false
+		nextTick(() => props.onAfterHide?.())
 	}, 300)
+}
+
+async function scrollToBottom(behavior: ScrollBehavior = 'smooth') {
+	await nextTick()
+	if (!scrollContainer.value) return
+
+	scrollContainer.value.scrollTo({
+		top: scrollContainer.value.scrollHeight,
+		behavior,
+	})
+	requestAnimationFrame(checkScrollState)
 }
 
 defineExpose({
 	show,
 	hide,
 	checkScrollState,
+	scrollToBottom,
 })
 
 const mouseX = ref(0)
@@ -303,6 +331,11 @@ function updateMousePosition(event: { clientX: number; clientY: number }) {
 	mouseY.value = event.clientY
 }
 
+function resetMousePosition() {
+	mouseX.value = Math.round(window.innerWidth / 2)
+	mouseY.value = Math.round(window.innerHeight / 2)
+}
+
 onUnmounted(() => {
 	if (open.value) {
 		popModal()
@@ -319,8 +352,6 @@ function handleWindowKeyDown(event: KeyboardEvent) {
 	if (props.closeOnEsc && event.key === 'Escape' && props.closable) {
 		if (!isTopmostModal()) return
 		hide()
-		mouseX.value = Math.round(window.innerWidth / 2)
-		mouseY.value = Math.round(window.innerHeight / 2)
 	}
 }
 
@@ -345,6 +376,10 @@ function handleKeyDown(event: KeyboardEvent) {
 		}
 	}
 }
+
+defineOptions({
+	inheritAttrs: false,
+})
 </script>
 
 <style lang="scss" scoped>
@@ -428,11 +463,12 @@ function handleKeyDown(event: KeyboardEvent) {
 	visibility: hidden;
 	pointer-events: none;
 	transform: translate(v-bind(mouseXOffset), v-bind(mouseYOffset));
-	transition: all 0.2s ease-out;
+	transition: none;
 
 	&.shown {
 		visibility: visible;
 		transform: translate(0, 0);
+		transition: all 0.2s ease-out;
 
 		> .modal-body {
 			opacity: 1;

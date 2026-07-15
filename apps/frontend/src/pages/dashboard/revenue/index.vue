@@ -5,7 +5,7 @@
 		:preloaded-payment-data="preloadedPaymentMethods"
 		@refresh-data="refreshData"
 	/>
-	<div class="mb-20 flex flex-col gap-6 lg:pl-8">
+	<div class="mb-20 flex flex-col gap-6 lg:pl-4 lg:pt-1.5">
 		<div class="flex flex-col gap-4 md:gap-5">
 			<div class="flex flex-col gap-1">
 				<span class="text-xl font-semibold text-contrast md:text-2xl">{{
@@ -70,7 +70,13 @@
 								date: date.date ? formatDate(date.date) : '',
 							})
 						}}
-						<Tooltip theme="dismissable-prompt" :triggers="['hover', 'focus']" no-auto-focus>
+						<Tooltip
+							theme="dismissable-prompt"
+							class="inline-flex shrink-0"
+							:triggers="['hover', 'focus']"
+							no-auto-focus
+							:aria-id="`${baseId}-date-segment-tooltip-${i}`"
+						>
 							<nuxt-link
 								class="inline-flex items-center justify-center text-link"
 								to="/legal/cmp-info#pending"
@@ -99,7 +105,13 @@
 							class="zone--striped-small zone--striped--gray my-auto block size-4 rounded-full bg-button-bg opacity-90 md:size-5"
 						></span>
 						{{ formatMessage(messages.processing) }}
-						<Tooltip theme="dismissable-prompt" :triggers="['hover', 'focus']" no-auto-focus>
+						<Tooltip
+							theme="dismissable-prompt"
+							class="inline-flex shrink-0"
+							:triggers="['hover', 'focus']"
+							no-auto-focus
+							:aria-id="`${baseId}-processing-tooltip`"
+						>
 							<InProgressIcon class="inline-block size-4 align-middle md:size-5" />
 							<template #popper>
 								<div class="w-[250px] font-semibold text-contrast">
@@ -291,6 +303,8 @@ type RevenueBarSegment = {
 }
 
 const hoveredSeg = ref<string | null>(null)
+
+const baseId = useId()
 
 const withdrawModal = ref<InstanceType<typeof CreatorWithdrawModal>>()
 async function openWithdrawModal() {

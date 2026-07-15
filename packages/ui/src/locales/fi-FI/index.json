@@ -89,9 +89,6 @@
   "button.refresh": {
     "defaultMessage": "Päivitä"
   },
-  "button.remove": {
-    "defaultMessage": "Poista"
-  },
   "button.remove-image": {
     "defaultMessage": "Poista kuva"
   },
@@ -404,9 +401,6 @@
   "omorphia.component.badge.label.unlisted": {
     "defaultMessage": "Piilotettu"
   },
-  "omorphia.component.badge.label.withheld": {
-    "defaultMessage": "Pidätetty"
-  },
   "omorphia.component.copy.action.copy": {
     "defaultMessage": "Kopioi koodi leikepöydälle"
   },
@@ -526,9 +520,6 @@
   },
   "servers.region.central-europe": {
     "defaultMessage": "Keski-Eurooppa"
-  },
-  "servers.region.north-america": {
-    "defaultMessage": "Pohjois-Amerikka"
   },
   "servers.region.prompt": {
     "defaultMessage": "Missä haluaisit palvelimesi sijaitsevan?"

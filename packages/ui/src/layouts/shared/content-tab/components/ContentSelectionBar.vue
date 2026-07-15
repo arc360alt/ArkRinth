@@ -2,10 +2,11 @@
 import { PowerIcon, PowerOffIcon, XIcon } from '@modrinth/assets'
 import { computed } from 'vue'
 
+import Avatar from '#ui/components/base/Avatar.vue'
 import ButtonStyled from '#ui/components/base/ButtonStyled.vue'
 import FloatingActionBar from '#ui/components/base/FloatingActionBar.vue'
 import { defineMessages, useVIntl } from '#ui/composables/i18n'
-import { commonMessages } from '#ui/utils/common-messages'
+import { commonMessages, formatContentTypeSentence } from '#ui/utils/common-messages'
 
 import type { BulkOperationType } from '../composables/bulk-operations'
 import type { ContentItem } from '../types'
@@ -15,7 +16,7 @@ const { formatMessage } = useVIntl()
 const messages = defineMessages({
 	selectedCount: {
 		id: 'content.selection-bar.selected-count',
-		defaultMessage: '{count} {contentType} selected',
+		defaultMessage: '{count, number} {contentType} selected',
 	},
 	selectedCountSimple: {
 		id: 'content.selection-bar.selected-count-simple',
@@ -45,6 +46,10 @@ const messages = defineMessages({
 		id: 'content.selection-bar.bulk.updating-waiting',
 		defaultMessage: 'Updating {contentType}...',
 	},
+	bulkUpdatingCount: {
+		id: 'content.selection-bar.bulk.updating-count',
+		defaultMessage: 'Updating {count, number} {contentType}',
+	},
 	bulkDeleting: {
 		id: 'content.selection-bar.bulk.deleting',
 		defaultMessage: 'Deleting {progress}/{total} {contentType}...',
@@ -52,6 +57,18 @@ const messages = defineMessages({
 	bulkDeletingWaiting: {
 		id: 'content.selection-bar.bulk.deleting-waiting',
 		defaultMessage: 'Deleting {contentType}...',
+	},
+	bulkEnablingCount: {
+		id: 'content.selection-bar.bulk.enabling-count',
+		defaultMessage: 'Enabling {count, number} {contentType}',
+	},
+	bulkDisablingCount: {
+		id: 'content.selection-bar.bulk.disabling-count',
+		defaultMessage: 'Disabling {count, number} {contentType}',
+	},
+	bulkDeletingCount: {
+		id: 'content.selection-bar.bulk.deleting-count',
+		defaultMessage: 'Deleting {count, number} {contentType}',
 	},
 	allAlreadyEnabled: {
 		id: 'content.selection-bar.all-already-enabled',
@@ -67,23 +84,31 @@ interface Props {
 	selectedItems: ContentItem[]
 	contentTypeLabel?: string
 	isBusy?: boolean
+	busyTooltip?: string | null
 	isBulkOperating?: boolean
 	bulkOperation?: BulkOperationType | null
 	bulkProgress?: number
 	bulkTotal?: number
 	bulkWaiting?: boolean
+	bulkStatusMessage?: string | null
+	bulkItemCount?: number
 	ariaLabel?: string
+	getItemId?: (item: ContentItem) => string
 }
 
 const props = withDefaults(defineProps<Props>(), {
 	contentTypeLabel: undefined,
 	isBusy: false,
+	busyTooltip: undefined,
 	isBulkOperating: false,
 	bulkOperation: null,
 	bulkProgress: 0,
 	bulkTotal: 0,
 	bulkWaiting: false,
+	bulkStatusMessage: null,
+	bulkItemCount: 0,
 	ariaLabel: undefined,
+	getItemId: undefined,
 })
 
 const emit = defineEmits<{
@@ -93,26 +118,50 @@ const emit = defineEmits<{
 }>()
 
 const shown = computed(() => props.selectedItems.length > 0 || props.isBulkOperating)
+const iconStackOffset = 24
+const visibleItems = computed(() => props.selectedItems.slice(0, 3))
+const overflowCount = computed(() => Math.max(0, props.selectedItems.length - 3))
+const iconStackWidth = computed(() => {
+	if (props.selectedItems.length === 0) return 0
+	return 32 + (visibleItems.value.length - 1 + (overflowCount.value > 0 ? 1 : 0)) * iconStackOffset
+})
+
+function resolveItemId(item: ContentItem) {
+	return props.getItemId?.(item) ?? item.file_path ?? item.file_name ?? item.id
+}
 
 const allDisabled = computed(() => props.selectedItems.every((m) => !m.enabled))
 const allEnabled = computed(() => props.selectedItems.every((m) => m.enabled))
 
 const selectedCountText = computed(() => {
-	const count = props.selectedItems.length || props.bulkTotal
+	const count = props.isBulkOperating
+		? props.bulkItemCount || props.bulkTotal || props.selectedItems.length
+		: props.selectedItems.length || props.bulkTotal
+	if (props.isBulkOperating && props.bulkOperation) {
+		const messageMap = {
+			enable: messages.bulkEnablingCount,
+			disable: messages.bulkDisablingCount,
+			update: messages.bulkUpdatingCount,
+			delete: messages.bulkDeletingCount,
+		}
+		return formatMessage(messageMap[props.bulkOperation], {
+			count,
+			contentType: formatContentTypeSentence(formatMessage, props.contentTypeLabel, count),
+		})
+	}
+
 	if (props.contentTypeLabel) {
 		return formatMessage(messages.selectedCount, {
 			count,
-			contentType: `${props.contentTypeLabel}${count === 1 ? '' : 's'}`,
+			contentType: formatContentTypeSentence(formatMessage, props.contentTypeLabel, count),
 		})
 	}
 	return formatMessage(messages.selectedCountSimple, { count })
 })
 
 const bulkProgressMessage = computed(() => {
+	if (props.bulkStatusMessage) return props.bulkStatusMessage
 	if (!props.bulkOperation) return ''
-	const contentType = props.contentTypeLabel
-		? `${props.contentTypeLabel}${props.bulkTotal === 1 ? '' : 's'}`
-		: 'items'
 	const messageMap = {
 		enable: props.bulkWaiting ? messages.bulkEnablingWaiting : messages.bulkEnabling,
 		disable: props.bulkWaiting ? messages.bulkDisablingWaiting : messages.bulkDisabling,
@@ -122,18 +171,49 @@ const bulkProgressMessage = computed(() => {
 	return formatMessage(messageMap[props.bulkOperation], {
 		progress: props.bulkProgress,
 		total: props.bulkTotal,
-		contentType,
+		contentType: formatContentTypeSentence(formatMessage, props.contentTypeLabel, props.bulkTotal),
 	})
 })
 </script>
 
 <template>
-	<FloatingActionBar :shown="shown" :aria-label="ariaLabel">
+	<FloatingActionBar :shown="shown" :aria-label="ariaLabel" hide-when-modal-open>
 		<div class="flex items-center gap-0.5">
-			<span class="px-4 py-2.5 text-base font-semibold text-contrast tabular-nums">
+			<div
+				v-if="selectedItems.length > 0"
+				class="relative h-8 shrink-0"
+				:style="{ width: `${iconStackWidth}px` }"
+				aria-hidden="true"
+			>
+				<div
+					v-for="(item, index) in visibleItems"
+					:key="resolveItemId(item)"
+					v-tooltip="item.project?.title ?? item.file_name"
+					class="absolute top-0 flex h-8 w-8 items-center justify-center overflow-hidden rounded-lg border-[1.5px] border-solid border-surface-3 bg-surface-4"
+					:style="{ left: `${index * iconStackOffset}px`, zIndex: visibleItems.length - index }"
+				>
+					<Avatar
+						:src="item.project?.icon_url"
+						:alt="item.project?.title ?? item.file_name"
+						:tint-by="resolveItemId(item)"
+						size="100%"
+						no-shadow
+						class="selected-content-avatar"
+					/>
+				</div>
+				<div
+					v-if="overflowCount > 0"
+					class="absolute top-0 flex h-8 w-8 items-center justify-center rounded-lg border-[1.5px] border-solid border-surface-3 bg-surface-4 text-xs font-bold text-contrast"
+					:style="{ left: `${visibleItems.length * iconStackOffset}px`, zIndex: 0 }"
+				>
+					+{{ overflowCount }}
+				</div>
+			</div>
+
+			<span class="px-3 py-2 text-base font-semibold text-contrast tabular-nums">
 				{{ selectedCountText }}
 			</span>
-			<div class="mx-1 h-6 w-px bg-surface-5" />
+			<div class="mx-0.5 h-6 w-px bg-surface-5" />
 			<ButtonStyled type="transparent">
 				<button
 					v-tooltip="formatMessage(commonMessages.clearButton)"
@@ -154,9 +234,11 @@ const bulkProgressMessage = computed(() => {
 			<ButtonStyled type="transparent">
 				<button
 					v-tooltip="
-						allEnabled
-							? formatMessage(messages.allAlreadyEnabled)
-							: formatMessage(commonMessages.enableButton)
+						isBusy && busyTooltip
+							? busyTooltip
+							: allEnabled
+								? formatMessage(messages.allAlreadyEnabled)
+								: formatMessage(commonMessages.enableButton)
 					"
 					:disabled="isBusy || allEnabled"
 					@click="emit('enable')"
@@ -168,9 +250,11 @@ const bulkProgressMessage = computed(() => {
 			<ButtonStyled type="transparent">
 				<button
 					v-tooltip="
-						allDisabled
-							? formatMessage(messages.allAlreadyDisabled)
-							: formatMessage(commonMessages.disableButton)
+						isBusy && busyTooltip
+							? busyTooltip
+							: allDisabled
+								? formatMessage(messages.allAlreadyDisabled)
+								: formatMessage(commonMessages.disableButton)
 					"
 					:disabled="isBusy || allDisabled"
 					@click="emit('disable')"
@@ -222,5 +306,9 @@ const bulkProgressMessage = computed(() => {
 
 .animate-indeterminate {
 	animation: indeterminate 1.5s ease-in-out infinite;
+}
+
+:deep(.selected-content-avatar) {
+	background-color: var(--color-button-bg);
 }
 </style>

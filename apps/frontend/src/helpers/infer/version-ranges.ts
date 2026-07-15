@@ -25,6 +25,7 @@ export function getGameVersionsMatchingSemverRange(
 export function getGameVersionsMatchingMavenRange(
 	range: string | undefined,
 	gameVersions: string[],
+	processor: (version: string) => string | null = (v) => v,
 ): string[] {
 	if (!range) {
 		return []
@@ -49,38 +50,56 @@ export function getGameVersionsMatchingMavenRange(
 		ranges.push(range)
 	}
 
-	const LESS_THAN_EQUAL = /^\(,(.*)]$/
-	const LESS_THAN = /^\(,(.*)\)$/
-	const EQUAL = /^\[(.*)]$/
-	const GREATER_THAN_EQUAL = /^\[(.*),\)$/
-	const GREATER_THAN = /^\((.*),\)$/
-	const BETWEEN = /^\((.*),(.*)\)$/
-	const BETWEEN_EQUAL = /^\[(.*),(.*)]$/
-	const BETWEEN_LESS_THAN_EQUAL = /^\((.*),(.*)]$/
-	const BETWEEN_GREATER_THAN_EQUAL = /^\[(.*),(.*)\)$/
+	const LESS_THAN_EQUAL = /^\(,([^,]*)]$/
+	const LESS_THAN = /^\(,([^,]*)\)$/
+	const EQUAL = /^\[([^,]*)]$/
+	const GREATER_THAN_EQUAL = /^\[([^,]*),\)$/
+	const GREATER_THAN = /^\(([^,]*),\)$/
+	const BETWEEN = /^\(([^,]*),([^,]*)\)$/
+	const BETWEEN_EQUAL = /^\[([^,]*),([^,]*)]$/
+	const BETWEEN_LESS_THAN_EQUAL = /^\(([^,]*),([^,]*)]$/
+	const BETWEEN_GREATER_THAN_EQUAL = /^\[([^,]*),([^,]*)\)$/
 
 	const semverRanges = []
 
 	for (const range of ranges) {
 		let result
-		if ((result = range.match(LESS_THAN_EQUAL))) {
-			semverRanges.push(`<=${result[1]}`)
-		} else if ((result = range.match(LESS_THAN))) {
-			semverRanges.push(`<${result[1]}`)
-		} else if ((result = range.match(EQUAL))) {
-			semverRanges.push(`${result[1]}`)
-		} else if ((result = range.match(GREATER_THAN_EQUAL))) {
-			semverRanges.push(`>=${result[1]}`)
-		} else if ((result = range.match(GREATER_THAN))) {
-			semverRanges.push(`>${result[1]}`)
-		} else if ((result = range.match(BETWEEN))) {
-			semverRanges.push(`>${result[1]} <${result[2]}`)
-		} else if ((result = range.match(BETWEEN_EQUAL))) {
-			semverRanges.push(`>=${result[1]} <=${result[2]}`)
-		} else if ((result = range.match(BETWEEN_LESS_THAN_EQUAL))) {
-			semverRanges.push(`>${result[1]} <=${result[2]}`)
-		} else if ((result = range.match(BETWEEN_GREATER_THAN_EQUAL))) {
-			semverRanges.push(`>=${result[1]} <${result[2]}`)
+		let version1
+		let version2
+		if ((result = range.match(LESS_THAN_EQUAL)) && (version1 = processor(result[1]))) {
+			semverRanges.push(`<=${version1}`)
+		} else if ((result = range.match(LESS_THAN)) && (version1 = processor(result[1]))) {
+			semverRanges.push(`<${version1}`)
+		} else if ((result = range.match(EQUAL)) && (version1 = processor(result[1]))) {
+			semverRanges.push(`${version1}`)
+		} else if ((result = range.match(GREATER_THAN_EQUAL)) && (version1 = processor(result[1]))) {
+			semverRanges.push(`>=${version1}`)
+		} else if ((result = range.match(GREATER_THAN)) && (version1 = processor(result[1]))) {
+			semverRanges.push(`>${version1}`)
+		} else if (
+			(result = range.match(BETWEEN)) &&
+			(version1 = processor(result[1])) &&
+			(version2 = processor(result[2]))
+		) {
+			semverRanges.push(`>${version1} <${version2}`)
+		} else if (
+			(result = range.match(BETWEEN_EQUAL)) &&
+			(version1 = processor(result[1])) &&
+			(version2 = processor(result[2]))
+		) {
+			semverRanges.push(`>=${version1} <=${version2}`)
+		} else if (
+			(result = range.match(BETWEEN_LESS_THAN_EQUAL)) &&
+			(version1 = processor(result[1])) &&
+			(version2 = processor(result[2]))
+		) {
+			semverRanges.push(`>${version1} <=${version2}`)
+		} else if (
+			(result = range.match(BETWEEN_GREATER_THAN_EQUAL)) &&
+			(version1 = processor(result[1])) &&
+			(version2 = processor(result[2]))
+		) {
+			semverRanges.push(`>=${version1} <${version2}`)
 		}
 	}
 	return getGameVersionsMatchingSemverRange(semverRanges, gameVersions)

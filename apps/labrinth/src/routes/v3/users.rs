@@ -1,17 +1,26 @@
-use std::{collections::HashMap, sync::Arc};
+use std::{
+    cmp::Reverse,
+    collections::{HashMap, HashSet},
+};
 
 use super::{ApiError, oauth_clients::get_user_clients};
 use crate::database::PgPool;
 use crate::util::error::Context;
 use crate::{
     auth::{
-        checks::is_visible_organization, filter_visible_collections,
-        filter_visible_projects, get_user_from_headers,
+        check_is_moderator_from_headers, checks::is_visible_organization,
+        filter_visible_collections, filter_visible_projects,
+        get_user_from_headers,
     },
-    database::{models::DBUser, redis::RedisPool},
+    database::{
+        models::{DBModerationNote, DBOrganization, DBProjectId, DBUser},
+        redis::RedisPool,
+    },
     file_hosting::{FileHost, FileHostPublicity},
     models::{
+        ids::OrganizationId,
         notifications::Notification,
+        organizations::Organization,
         pats::Scopes,
         projects::Project,
         users::{Badges, Role},
@@ -22,30 +31,35 @@ use crate::{
         validate::validation_errors_to_string,
     },
 };
-use actix_web::{HttpRequest, HttpResponse, web};
+use actix_web::{HttpRequest, HttpResponse, delete, get, patch, web};
 use ariadne::ids::UserId;
 use serde::{Deserialize, Serialize};
 use validator::Validate;
 
-pub fn config(cfg: &mut web::ServiceConfig) {
-    cfg.route("user", web::get().to(user_auth_get));
-    cfg.route("users", web::get().to(users_get));
-    cfg.route("user_email", web::get().to(admin_user_email));
+pub fn config(cfg: &mut actix_web::web::ServiceConfig) {
+    cfg.service(user_auth_get_route)
+        .service(users_get_route)
+        .service(users_search)
+        .service(admin_user_email)
+        .service(all_projects)
+        .service(projects_list_route)
+        .service(user_notes_edit)
+        .service(user_get_route)
+        .service(collections_list)
+        .service(orgs_list)
+        .service(user_edit_route)
+        .service(user_icon_edit_route)
+        .service(user_icon_delete_route)
+        .service(user_delete_route)
+        .service(user_follows_route)
+        .service(user_notifications_route)
+        .service(get_user_clients);
+}
 
-    cfg.service(
-        web::scope("user")
-            .route("{user_id}/projects", web::get().to(projects_list))
-            .route("{id}", web::get().to(user_get))
-            .route("{user_id}/collections", web::get().to(collections_list))
-            .route("{user_id}/organizations", web::get().to(orgs_list))
-            .route("{id}", web::patch().to(user_edit))
-            .route("{id}/icon", web::patch().to(user_icon_edit))
-            .route("{id}/icon", web::delete().to(user_icon_delete))
-            .route("{id}", web::delete().to(user_delete))
-            .route("{id}/follows", web::get().to(user_follows))
-            .route("{id}/notifications", web::get().to(user_notifications))
-            .route("{id}/oauth_apps", web::get().to(get_user_clients)),
-    );
+#[derive(Serialize)]
+pub struct AllProjectsResponse {
+    pub projects: Vec<Project>,
+    pub organizations: HashMap<OrganizationId, Organization>,
 }
 
 #[derive(Deserialize)]
@@ -53,6 +67,143 @@ pub struct UserEmailQuery {
     pub email: String,
 }
 
+#[utoipa::path(tag = "users", responses((status = OK)))]
+#[get("/user/{user_id}/all-projects")]
+pub async fn all_projects(
+    req: HttpRequest,
+    info: web::Path<(String,)>,
+    pool: web::Data<PgPool>,
+    redis: web::Data<RedisPool>,
+    session_queue: web::Data<AuthQueue>,
+) -> Result<web::Json<AllProjectsResponse>, ApiError> {
+    let user = get_user_from_headers(
+        &req,
+        &**pool,
+        &redis,
+        &session_queue,
+        Scopes::PROJECT_READ,
+    )
+    .await
+    .map(|x| x.1)
+    .ok();
+    let target_user = DBUser::get(&info.into_inner().0, &**pool, &redis)
+        .await?
+        .ok_or(ApiError::NotFound)?;
+
+    let user_project_ids =
+        DBUser::get_projects(target_user.id, &**pool, &redis).await?;
+    let organization_ids =
+        DBUser::get_organizations(target_user.id, &**pool).await?;
+    let organizations_data =
+        DBOrganization::get_many_ids(&organization_ids, &**pool, &redis)
+            .await?;
+
+    let team_ids = organizations_data
+        .iter()
+        .map(|organization| organization.team_id)
+        .collect::<Vec<_>>();
+    let teams_data =
+        crate::database::models::DBTeamMember::get_from_team_full_many(
+            &team_ids, &**pool, &redis,
+        )
+        .await?;
+    let users = DBUser::get_many_ids(
+        &teams_data
+            .iter()
+            .map(|member| member.user_id)
+            .collect::<Vec<_>>(),
+        &**pool,
+        &redis,
+    )
+    .await?;
+
+    let mut team_groups = HashMap::new();
+    for member in teams_data {
+        team_groups
+            .entry(member.team_id)
+            .or_insert(vec![])
+            .push(member);
+    }
+
+    let mut organizations = HashMap::new();
+    let mut visible_organization_ids = Vec::new();
+    for data in organizations_data {
+        if !is_visible_organization(&data, &user, &pool, &redis).await? {
+            continue;
+        }
+
+        visible_organization_ids.push(data.id);
+        let members_data = team_groups.remove(&data.team_id).unwrap_or(vec![]);
+        let logged_in = user
+            .as_ref()
+            .and_then(|user| {
+                members_data
+                    .iter()
+                    .find(|x| x.user_id == user.id.into() && x.accepted)
+            })
+            .is_some();
+        let team_members = members_data
+            .into_iter()
+            .filter(|x| logged_in || x.accepted || target_user.id == x.user_id)
+            .filter_map(|data| {
+                users.iter().find(|x| x.id == data.user_id).map(|member| {
+                    crate::models::teams::TeamMember::from(
+                        data,
+                        member.clone(),
+                        !logged_in,
+                    )
+                })
+            })
+            .collect();
+
+        organizations.insert(
+            OrganizationId::from(data.id),
+            Organization::from(data, team_members),
+        );
+    }
+
+    let organization_id_values = visible_organization_ids
+        .iter()
+        .map(|id| id.0)
+        .collect::<Vec<_>>();
+    let organization_project_ids = sqlx::query!(
+        "
+        SELECT m.id
+        FROM mods m
+        WHERE m.organization_id = ANY($1)
+        ",
+        &organization_id_values,
+    )
+    .fetch_all(&**pool)
+    .await?
+    .into_iter()
+    .map(|row| DBProjectId(row.id))
+    .collect::<Vec<_>>();
+
+    let project_ids = user_project_ids
+        .into_iter()
+        .chain(organization_project_ids)
+        .collect::<HashSet<_>>()
+        .into_iter()
+        .collect::<Vec<_>>();
+    let projects_data =
+        crate::database::DBProject::get_many_ids(&project_ids, &**pool, &redis)
+            .await?;
+    let projects =
+        filter_visible_projects(projects_data, &user, &pool, true).await?;
+
+    Ok(web::Json(AllProjectsResponse {
+        projects,
+        organizations,
+    }))
+}
+
+#[utoipa::path(
+	tag = "users",
+	params(("email" = String, Query)),
+	responses((status = OK))
+)]
+#[get("/user_email")]
 pub async fn admin_user_email(
     req: HttpRequest,
     pool: web::Data<PgPool>,
@@ -107,6 +258,18 @@ pub async fn admin_user_email(
     }
 }
 
+#[utoipa::path(tag = "users", responses((status = OK)))]
+#[get("/user/{user_id}/projects")]
+pub async fn projects_list_route(
+    req: HttpRequest,
+    info: web::Path<(String,)>,
+    pool: web::Data<PgPool>,
+    redis: web::Data<RedisPool>,
+    session_queue: web::Data<AuthQueue>,
+) -> Result<HttpResponse, ApiError> {
+    projects_list(req, info, pool, redis, session_queue).await
+}
+
 pub async fn projects_list(
     req: HttpRequest,
     info: web::Path<(String,)>,
@@ -144,6 +307,17 @@ pub async fn projects_list(
     }
 }
 
+#[utoipa::path(tag = "users", responses((status = OK)))]
+#[get("/user")]
+pub async fn user_auth_get_route(
+    req: HttpRequest,
+    pool: web::Data<PgPool>,
+    redis: web::Data<RedisPool>,
+    session_queue: web::Data<AuthQueue>,
+) -> Result<HttpResponse, ApiError> {
+    user_auth_get(req, pool, redis, session_queue).await
+}
+
 pub async fn user_auth_get(
     req: HttpRequest,
     pool: web::Data<PgPool>,
@@ -167,6 +341,12 @@ pub async fn user_auth_get(
         user.payout_data = None;
     }
 
+    if user.role.is_mod() {
+        let note =
+            DBModerationNote::get_user(user.id.into(), &**pool, &redis).await?;
+        user.moderation_notes = Some(note.map(Into::into));
+    }
+
     Ok(HttpResponse::Ok().json(user))
 }
 
@@ -175,19 +355,106 @@ pub struct UserIds {
     pub ids: String,
 }
 
+#[derive(Deserialize)]
+pub struct UserSearchQuery {
+    pub query: String,
+}
+
+#[utoipa::path(
+	tag = "users",
+	params(("query" = String, Query)),
+	responses((status = OK))
+)]
+#[get("/users/search")]
+pub async fn users_search(
+    web::Query(query): web::Query<UserSearchQuery>,
+    pool: web::Data<PgPool>,
+) -> Result<web::Json<Vec<crate::models::users::SearchUser>>, ApiError> {
+    let query = query.query.trim();
+    let users = DBUser::search(query, &**pool)
+        .await
+        .wrap_internal_err("failed to search users")?
+        .into_iter()
+        .map(Into::into)
+        .collect();
+
+    Ok(web::Json(users))
+}
+
+#[utoipa::path(
+	tag = "users",
+	params(("ids" = String, Query)),
+	responses((status = OK))
+)]
+#[get("/users")]
+pub async fn users_get_route(
+    req: HttpRequest,
+    ids: web::Query<UserIds>,
+    pool: web::Data<PgPool>,
+    redis: web::Data<RedisPool>,
+    session_queue: web::Data<AuthQueue>,
+) -> Result<HttpResponse, ApiError> {
+    users_get(req, ids, pool, redis, session_queue).await
+}
+
 pub async fn users_get(
+    req: HttpRequest,
     web::Query(ids): web::Query<UserIds>,
     pool: web::Data<PgPool>,
     redis: web::Data<RedisPool>,
+    session_queue: web::Data<AuthQueue>,
 ) -> Result<HttpResponse, ApiError> {
     let user_ids = serde_json::from_str::<Vec<String>>(&ids.ids)?;
 
     let users_data = DBUser::get_many(&user_ids, &**pool, &redis).await?;
 
-    let users: Vec<crate::models::users::User> =
-        users_data.into_iter().map(From::from).collect();
+    let auth_user = get_user_from_headers(
+        &req,
+        &**pool,
+        &redis,
+        &session_queue,
+        Scopes::SESSION_ACCESS,
+    )
+    .await
+    .map(|x| x.1)
+    .ok();
+
+    let notes = if auth_user.as_ref().is_some_and(|x| x.role.is_mod()) {
+        DBModerationNote::get_many_users(
+            &users_data.iter().map(|x| x.id).collect::<Vec<_>>(),
+            &**pool,
+            &redis,
+        )
+        .await?
+    } else {
+        HashMap::new()
+    };
+
+    let users: Vec<crate::models::users::User> = users_data
+        .into_iter()
+        .map(|data| {
+            let mut user = crate::models::users::User::from(data.clone());
+            if auth_user.as_ref().is_some_and(|x| x.role.is_mod()) {
+                user.moderation_notes =
+                    Some(notes.get(&data.id).cloned().map(Into::into));
+            }
+            user
+        })
+        .collect();
 
     Ok(HttpResponse::Ok().json(users))
+}
+
+#[utoipa::path(tag = "users", responses((status = OK)))]
+#[get("/user/{id}")]
+pub async fn user_get_route(
+    req: HttpRequest,
+    info: web::Path<(String,)>,
+    pool: web::Data<PgPool>,
+    redis: web::Data<RedisPool>,
+    session_queue: web::Data<AuthQueue>,
+) -> Result<HttpResponse, ApiError> {
+    user_get(req, info, pool, redis, session_queue).await
 }
 
 pub async fn user_get(
@@ -211,12 +478,21 @@ pub async fn user_get(
         .map(|x| x.1)
         .ok();
 
-        let response: crate::models::users::User =
-            if auth_user.is_some_and(|x| x.role.is_admin()) {
-                crate::models::users::User::from_full(data)
-            } else {
-                data.into()
-            };
+        let is_admin = auth_user.as_ref().is_some_and(|x| x.role.is_admin());
+        let is_mod = auth_user.as_ref().is_some_and(|x| x.role.is_mod());
+        let user_id = data.id;
+
+        let mut response: crate::models::users::User = if is_admin {
+            crate::models::users::User::from_full(data)
+        } else {
+            data.into()
+        };
+
+        if is_mod {
+            let note =
+                DBModerationNote::get_user(user_id, &**pool, &redis).await?;
+            response.moderation_notes = Some(note.map(Into::into));
+        }
 
         Ok(HttpResponse::Ok().json(response))
     } else {
@@ -224,6 +500,77 @@ pub async fn user_get(
     }
 }
 
+#[utoipa::path(tag = "users", responses((status = NO_CONTENT)))]
+#[patch("/user/{id}/notes")]
+pub async fn user_notes_edit(
+    req: HttpRequest,
+    info: web::Path<(String,)>,
+    new_note: web::Json<crate::models::moderation_notes::PatchModerationNote>,
+    pool: web::Data<PgPool>,
+    redis: web::Data<RedisPool>,
+    session_queue: web::Data<AuthQueue>,
+) -> Result<HttpResponse, ApiError> {
+    let user = check_is_moderator_from_headers(
+        &req,
+        &**pool,
+        &redis,
+        &session_queue,
+        Scopes::SESSION_ACCESS,
+    )
+    .await?;
+
+    new_note.validate_not_empty()?;
+    let expected_version =
+        crate::models::moderation_notes::parse_if_match_header(&req)?;
+
+    let user_data = DBUser::get(&info.into_inner().0, &**pool, &redis)
+        .await?
+        .ok_or(ApiError::NotFound)?;
+
+    let mut transaction = pool.begin().await?;
+    if let Some(expected) = expected_version {
+        let updated = DBModerationNote::update(
+            Some(user_data.id),
+            None,
+            user.id.into(),
+            expected,
+            new_note.notes.as_deref(),
+            new_note.user_rating,
+            &mut transaction,
+        )
+        .await?;
+
+        if updated.is_none() {
+            return Err(ApiError::PreconditionFailed(
+                "moderation note version does not match".to_string(),
+            ));
+        }
+    } else {
+        let updated = DBModerationNote::insert(
+            Some(user_data.id),
+            None,
+            user.id.into(),
+            new_note.notes.as_deref(),
+            new_note.user_rating,
+            &mut transaction,
+        )
+        .await?;
+
+        if updated.is_none() {
+            return Err(ApiError::PreconditionRequired(
+                "moderation note version does not match".to_string(),
+            ));
+        }
+    };
+
+    transaction.commit().await?;
+    DBModerationNote::clear_user_cache(user_data.id, &redis).await?;
+
+    Ok(HttpResponse::NoContent().finish())
+}
+
+#[utoipa::path(tag = "users", responses((status = OK)))]
+#[get("/user/{user_id}/collections")]
 pub async fn collections_list(
     req: HttpRequest,
     info: web::Path<(String,)>,
@@ -263,6 +610,8 @@ pub async fn collections_list(
     }
 }
 
+#[utoipa::path(tag = "users", responses((status = OK)))]
+#[get("/user/{user_id}/organizations")]
 pub async fn orgs_list(
     req: HttpRequest,
     info: web::Path<(String,)>,
@@ -358,9 +707,9 @@ pub async fn orgs_list(
     }
 }
 
-#[derive(Serialize, Deserialize, Validate)]
+#[derive(Serialize, Deserialize, Validate, utoipa::ToSchema)]
 pub struct EditUser {
-    #[validate(length(min = 1, max = 39), regex(path = *crate::util::validate::RE_USERNAME))]
+    #[validate(length(min = 1, max = 39), regex(path = *crate::util::validate::RE_URL_SAFE))]
     pub username: Option<String>,
     #[serde(
         default,
@@ -374,6 +723,19 @@ pub struct EditUser {
     #[validate(length(max = 160))]
     pub venmo_handle: Option<String>,
     pub allow_friend_requests: Option<bool>,
+}
+
+#[utoipa::path(tag = "users", responses((status = NO_CONTENT)))]
+#[patch("/user/{id}")]
+pub async fn user_edit_route(
+    req: HttpRequest,
+    info: web::Path<(String,)>,
+    new_user: web::Json<EditUser>,
+    pool: web::Data<PgPool>,
+    redis: web::Data<RedisPool>,
+    session_queue: web::Data<AuthQueue>,
+) -> Result<HttpResponse, ApiError> {
+    user_edit(req, info, new_user, pool, redis, session_queue).await
 }
 
 pub async fn user_edit(
@@ -545,13 +907,43 @@ pub struct Extension {
 }
 
 #[allow(clippy::too_many_arguments)]
+#[utoipa::path(
+	tag = "users",
+	params(("ext" = String, Query)),
+	request_body(content = Vec<u8>, content_type = "application/octet-stream"),
+	responses((status = NO_CONTENT))
+)]
+#[patch("/user/{id}/icon")]
+pub async fn user_icon_edit_route(
+    ext: web::Query<Extension>,
+    req: HttpRequest,
+    info: web::Path<(String,)>,
+    pool: web::Data<PgPool>,
+    redis: web::Data<RedisPool>,
+    file_host: web::Data<dyn FileHost>,
+    payload: web::Payload,
+    session_queue: web::Data<AuthQueue>,
+) -> Result<HttpResponse, ApiError> {
+    user_icon_edit(
+        ext,
+        req,
+        info,
+        pool,
+        redis,
+        file_host,
+        payload,
+        session_queue,
+    )
+    .await
+}
+
 pub async fn user_icon_edit(
     web::Query(ext): web::Query<Extension>,
     req: HttpRequest,
     info: web::Path<(String,)>,
     pool: web::Data<PgPool>,
     redis: web::Data<RedisPool>,
-    file_host: web::Data<Arc<dyn FileHost + Send + Sync>>,
+    file_host: web::Data<dyn FileHost>,
     mut payload: web::Payload,
     session_queue: web::Data<AuthQueue>,
 ) -> Result<HttpResponse, ApiError> {
@@ -578,7 +970,7 @@ pub async fn user_icon_edit(
             actual_user.avatar_url,
             actual_user.raw_avatar_url,
             FileHostPublicity::Public,
-            &***file_host,
+            &**file_host,
         )
         .await?;
 
@@ -597,7 +989,7 @@ pub async fn user_icon_edit(
             &ext.ext,
             Some(96),
             Some(1.0),
-            &***file_host,
+            &**file_host,
         )
         .await?;
 
@@ -621,12 +1013,25 @@ pub async fn user_icon_edit(
     }
 }
 
+#[utoipa::path(tag = "users", responses((status = NO_CONTENT)))]
+#[delete("/user/{id}/icon")]
+pub async fn user_icon_delete_route(
+    req: HttpRequest,
+    info: web::Path<(String,)>,
+    pool: web::Data<PgPool>,
+    redis: web::Data<RedisPool>,
+    file_host: web::Data<dyn FileHost>,
+    session_queue: web::Data<AuthQueue>,
+) -> Result<HttpResponse, ApiError> {
+    user_icon_delete(req, info, pool, redis, file_host, session_queue).await
+}
+
 pub async fn user_icon_delete(
     req: HttpRequest,
     info: web::Path<(String,)>,
     pool: web::Data<PgPool>,
     redis: web::Data<RedisPool>,
-    file_host: web::Data<Arc<dyn FileHost + Send + Sync>>,
+    file_host: web::Data<dyn FileHost>,
     session_queue: web::Data<AuthQueue>,
 ) -> Result<HttpResponse, ApiError> {
     let user = get_user_from_headers(
@@ -652,7 +1057,7 @@ pub async fn user_icon_delete(
             actual_user.avatar_url,
             actual_user.raw_avatar_url,
             FileHostPublicity::Public,
-            &***file_host,
+            &**file_host,
         )
         .await?;
 
@@ -673,6 +1078,18 @@ pub async fn user_icon_delete(
     } else {
         Err(ApiError::NotFound)
     }
+}
+
+#[utoipa::path(tag = "users", responses((status = NO_CONTENT)))]
+#[delete("/user/{id}")]
+pub async fn user_delete_route(
+    req: HttpRequest,
+    info: web::Path<(String,)>,
+    pool: web::Data<PgPool>,
+    redis: web::Data<RedisPool>,
+    session_queue: web::Data<AuthQueue>,
+) -> Result<(), ApiError> {
+    user_delete(req, info, pool, redis, session_queue).await
 }
 
 pub async fn user_delete(
@@ -723,6 +1140,18 @@ pub async fn user_delete(
     }
 }
 
+#[utoipa::path(tag = "users", responses((status = OK)))]
+#[get("/user/{id}/follows")]
+pub async fn user_follows_route(
+    req: HttpRequest,
+    info: web::Path<(String,)>,
+    pool: web::Data<PgPool>,
+    redis: web::Data<RedisPool>,
+    session_queue: web::Data<AuthQueue>,
+) -> Result<HttpResponse, ApiError> {
+    user_follows(req, info, pool, redis, session_queue).await
+}
+
 pub async fn user_follows(
     req: HttpRequest,
     info: web::Path<(String,)>,
@@ -765,6 +1194,18 @@ pub async fn user_follows(
     }
 }
 
+#[utoipa::path(tag = "users", responses((status = OK)))]
+#[get("/user/{id}/notifications")]
+pub async fn user_notifications_route(
+    req: HttpRequest,
+    info: web::Path<(String,)>,
+    pool: web::Data<PgPool>,
+    redis: web::Data<RedisPool>,
+    session_queue: web::Data<AuthQueue>,
+) -> Result<HttpResponse, ApiError> {
+    user_notifications(req, info, pool, redis, session_queue).await
+}
+
 pub async fn user_notifications(
     req: HttpRequest,
     info: web::Path<(String,)>,
@@ -799,7 +1240,7 @@ pub async fn user_notifications(
             .map(Into::into)
             .collect();
 
-        notifications.sort_by(|a, b| b.created.cmp(&a.created));
+        notifications.sort_by_key(|b| Reverse(b.created));
         Ok(HttpResponse::Ok().json(notifications))
     } else {
         Err(ApiError::NotFound)

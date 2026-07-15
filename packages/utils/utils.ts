@@ -94,18 +94,6 @@ export const sortedCategories = (tags, formatCategoryName, locale) => {
 	})
 }
 
-export const formatBytes = (bytes, decimals = 2) => {
-	if (bytes === 0) return '0 Bytes'
-
-	const k = 1024
-	const dm = decimals < 0 ? 0 : decimals
-	const sizes = ['Bytes', 'KiB', 'MiB', 'GiB']
-
-	const i = Math.floor(Math.log(bytes) / Math.log(k))
-
-	return `${parseFloat((bytes / Math.pow(k, i)).toFixed(dm))} ${sizes[i]}`
-}
-
 export const capitalizeString = (name) => {
 	return name ? name.charAt(0).toUpperCase() + name.slice(1) : name
 }
@@ -131,6 +119,8 @@ export const formatProjectType = (name, short = false) => {
 			return 'PLG'
 		} else if (name === 'datapack') {
 			return 'DPK'
+		} else if (name === 'minecraft_java_server') {
+			return 'SRV'
 		}
 	}
 
@@ -238,7 +228,7 @@ export function cycleValue<T extends string>(value: T, values: T[]): T {
 	return values[index % values.length]
 }
 
-export const fileIsValid = (file, validationOptions) => {
+export const fileIsValid = (file, validationOptions, formatBytes) => {
 	const { maxSize, alertOnInvalid } = validationOptions
 	if (maxSize !== null && maxSize !== undefined && file.size > maxSize) {
 		if (alertOnInvalid) {
@@ -299,3 +289,33 @@ export function arrayBufferToBase64(buffer: Uint8Array | ArrayBuffer): string {
 }
 export const DEFAULT_CREDIT_EMAIL_MESSAGE =
 	"We're really sorry about the recent issues with your server."
+
+/**
+ * Comparator for sorting values by first occurrence index in {@link order}.
+ * Values absent from {@link order} behave as tied after listed values (`order.length`).
+ */
+export function compareByIndex<T>(order: readonly T[], a: T, b: T): number {
+	const ia = order.indexOf(a)
+	const ib = order.indexOf(b)
+	const ra = ia === -1 ? order.length : ia
+	const rb = ib === -1 ? order.length : ib
+	return ra - rb
+}
+
+/**
+ * Sort {@link items} in place according to {@link order}, returning the same array reference.
+ *
+ * If the array should not be mutated, use {@link sortedByIndex}.
+ */
+export function sortByIndex<T>(order: readonly T[], items: T[]): T[] {
+	items.sort((a, b) => compareByIndex(order, a, b))
+	return items
+}
+
+/**
+ * Creates a sorted copy of {@link items} according to {@link order}.
+ *
+ */
+export function sortedByIndex<T>(order: readonly T[], items: T[]): T[] {
+	return items.slice().sort((a, b) => compareByIndex(order, a, b))
+}

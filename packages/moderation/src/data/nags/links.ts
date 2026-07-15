@@ -1,9 +1,17 @@
-import { defineMessage, useVIntl } from '@modrinth/ui'
+import { defineMessage, formatProjectTypeSentence, useVIntl } from '@modrinth/ui'
 
 import type { Nag, NagContext } from '../../types/nags'
 
 export const commonLinkDomains = {
-	source: ['github.com', 'gitlab.com', 'bitbucket.org', 'codeberg.org', 'git.sr.ht', 'tangled.org'],
+	source: [
+		'github.com',
+		'gitlab.com',
+		'bitbucket.org',
+		'codeberg.org',
+		'git.sr.ht',
+		'tangled.org',
+		'git.gay',
+	],
 	issues: [
 		'github.com',
 		'gitlab.com',
@@ -11,6 +19,7 @@ export const commonLinkDomains = {
 		'codeberg.org',
 		'docs.google.com',
 		'tangled.org',
+		'git.gay',
 	],
 	discord: ['discord.gg', 'discord.com', 'dsc.gg'],
 	licenseBlocklist: [
@@ -90,7 +99,7 @@ export const linksNags: Nag[] = [
 				id: 'nags.settings.links.title',
 				defaultMessage: 'Visit links settings',
 			}),
-			shouldShow: (context: NagContext) => context.currentRoute !== 'type-id-settings-links',
+			shouldShow: (context: NagContext) => context.currentRoute !== 'type-project-settings-links',
 		},
 	},
 	{
@@ -117,14 +126,14 @@ export const linksNags: Nag[] = [
 				id: 'nags.settings.links.title',
 				defaultMessage: 'Visit links settings',
 			}),
-			shouldShow: (context: NagContext) => context.currentRoute !== 'type-id-settings-links',
+			shouldShow: (context: NagContext) => context.currentRoute !== 'type-project-settings-links',
 		},
 	},
 	{
 		id: 'identical-links',
 		title: defineMessage({
 			id: 'nags.identical-links.title',
-			defaultMessage: 'Identical Links',
+			defaultMessage: 'Clean up identical links',
 		}),
 		description: defineMessage({
 			id: 'nags.identical-links.description',
@@ -141,7 +150,7 @@ export const linksNags: Nag[] = [
 				id: 'nags.settings.links.title',
 				defaultMessage: 'Visit links settings',
 			}),
-			shouldShow: (context: NagContext) => context.currentRoute !== 'type-id-settings-links',
+			shouldShow: (context: NagContext) => context.currentRoute !== 'type-project-settings-links',
 		},
 	},
 	{
@@ -169,7 +178,7 @@ export const linksNags: Nag[] = [
 				id: 'nags.visit-links-settings.title',
 				defaultMessage: 'Visit links settings',
 			}),
-			shouldShow: (context: NagContext) => context.currentRoute !== 'type-id-settings-links',
+			shouldShow: (context: NagContext) => context.currentRoute !== 'type-project-settings-links',
 		},
 	},
 	{
@@ -196,7 +205,7 @@ export const linksNags: Nag[] = [
 				id: 'nags.visit-links-settings.title',
 				defaultMessage: 'Visit links settings',
 			}),
-			shouldShow: (context: NagContext) => context.currentRoute !== 'type-id-settings-links',
+			shouldShow: (context: NagContext) => context.currentRoute !== 'type-project-settings-links',
 		},
 	},
 	{
@@ -290,7 +299,7 @@ export const linksNags: Nag[] = [
 				id: 'nags.edit-license.title',
 				defaultMessage: 'Edit license',
 			}),
-			shouldShow: (context: NagContext) => context.currentRoute !== 'type-id-settings',
+			shouldShow: (context: NagContext) => context.currentRoute !== 'type-project-settings',
 		},
 	},
 	{
@@ -306,10 +315,10 @@ export const linksNags: Nag[] = [
 				defineMessage({
 					id: 'nags.gpl-license-source-required.description',
 					defaultMessage:
-						'Your {type, select, mod {mod} plugin {plugin} other {project}} uses a license which requires source code to be available. Please provide a source code link or sources file for each additional version, or consider using a different license.',
+						'Your {type} uses a license which requires source code to be available. Please provide a source code link or sources file for each additional version, or consider using a different license.',
 				}),
 				{
-					type: context.project.project_type,
+					type: formatProjectTypeSentence(formatMessage, context.project.project_type),
 				},
 			)
 		},
@@ -364,7 +373,7 @@ export const linksNags: Nag[] = [
 				id: 'nags.visit-links-settings.title',
 				defaultMessage: 'Visit links settings',
 			}),
-			shouldShow: (context: NagContext) => context.currentRoute !== 'type-id-settings-links',
+			shouldShow: (context: NagContext) => context.currentRoute !== 'type-project-settings-links',
 		},
 	},
 ]

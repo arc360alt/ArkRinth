@@ -16,10 +16,10 @@
 			"
 			:width="'550px'"
 		>
-			<div class="flex flex-col gap-4">
-				<div class="flex w-full flex-col">
+			<div class="flex flex-col gap-6">
+				<div class="flex w-full flex-col gap-2.5">
 					<label for="pat-name">
-						<span class="label__title">{{ formatMessage(createModalMessages.nameLabel) }}</span>
+						<span class="font-semibold">{{ formatMessage(createModalMessages.nameLabel) }}</span>
 					</label>
 					<StyledInput
 						id="pat-name"
@@ -29,20 +29,20 @@
 					/>
 				</div>
 
-				<div class="flex w-full flex-col">
+				<div class="flex w-full flex-col gap-2.5">
 					<label for="pat-scopes">
-						<span class="label__title">{{ formatMessage(commonMessages.scopesLabel) }}</span>
+						<span class="font-semibold">{{ formatMessage(commonMessages.scopesLabel) }}</span>
 					</label>
 					<div
 						id="pat-scopes"
-						class="scope-items mt-2 grid grid-cols-1 gap-x-6 gap-y-4 min-[600px]:grid-cols-2"
+						class="scope-items grid grid-cols-1 gap-x-6 gap-y-4 min-[600px]:grid-cols-2"
 					>
 						<div
 							v-for="category in scopeCategories"
 							:key="category.name"
-							class="flex flex-col gap-2"
+							class="flex flex-col gap-1.5"
 						>
-							<h4 class="m-0 border-b border-divider pb-1 text-base font-bold text-contrast">
+							<h4 class="m-0 border-b border-divider text-base font-medium text-primary">
 								{{ category.name }}
 							</h4>
 							<div class="flex flex-col gap-2">
@@ -58,39 +58,32 @@
 					</div>
 				</div>
 
-				<div class="flex w-full flex-col">
+				<div class="flex w-full flex-col gap-2.5">
 					<label for="pat-expires">
-						<span class="label__title">{{ formatMessage(createModalMessages.expiresLabel) }}</span>
+						<span class="font-semibold">{{ formatMessage(createModalMessages.expiresLabel) }}</span>
 					</label>
-					<StyledInput id="pat-expires" v-model="expires" type="date" />
-					<p></p>
+					<DatePicker id="pat-expires" v-model="expires" show-today wrapper-class="w-full" />
 				</div>
 
-				<div class="input-group push-right">
-					<button class="iconified-button" @click="$refs.patModal.hide()">
-						<XIcon />
-						{{ formatMessage(commonMessages.cancelButton) }}
-					</button>
-					<button
-						v-if="editPatId !== null"
-						:disabled="loading || !name || !expires"
-						type="button"
-						class="iconified-button brand-button"
-						@click="editPat"
-					>
-						<SaveIcon />
-						{{ formatMessage(commonMessages.saveChangesButton) }}
-					</button>
-					<button
-						v-else
-						:disabled="loading || !name || !expires"
-						type="button"
-						class="iconified-button brand-button"
-						@click="createPat"
-					>
-						<PlusIcon />
-						{{ formatMessage(createModalMessages.action) }}
-					</button>
+				<div class="ml-auto mt-4 flex gap-2">
+					<ButtonStyled type="outlined">
+						<button @click="$refs.patModal.hide()">
+							<XIcon />
+							{{ formatMessage(commonMessages.cancelButton) }}
+						</button>
+					</ButtonStyled>
+					<ButtonStyled v-if="editPatId !== null" color="brand">
+						<button :disabled="loading || !name || !expires" @click="editPat">
+							<SaveIcon />
+							{{ formatMessage(commonMessages.saveChangesButton) }}
+						</button>
+					</ButtonStyled>
+					<ButtonStyled v-else color="brand">
+						<button :disabled="loading || !name || !expires" @click="createPat">
+							<PlusIcon />
+							{{ formatMessage(createModalMessages.action) }}
+						</button>
+					</ButtonStyled>
 				</div>
 			</div>
 		</NewModal>
@@ -99,20 +92,21 @@
 			<div class="header__title">
 				<h2 class="text-2xl">{{ formatMessage(commonSettingsMessages.pats) }}</h2>
 			</div>
-			<button
-				class="btn btn-primary"
-				@click="
-					() => {
-						name = null
-						scopesVal = 0
-						expires = null
-						editPatId = null
-						$refs.patModal.show()
-					}
-				"
-			>
-				<PlusIcon /> {{ formatMessage(messages.create) }}
-			</button>
+			<ButtonStyled color="brand">
+				<button
+					@click="
+						() => {
+							name = null
+							scopesVal = 0
+							expires = null
+							editPatId = null
+							$refs.patModal.show()
+						}
+					"
+				>
+					<PlusIcon /> {{ formatMessage(messages.create) }}
+				</button>
+			</ButtonStyled>
 		</div>
 		<p>
 			<IntlFormatted :message-id="messages.description">
@@ -172,31 +166,33 @@
 				</div>
 			</div>
 			<div class="token-actions ml-auto flex flex-col gap-2">
-				<button
-					class="iconified-button raised-button"
-					@click="
-						() => {
-							editPatId = pat.id
-							name = pat.name
-							scopesVal = pat.scopes
-							expires = $dayjs(pat.expires).format('YYYY-MM-DD')
-							$refs.patModal.show()
-						}
-					"
-				>
-					<EditIcon /> {{ formatMessage(tokenMessages.edit) }}
-				</button>
-				<button
-					class="iconified-button raised-button"
-					@click="
-						() => {
-							deletePatIndex = pat.id
-							$refs.modal_confirm.show()
-						}
-					"
-				>
-					<TrashIcon /> {{ formatMessage(tokenMessages.revoke) }}
-				</button>
+				<ButtonStyled>
+					<button
+						@click="
+							() => {
+								editPatId = pat.id
+								name = pat.name
+								scopesVal = pat.scopes
+								expires = $dayjs(pat.expires).format('YYYY-MM-DD')
+								$refs.patModal.show()
+							}
+						"
+					>
+						<EditIcon /> {{ formatMessage(tokenMessages.edit) }}
+					</button>
+				</ButtonStyled>
+				<ButtonStyled>
+					<button
+						@click="
+							() => {
+								deletePatIndex = pat.id
+								$refs.modal_confirm.show()
+							}
+						"
+					>
+						<TrashIcon /> {{ formatMessage(tokenMessages.revoke) }}
+					</button>
+				</ButtonStyled>
 			</div>
 		</div>
 	</div>
@@ -204,11 +200,13 @@
 <script setup>
 import { EditIcon, PlusIcon, SaveIcon, TrashIcon, XIcon } from '@modrinth/assets'
 import {
+	ButtonStyled,
 	Checkbox,
 	commonMessages,
 	commonSettingsMessages,
 	ConfirmModal,
 	CopyCode,
+	DatePicker,
 	defineMessages,
 	injectModrinthClient,
 	injectNotificationManager,
@@ -470,7 +468,6 @@ async function removePat(id) {
 </script>
 <style lang="scss" scoped>
 .scope-items :deep(.checkbox-outer) {
-	white-space: nowrap !important;
 	justify-content: flex-start !important;
 }
 

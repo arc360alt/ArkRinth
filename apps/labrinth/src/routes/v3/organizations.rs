@@ -1,5 +1,4 @@
 use std::collections::HashMap;
-use std::sync::Arc;
 
 use super::ApiError;
 use crate::auth::checks::is_visible_organization;
@@ -7,7 +6,7 @@ use crate::auth::{filter_visible_projects, get_user_from_headers};
 use crate::database::PgPool;
 use crate::database::models::team_item::DBTeamMember;
 use crate::database::models::{
-    DBOrganization, generate_organization_id, team_item,
+    DBModerationNote, DBOrganization, generate_organization_id, team_item,
 };
 use crate::database::redis::RedisPool;
 use crate::file_hosting::{FileHost, FileHostPublicity};
@@ -17,40 +16,34 @@ use crate::models::teams::{OrganizationPermissions, ProjectPermissions};
 use crate::models::v3::user_limits::UserLimits;
 use crate::queue::session::AuthQueue;
 use crate::routes::v3::project_creation::CreateError;
+use crate::search::SearchState;
 use crate::util::img::delete_old_images;
 use crate::util::routes::read_limited_from_payload;
 use crate::util::validate::validation_errors_to_string;
 use crate::{database, models};
-use actix_web::{HttpRequest, HttpResponse, web};
+use actix_web::{HttpRequest, HttpResponse, delete, get, patch, post, web};
 use ariadne::ids::UserId;
 use futures::TryStreamExt;
 use rust_decimal::Decimal;
 use serde::{Deserialize, Serialize};
 use validator::Validate;
 
-pub fn config(cfg: &mut web::ServiceConfig) {
-    cfg.route("organizations", web::get().to(organizations_get));
-    cfg.service(
-        web::scope("organization")
-            .route("", web::post().to(organization_create))
-            .route("{id}/projects", web::get().to(organization_projects_get))
-            .route("{id}", web::get().to(organization_get))
-            .route("{id}", web::patch().to(organizations_edit))
-            .route("{id}", web::delete().to(organization_delete))
-            .route("{id}/projects", web::post().to(organization_projects_add))
-            .route(
-                "{id}/projects/{project_id}",
-                web::delete().to(organization_projects_remove),
-            )
-            .route("{id}/icon", web::patch().to(organization_icon_edit))
-            .route("{id}/icon", web::delete().to(delete_organization_icon))
-            .route(
-                "{id}/members",
-                web::get().to(super::teams::team_members_get_organization),
-            ),
-    );
+pub fn config(cfg: &mut actix_web::web::ServiceConfig) {
+    cfg.service(organizations_get)
+        .service(organization_create)
+        .service(organization_projects_get)
+        .service(organization_notes_edit)
+        .service(organization_get)
+        .service(organizations_edit)
+        .service(organization_delete)
+        .service(organization_projects_add)
+        .service(organization_projects_remove)
+        .service(organization_icon_edit)
+        .service(delete_organization_icon);
 }
 
+#[utoipa::path(tag = "organizations", responses((status = OK)))]
+#[get("/organization/{id}/projects")]
 pub async fn organization_projects_get(
     req: HttpRequest,
     info: web::Path<(String,)>,
@@ -105,7 +98,7 @@ pub async fn organization_projects_get(
     }
 }
 
-#[derive(Deserialize, Validate)]
+#[derive(Deserialize, Validate, utoipa::ToSchema)]
 pub struct NewOrganization {
     #[validate(
         length(min = 3, max = 64),
@@ -119,6 +112,8 @@ pub struct NewOrganization {
     pub description: String,
 }
 
+#[utoipa::path(tag = "organizations", responses((status = OK)))]
+#[post("/organization")]
 pub async fn organization_create(
     req: HttpRequest,
     new_organization: web::Json<NewOrganization>,
@@ -221,6 +216,8 @@ pub async fn organization_create(
     Ok(HttpResponse::Ok().json(organization))
 }
 
+#[utoipa::path(tag = "organizations", responses((status = OK)))]
+#[get("/organization/{id}")]
 pub async fn organization_get(
     req: HttpRequest,
     info: web::Path<(String,)>,
@@ -283,11 +280,97 @@ pub async fn organization_get(
             })
             .collect();
 
-        let organization =
+        let mut organization =
             models::organizations::Organization::from(data, team_members);
+        if current_user.as_ref().is_some_and(|x| x.role.is_mod()) {
+            let note = DBModerationNote::get_organization(
+                organization.id.into(),
+                &**pool,
+                &redis,
+            )
+            .await?;
+            organization.moderation_notes = Some(note.map(Into::into));
+        }
         return Ok(HttpResponse::Ok().json(organization));
     }
     Err(ApiError::NotFound)
+}
+
+#[utoipa::path(tag = "organizations", responses((status = NO_CONTENT)))]
+#[patch("/organization/{id}/notes")]
+pub async fn organization_notes_edit(
+    req: HttpRequest,
+    info: web::Path<(String,)>,
+    new_note: web::Json<crate::models::moderation_notes::PatchModerationNote>,
+    pool: web::Data<PgPool>,
+    redis: web::Data<RedisPool>,
+    session_queue: web::Data<AuthQueue>,
+) -> Result<HttpResponse, ApiError> {
+    let user = get_user_from_headers(
+        &req,
+        &**pool,
+        &redis,
+        &session_queue,
+        Scopes::SESSION_ACCESS,
+    )
+    .await?
+    .1;
+
+    if !user.role.is_mod() {
+        return Err(ApiError::CustomAuthentication(
+            "you do not have permission to edit moderation notes".to_string(),
+        ));
+    }
+
+    new_note.validate_not_empty()?;
+    let expected_version =
+        crate::models::moderation_notes::parse_if_match_header(&req)?;
+
+    let organization =
+        DBOrganization::get(&info.into_inner().0, &**pool, &redis)
+            .await?
+            .ok_or(ApiError::NotFound)?;
+
+    let mut transaction = pool.begin().await?;
+    if let Some(expected) = expected_version {
+        let updated = DBModerationNote::update(
+            None,
+            Some(organization.id),
+            user.id.into(),
+            expected,
+            new_note.notes.as_deref(),
+            new_note.user_rating,
+            &mut transaction,
+        )
+        .await?;
+
+        if updated.is_none() {
+            return Err(ApiError::PreconditionFailed(
+                "moderation note version does not match".to_string(),
+            ));
+        }
+    } else {
+        let updated = DBModerationNote::insert(
+            None,
+            Some(organization.id),
+            user.id.into(),
+            new_note.notes.as_deref(),
+            new_note.user_rating,
+            &mut transaction,
+        )
+        .await?;
+
+        if updated.is_none() {
+            return Err(ApiError::PreconditionRequired(
+                "moderation note version does not match".to_string(),
+            ));
+        }
+    };
+
+    transaction.commit().await?;
+    DBModerationNote::clear_organization_cache(organization.id, &redis).await?;
+
+    Ok(HttpResponse::NoContent().finish())
 }
 
 #[derive(Deserialize)]
@@ -295,6 +378,12 @@ pub struct OrganizationIds {
     pub ids: String,
 }
 
+#[utoipa::path(
+	tag = "organizations",
+	params(("ids" = String, Query)),
+	responses((status = OK))
+)]
+#[get("/organizations")]
 pub async fn organizations_get(
     req: HttpRequest,
     web::Query(ids): web::Query<OrganizationIds>,
@@ -331,6 +420,17 @@ pub async fn organizations_get(
     .map(|x| x.1)
     .ok();
     let user_id = current_user.as_ref().map(|x| x.id.into());
+    let include_notes = current_user.as_ref().is_some_and(|x| x.role.is_mod());
+    let notes = if include_notes {
+        DBModerationNote::get_many_organizations(
+            &organizations_data.iter().map(|x| x.id).collect::<Vec<_>>(),
+            &**pool,
+            &redis,
+        )
+        .await?
+    } else {
+        HashMap::new()
+    };
 
     let mut organizations = vec![];
 
@@ -375,15 +475,20 @@ pub async fn organizations_get(
             })
             .collect();
 
-        let organization =
+        let data_id = data.id;
+        let mut organization =
             models::organizations::Organization::from(data, team_members);
+        if include_notes {
+            organization.moderation_notes =
+                Some(notes.get(&data_id).cloned().map(Into::into));
+        }
         organizations.push(organization);
     }
 
     Ok(HttpResponse::Ok().json(organizations))
 }
 
-#[derive(Serialize, Deserialize, Validate)]
+#[derive(Serialize, Deserialize, Validate, utoipa::ToSchema)]
 pub struct OrganizationEdit {
     #[validate(length(min = 3, max = 256))]
     pub description: Option<String>,
@@ -396,6 +501,8 @@ pub struct OrganizationEdit {
     pub name: Option<String>,
 }
 
+#[utoipa::path(tag = "organizations", responses((status = NO_CONTENT)))]
+#[patch("/organization/{id}")]
 pub async fn organizations_edit(
     req: HttpRequest,
     info: web::Path<(String,)>,
@@ -557,12 +664,15 @@ pub async fn organizations_edit(
     }
 }
 
+#[utoipa::path(tag = "organizations", responses((status = NO_CONTENT)))]
+#[delete("/organization/{id}")]
 pub async fn organization_delete(
     req: HttpRequest,
     info: web::Path<(String,)>,
     pool: web::Data<PgPool>,
     redis: web::Data<RedisPool>,
     session_queue: web::Data<AuthQueue>,
+    search_state: web::Data<SearchState>,
 ) -> Result<HttpResponse, ApiError> {
     let user = get_user_from_headers(
         &req,
@@ -631,9 +741,9 @@ pub async fn organization_delete(
     // Handle projects- every project that is in this organization needs to have its owner changed the organization owner
     // Now, no project should have an owner if it is in an organization, and also
     // the owner of an organization should not be a team member in any project
-    let organization_project_teams = sqlx::query!(
+    let organization_projects = sqlx::query!(
         "
-        SELECT t.id FROM organizations o
+        SELECT t.id team_id, m.id project_id FROM organizations o
         INNER JOIN mods m ON m.organization_id = o.id
         INNER JOIN teams t ON t.id = m.team_id
         WHERE o.id = $1 AND $1 IS NOT NULL
@@ -641,9 +751,22 @@ pub async fn organization_delete(
         organization.id as database::models::ids::DBOrganizationId
     )
     .fetch(&mut transaction)
-    .map_ok(|c| database::models::DBTeamId(c.id))
+    .map_ok(|c| {
+        (
+            database::models::DBTeamId(c.team_id),
+            database::models::DBProjectId(c.project_id),
+        )
+    })
     .try_collect::<Vec<_>>()
     .await?;
+    let organization_project_teams = organization_projects
+        .iter()
+        .map(|(team_id, _)| *team_id)
+        .collect::<Vec<_>>();
+    let organization_project_ids = organization_projects
+        .iter()
+        .map(|(_, project_id)| *project_id)
+        .collect::<Vec<_>>();
 
     for organization_project_team in &organization_project_teams {
         let new_id = crate::database::models::ids::generate_team_member_id(
@@ -685,6 +808,17 @@ pub async fn organization_delete(
         database::models::DBTeamMember::clear_cache(*team_id, &redis).await?;
     }
 
+    for project_id in organization_project_ids {
+        super::projects::clear_project_cache_and_queue_search(
+            &redis,
+            &search_state,
+            project_id,
+            None,
+            None,
+        )
+        .await?;
+    }
+
     if !organization_project_teams.is_empty() {
         database::models::DBUser::clear_project_cache(&[owner_id], &redis)
             .await?;
@@ -697,10 +831,12 @@ pub async fn organization_delete(
     }
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, utoipa::ToSchema)]
 pub struct OrganizationProjectAdd {
     pub project_id: String, // Also allow name/slug
 }
+#[utoipa::path(tag = "organizations", responses((status = NO_CONTENT)))]
+#[post("/organization/{id}/projects")]
 pub async fn organization_projects_add(
     req: HttpRequest,
     info: web::Path<(String,)>,
@@ -708,6 +844,7 @@ pub async fn organization_projects_add(
     pool: web::Data<PgPool>,
     redis: web::Data<RedisPool>,
     session_queue: web::Data<AuthQueue>,
+    search_state: web::Data<SearchState>,
 ) -> Result<HttpResponse, ApiError> {
     let info = info.into_inner().0;
     let current_user = get_user_from_headers(
@@ -841,11 +978,12 @@ pub async fn organization_projects_add(
             &redis,
         )
         .await?;
-        database::models::DBProject::clear_cache(
+        super::projects::clear_project_cache_and_queue_search(
+            &redis,
+            &search_state,
             project_item.inner.id,
             project_item.inner.slug,
             None,
-            &redis,
         )
         .await?;
     } else {
@@ -857,13 +995,15 @@ pub async fn organization_projects_add(
     Ok(HttpResponse::Ok().finish())
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, utoipa::ToSchema)]
 pub struct OrganizationProjectRemoval {
     // A new owner must be supplied for the project.
     // That user must be a member of the organization, but not necessarily a member of the project.
     pub new_owner: UserId,
 }
 
+#[utoipa::path(tag = "organizations", responses((status = NO_CONTENT)))]
+#[delete("/organization/{id}/projects/{project_id}")]
 pub async fn organization_projects_remove(
     req: HttpRequest,
     info: web::Path<(String, String)>,
@@ -871,6 +1011,7 @@ pub async fn organization_projects_remove(
     data: web::Json<OrganizationProjectRemoval>,
     redis: web::Data<RedisPool>,
     session_queue: web::Data<AuthQueue>,
+    search_state: web::Data<SearchState>,
 ) -> Result<HttpResponse, ApiError> {
     let (organization_id, project_id) = info.into_inner();
     let current_user = get_user_from_headers(
@@ -1029,11 +1170,12 @@ pub async fn organization_projects_remove(
             &redis,
         )
         .await?;
-        database::models::DBProject::clear_cache(
+        super::projects::clear_project_cache_and_queue_search(
+            &redis,
+            &search_state,
             project_item.inner.id,
             project_item.inner.slug,
             None,
-            &redis,
         )
         .await?;
     } else {
@@ -1051,13 +1193,20 @@ pub struct Extension {
 }
 
 #[allow(clippy::too_many_arguments)]
+#[utoipa::path(
+	tag = "organizations",
+	params(("ext" = String, Query)),
+	request_body(content = Vec<u8>, content_type = "application/octet-stream"),
+	responses((status = NO_CONTENT))
+)]
+#[patch("/organization/{id}/icon")]
 pub async fn organization_icon_edit(
     web::Query(ext): web::Query<Extension>,
     req: HttpRequest,
     info: web::Path<(String,)>,
     pool: web::Data<PgPool>,
     redis: web::Data<RedisPool>,
-    file_host: web::Data<Arc<dyn FileHost + Send + Sync>>,
+    file_host: web::Data<dyn FileHost>,
     mut payload: web::Payload,
     session_queue: web::Data<AuthQueue>,
 ) -> Result<HttpResponse, ApiError> {
@@ -1108,7 +1257,7 @@ pub async fn organization_icon_edit(
         organization_item.icon_url,
         organization_item.raw_icon_url,
         FileHostPublicity::Public,
-        &***file_host,
+        &**file_host,
     )
     .await?;
 
@@ -1127,7 +1276,7 @@ pub async fn organization_icon_edit(
         &ext.ext,
         Some(96),
         Some(1.0),
-        &***file_host,
+        &**file_host,
     )
     .await?;
 
@@ -1158,12 +1307,14 @@ pub async fn organization_icon_edit(
     Ok(HttpResponse::NoContent().body(""))
 }
 
+#[utoipa::path(tag = "organizations", responses((status = NO_CONTENT)))]
+#[delete("/organization/{id}/icon")]
 pub async fn delete_organization_icon(
     req: HttpRequest,
     info: web::Path<(String,)>,
     pool: web::Data<PgPool>,
     redis: web::Data<RedisPool>,
-    file_host: web::Data<Arc<dyn FileHost + Send + Sync>>,
+    file_host: web::Data<dyn FileHost>,
     session_queue: web::Data<AuthQueue>,
 ) -> Result<HttpResponse, ApiError> {
     let user = get_user_from_headers(
@@ -1213,7 +1364,7 @@ pub async fn delete_organization_icon(
         organization_item.icon_url,
         organization_item.raw_icon_url,
         FileHostPublicity::Public,
-        &***file_host,
+        &**file_host,
     )
     .await?;
 

@@ -44,6 +44,8 @@
 				:share-disabled="resolvedShareDisabled"
 				:sharing="isSharing"
 				:fullscreen="isFullscreen"
+				:clear-disabled="resolvedClearDisabled"
+				:clear-disabled-tooltip="resolvedClearDisabledTooltip"
 				:show-delete="showDelete"
 				:delete-disabled="resolvedDeleteDisabled"
 				:delete-disabled-tooltip="ctx.deleteDisabledTooltip"
@@ -59,6 +61,8 @@
 			class="min-h-0 flex-1"
 			:show-input="resolvedShowInput"
 			:disable-input="resolvedInputDisabled"
+			:disable-input-tooltip="resolvedInputDisabledTooltip"
+			:disabled-input-placeholder="resolvedInputDisabledPlaceholder"
 			:fullscreen="isFullscreen"
 			:empty-state-type="ctx.emptyStateType"
 			:loading="resolvedLoading"
@@ -76,7 +80,7 @@
 		<template #actions>
 			<div class="flex justify-end gap-2">
 				<ButtonStyled type="outlined">
-					<button class="!border !border-surface-4" @click="deleteModal?.hide()">
+					<button @click="deleteModal?.hide()">
 						<XIcon />
 						Cancel
 					</button>
@@ -108,6 +112,7 @@ import NewModal from '#ui/components/modal/NewModal.vue'
 import ShareModal from '#ui/components/modal/ShareModal.vue'
 import { injectModrinthClient } from '#ui/providers'
 import { injectModalBehavior } from '#ui/providers/modal-behavior'
+import { injectPageContext } from '#ui/providers/page-context'
 import { injectNotificationManager } from '#ui/providers/web-notifications.ts'
 
 import ConsoleActionButtons from './components/ConsoleActionButtons.vue'
@@ -127,6 +132,7 @@ import type { LogLevel, LogLine } from './types'
 const ctx = injectConsoleManager()
 const client = injectModrinthClient()
 const modalBehavior = injectModalBehavior()
+const pageContext = injectPageContext(null)
 const { addNotification } = injectNotificationManager()
 
 const crashHeader = computed(() => {
@@ -149,6 +155,9 @@ const deleteModal = ref<InstanceType<typeof NewModal> | null>(null)
 const isDeleting = ref(false)
 const searchQuery = ref('')
 const isFullscreen = ref(false)
+const fullscreenBodyClass = 'modrinth-console-fullscreen-active'
+const fullscreenIntercomPadding = 20
+const fullscreenIntercomPaddingRequestId = Symbol('console-fullscreen')
 const isApp =
 	typeof window !== 'undefined' && !!(window as Record<string, unknown>).__TAURI_INTERNALS__
 const isSharing = ref(false)
@@ -187,6 +196,11 @@ function buildCombinedPredicate(): ((line: LogLine) => boolean) | null {
 onBeforeUnmount(() => {
 	if (isFullscreen.value) {
 		document.body.style.overflow = ''
+		document.body.classList.remove(fullscreenBodyClass)
+		pageContext?.intercomBubble?.requestHorizontalPadding?.(
+			fullscreenIntercomPaddingRequestId,
+			null,
+		)
 		modalBehavior?.onHide?.()
 	}
 })
@@ -207,6 +221,11 @@ const resolvedDisableInput = computed(() => {
 	return isRef(v) ? v.value : v
 })
 
+function unwrapMaybeRef<T>(value: T | { value: T } | undefined): T | undefined {
+	if (value === undefined) return undefined
+	return isRef(value) ? value.value : value
+}
+
 // needs historical log start/end flags on ws to be properly useful
 const resolvedLoading = computed(() => {
 	const v = ctx.loading
@@ -215,6 +234,14 @@ const resolvedLoading = computed(() => {
 })
 
 const resolvedInputDisabled = computed(() => resolvedDisableInput.value || resolvedLoading.value)
+
+const resolvedInputDisabledTooltip = computed(() =>
+	resolvedDisableInput.value ? unwrapMaybeRef(ctx.disableCommandInputTooltip) : undefined,
+)
+
+const resolvedInputDisabledPlaceholder = computed(() =>
+	resolvedInputDisabledTooltip.value ? 'Command input disabled' : 'Server is not running',
+)
 
 const resolvedShareDisabled = computed(() => {
 	const v = ctx.shareDisabled
@@ -229,6 +256,16 @@ const resolvedDeleteDisabled = computed(() => {
 	if (!v) return false
 	return isRef(v) ? v.value : v
 })
+
+const resolvedClearDisabled = computed(() => {
+	const v = ctx.clearDisabled
+	if (!v) return false
+	return isRef(v) ? v.value : v
+})
+
+const resolvedClearDisabledTooltip = computed(() =>
+	resolvedClearDisabled.value ? unwrapMaybeRef(ctx.clearDisabledTooltip) : undefined,
+)
 
 function handleTerminalReady(_terminal: Terminal) {
 	rewriteFiltered()
@@ -266,9 +303,19 @@ function toggleFullscreen() {
 	isFullscreen.value = !isFullscreen.value
 	if (isFullscreen.value) {
 		document.body.style.overflow = 'hidden'
+		document.body.classList.add(fullscreenBodyClass)
+		pageContext?.intercomBubble?.requestHorizontalPadding?.(
+			fullscreenIntercomPaddingRequestId,
+			fullscreenIntercomPadding,
+		)
 		modalBehavior?.onShow?.()
 	} else {
 		document.body.style.overflow = ''
+		document.body.classList.remove(fullscreenBodyClass)
+		pageContext?.intercomBubble?.requestHorizontalPadding?.(
+			fullscreenIntercomPaddingRequestId,
+			null,
+		)
 		modalBehavior?.onHide?.()
 	}
 	nextTick(() => {
@@ -340,10 +387,12 @@ watch(resolvedLoading, (loading) => {
 })
 
 function handleCommand(cmd: string) {
+	if (resolvedInputDisabled.value) return
 	ctx.sendCommand?.(cmd)
 }
 
 function handleClear() {
+	if (resolvedClearDisabled.value) return
 	const term = terminalRef.value?.terminal
 	if (term) clearSearchHighlights(term)
 	terminalRef.value?.reset()
@@ -396,3 +445,27 @@ async function handleShare() {
 	}
 }
 </script>
+
+<style>
+.modrinth-console-fullscreen-active .intercom-lightweight-app,
+.modrinth-console-fullscreen-active .intercom-lightweight-app-launcher,
+.modrinth-console-fullscreen-active .intercom-lightweight-app-messenger,
+.modrinth-console-fullscreen-active .intercom-launcher-frame,
+.modrinth-console-fullscreen-active .intercom-messenger-frame,
+.modrinth-console-fullscreen-active #intercom-container,
+.modrinth-console-fullscreen-active #intercom-frame,
+.modrinth-console-fullscreen-active iframe[name='intercom-launcher-frame'],
+.modrinth-console-fullscreen-active iframe[name='intercom-messenger-frame'] {
+	z-index: 14 !important;
+}
+
+.modrinth-console-fullscreen-active .loading-indicator-container,
+.modrinth-console-fullscreen-active .app-contents::before {
+	z-index: 14 !important;
+}
+
+.modrinth-console-fullscreen-active .app-grid-navbar,
+.modrinth-console-fullscreen-active .app-grid-statusbar {
+	z-index: 0 !important;
+}
+</style>

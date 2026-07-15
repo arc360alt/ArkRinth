@@ -6,13 +6,13 @@ import Admonition from '#ui/components/base/Admonition.vue'
 import StackedAdmonitions, {
 	type StackedAdmonitionItem,
 } from '#ui/components/base/StackedAdmonitions.vue'
-import { ServerIcon } from '#ui/components/servers/icons'
 import InstallingBanner, {
 	type ContentError,
 	type SyncProgress,
 } from '#ui/components/servers/InstallingBanner.vue'
 import { defineMessages, useVIntl } from '#ui/composables/i18n'
 import { useServerBackupsQueue } from '#ui/composables/server-backups-queue'
+import { useServerPermissions } from '#ui/composables/server-permissions'
 import type { FileOperation } from '#ui/layouts/shared/files-tab/types'
 import { injectModrinthClient, injectModrinthServerContext } from '#ui/providers'
 
@@ -23,7 +23,6 @@ import UploadAdmonition from './UploadAdmonition.vue'
 const props = defineProps<{
 	syncProgress?: SyncProgress | null
 	contentError?: ContentError | null
-	serverImage?: string
 }>()
 
 const emit = defineEmits<{
@@ -34,6 +33,7 @@ const { formatMessage } = useVIntl()
 const client = injectModrinthClient()
 const ctx = injectModrinthServerContext()
 const route = useRoute()
+const { canSetup, canManageBackups, permissionDeniedMessage } = useServerPermissions()
 
 const { activeOperations, backups, progressFor, invalidate } = useServerBackupsQueue(
 	computed(() => ctx.serverId),
@@ -59,7 +59,13 @@ const isOnContentTab = computed(() => route.path.includes('/content'))
 const isOnFilesTab = computed(() => route.path.includes('/files'))
 
 const bannerCoversInstalling = computed(
-	() => ctx.server.value?.status === 'installing' || ctx.isSyncingContent.value,
+	() =>
+		ctx.server.value?.status === 'installing' ||
+		ctx.isSyncingContent.value ||
+		ctx.busyReasons.value.some(
+			(r) =>
+				r.reason.id === 'servers.busy.installing' || r.reason.id === 'servers.busy.syncing-content',
+		),
 )
 
 function isBackupReason(id: string) {
@@ -88,6 +94,7 @@ const filesBusyHeader = computed(() =>
 
 const dismissedIds = reactive(new Set<string>())
 const cancellingIds = reactive(new Set<string>())
+const uploadCancelling = ref(false)
 const dismissedContentErrorKey = ref<string | null>(null)
 
 const contentErrorKey = computed(() =>
@@ -165,8 +172,7 @@ type ServerAdmonitionItem = StackedAdmonitionItem & {
 
 const showInstallingBanner = computed(() => {
 	if (!ctx.server.value) return false
-	const installing =
-		ctx.server.value.status === 'installing' || ctx.isSyncingContent.value || !!props.contentError
+	const installing = bannerCoversInstalling.value || !!props.contentError
 	if (!installing) return false
 	if (contentErrorKey.value && dismissedContentErrorKey.value === contentErrorKey.value)
 		return false
@@ -307,10 +313,25 @@ async function onBackupDismiss(item: BackupAdmonitionEntry) {
 }
 
 async function onBackupCancel(item: BackupAdmonitionEntry) {
+	if (!canManageBackups.value) return
 	if (cancellingIds.has(item.key)) return
 	cancellingIds.add(item.key)
 	try {
-		await client.archon.backups_v1.delete(ctx.serverId, ctx.worldId.value!, item.backupId)
+		if (item.operationId == null) {
+			await client.archon.backups_v1.delete(ctx.serverId, ctx.worldId.value!, item.backupId)
+		} else if (item.type === 'create') {
+			await client.archon.backups_queue_v1.cancelCreate(
+				ctx.serverId,
+				ctx.worldId.value!,
+				item.operationId,
+			)
+		} else {
+			await client.archon.backups_queue_v1.cancelRestore(
+				ctx.serverId,
+				ctx.worldId.value!,
+				item.operationId,
+			)
+		}
 		await invalidate()
 	} catch (err) {
 		cancellingIds.delete(item.key)
@@ -319,9 +340,25 @@ async function onBackupCancel(item: BackupAdmonitionEntry) {
 }
 
 async function onBackupRetry(item: BackupAdmonitionEntry) {
+	if (!canManageBackups.value) return
 	await client.archon.backups_queue_v1.retry(ctx.serverId, ctx.worldId.value!, item.backupId)
 	dismissedIds.add(item.key)
 	await invalidate()
+}
+
+async function onUploadCancel() {
+	if (uploadCancelling.value) return
+	const cancel = ctx.cancelUpload.value
+	if (!cancel) return
+
+	uploadCancelling.value = true
+	try {
+		await cancel()
+	} catch (err) {
+		console.error('Failed to cancel upload', err)
+	} finally {
+		uploadCancelling.value = false
+	}
 }
 
 async function onDismissAll() {
@@ -366,16 +403,20 @@ function onContentErrorDismiss() {
 			<InstallingBanner
 				v-if="item.kind === 'installing'"
 				:progress="syncProgress"
+				:fallback-phase="isOnContentTab && !syncProgress ? 'Addons' : null"
 				:content-error="contentError"
 				:dismissible="dismissible && !!contentError"
+				:retry-disabled="!canSetup"
+				:retry-disabled-tooltip="permissionDeniedMessage"
 				@dismiss="onContentErrorDismiss"
 				@retry="emit('content-retry')"
-			>
-				<template #icon>
-					<ServerIcon :image="serverImage" class="!h-6 !w-6" />
-				</template>
-			</InstallingBanner>
-			<UploadAdmonition v-else-if="item.kind === 'upload'" />
+			/>
+			<UploadAdmonition
+				v-else-if="item.kind === 'upload'"
+				:cancelable="!!ctx.cancelUpload.value"
+				:cancelling="uploadCancelling"
+				@cancel="onUploadCancel"
+			/>
 			<FileOperationAdmonition
 				v-else-if="item.kind === 'fs-op'"
 				:op="item.op"
@@ -387,6 +428,8 @@ function onContentErrorDismiss() {
 				:item="item.entry"
 				:dismissible="dismissible"
 				:cancelling="cancellingIds.has(item.entry.key)"
+				:can-manage-backups="canManageBackups"
+				:permission-denied-message="permissionDeniedMessage"
 				@dismiss="onBackupDismiss(item.entry)"
 				@cancel="onBackupCancel(item.entry)"
 				@retry="onBackupRetry(item.entry)"

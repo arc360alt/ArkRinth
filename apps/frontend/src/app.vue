@@ -1,7 +1,9 @@
 <template>
 	<NuxtLayout>
 		<NuxtRouteAnnouncer />
-		<LoadingBar />
+		<ClientOnly>
+			<LoadingBar />
+		</ClientOnly>
 		<NotificationPanel />
 		<I18nDebugPanel />
 		<NuxtPage />
@@ -11,6 +13,8 @@
 import { I18nDebugPanel, LoadingBar, NotificationPanel } from '@modrinth/ui'
 
 import { setupProviders } from '~/providers/setup.ts'
+
+import { useAuth } from './composables/auth'
 
 const auth = await useAuth()
 setupProviders(auth)

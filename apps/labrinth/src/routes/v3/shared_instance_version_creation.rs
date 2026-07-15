@@ -20,23 +20,42 @@ use crate::routes::v3::project_creation::UploadedFile;
 use crate::util::ext::MRPACK_MIME_TYPE;
 use actix_web::http::header::ContentLength;
 use actix_web::web::Data;
-use actix_web::{HttpRequest, HttpResponse, web};
+use actix_web::{HttpRequest, HttpResponse, post, web};
 use bytes::BytesMut;
 use chrono::Utc;
 use futures_util::StreamExt;
 use hex::FromHex;
-use std::sync::Arc;
 
 const MAX_FILE_SIZE: usize = 500 * 1024 * 1024;
 const MAX_FILE_SIZE_TEXT: &str = "500 MB";
 
-pub fn config(cfg: &mut web::ServiceConfig) {
-    cfg.route(
-        "shared-instance/{id}/version",
-        web::post().to(shared_instance_version_create),
-    );
+pub fn config(cfg: &mut actix_web::web::ServiceConfig) {
+    cfg.service(shared_instance_version_create);
 }
 
+/// Create a shared instance version.
+#[utoipa::path(
+	tag = "versions",
+	post,
+	params(
+		("id" = SharedInstanceId, Path, description = "The ID of the shared instance")
+	),
+	request_body(content = Vec<u8>, content_type = "application/octet-stream"),
+	responses(
+		(status = 201, description = "Expected response to a valid request", body = SharedInstanceVersion),
+		(status = 400, description = "Request was invalid, see given error"),
+		(
+			status = 401,
+			description = "Incorrect token scopes or no authorization to access the requested item(s)"
+		),
+		(
+			status = 404,
+			description = "The requested item(s) were not found or no authorization to access the requested item(s)"
+		)
+	),
+	security(("bearer_auth" = ["SHARED_INSTANCE_VERSION_CREATE"]))
+)]
+#[post("/shared-instance/{id}/version")]
 #[allow(clippy::too_many_arguments)]
 pub async fn shared_instance_version_create(
     req: HttpRequest,
@@ -44,7 +63,7 @@ pub async fn shared_instance_version_create(
     payload: web::Payload,
     web::Header(ContentLength(content_length)): web::Header<ContentLength>,
     redis: Data<RedisPool>,
-    file_host: Data<Arc<dyn FileHost + Send + Sync>>,
+    file_host: Data<dyn FileHost>,
     info: web::Path<(SharedInstanceId,)>,
     session_queue: Data<AuthQueue>,
 ) -> Result<HttpResponse, ApiError> {
@@ -63,7 +82,7 @@ pub async fn shared_instance_version_create(
         payload,
         content_length,
         &redis,
-        &***file_host,
+        &**file_host,
         info.into_inner().0.into(),
         &session_queue,
         &mut transaction,
@@ -73,7 +92,7 @@ pub async fn shared_instance_version_create(
 
     if result.is_err() {
         let undo_result = super::project_creation::undo_uploads(
-            &***file_host,
+            &**file_host,
             &uploaded_files,
         )
         .await;

@@ -1,12 +1,12 @@
 <script setup lang="ts">
 import { PlusIcon } from '@modrinth/assets'
-import { Button, injectNotificationManager, NavTabs } from '@modrinth/ui'
+import { ButtonStyled, injectNotificationManager, NavTabs } from '@modrinth/ui'
 import { inject, onUnmounted, ref, shallowRef } from 'vue'
 import { useRoute } from 'vue-router'
 
 import { NewInstanceImage } from '@/assets/icons'
-import { profile_listener } from '@/helpers/events.js'
-import { list } from '@/helpers/profile.js'
+import { instance_listener } from '@/helpers/events.js'
+import { list } from '@/helpers/instance'
 import { useBreadcrumbs } from '@/store/breadcrumbs.js'
 
 const { handleError } = injectNotificationManager()
@@ -26,11 +26,11 @@ window.addEventListener('online', () => {
 	offline.value = false
 })
 
-const unlistenProfile = await profile_listener(async () => {
+const unlistenInstance = await instance_listener(async () => {
 	instances.value = await list().catch(handleError)
 })
 onUnmounted(() => {
-	unlistenProfile()
+	unlistenInstance()
 })
 </script>
 
@@ -55,10 +55,12 @@ onUnmounted(() => {
 				<NewInstanceImage />
 			</div>
 			<h3>No instances found</h3>
-			<Button color="primary" :disabled="offline" @click="showCreationModal?.()">
-				<PlusIcon />
-				Create new instance
-			</Button>
+			<ButtonStyled color="brand">
+				<button :disabled="offline" @click="showCreationModal?.()">
+					<PlusIcon />
+					Create new instance
+				</button>
+			</ButtonStyled>
 		</div>
 	</div>
 </template>

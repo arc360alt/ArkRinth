@@ -1,4 +1,7 @@
 {
+  "action.no-permission": {
+    "defaultMessage": "ليس لديك صلاحية."
+  },
   "affiliate.create.button": {
     "defaultMessage": "إنشاء رابط تسويق بالعمولة"
   },
@@ -35,6 +38,9 @@
   "app.server-settings.failed-to-load-server": {
     "defaultMessage": "عذر تحميل خادم الإعدادات"
   },
+  "badge.alpha": {
+    "defaultMessage": "نسخه أوليه"
+  },
   "badge.beta": {
     "defaultMessage": "تجريبي"
   },
@@ -46,6 +52,39 @@
   },
   "billing.resubscribe-modal.cancel": {
     "defaultMessage": "إلغاء"
+  },
+  "billing.resubscribe-modal.cpus": {
+    "defaultMessage": "{sharedCpus} وحدات المعالجة المركزية المشتركة"
+  },
+  "billing.resubscribe-modal.description": {
+    "defaultMessage": "أنت على وشك إعادة الاشتراك في <server-name>{serverName}</server-name>. سيتم إعادة تنشيط اشتراكك وسيستمر الخادم الخاص بك في العمل دون انقطاع."
+  },
+  "billing.resubscribe-modal.error.text": {
+    "defaultMessage": "لا يمكن إعادة الاشتراك، فشل في تحميل تفاصيل الاشتراك."
+  },
+  "billing.resubscribe-modal.error.title": {
+    "defaultMessage": "خطأ"
+  },
+  "billing.resubscribe-modal.failed-load": {
+    "defaultMessage": "فشل تحميل تفاصيل الاشتراك."
+  },
+  "billing.resubscribe-modal.next-charge": {
+    "defaultMessage": "سيتم تحصيل الرسوم التالية في <charge-date>{date}</charge-date>."
+  },
+  "billing.resubscribe-modal.plan-label": {
+    "defaultMessage": "خطة"
+  },
+  "billing.resubscribe-modal.ram": {
+    "defaultMessage": "{ramGb} جيجا بايت رام"
+  },
+  "billing.resubscribe-modal.resubscribe": {
+    "defaultMessage": "إعادة الاشتراك"
+  },
+  "billing.resubscribe-modal.storage": {
+    "defaultMessage": "{storageGb} GB مساحة تخزين"
+  },
+  "billing.resubscribe-modal.title": {
+    "defaultMessage": "إعادة الاشتراك في الخادم"
   },
   "button.accept": {
     "defaultMessage": "اقبل"
@@ -73,6 +112,9 @@
   },
   "button.continue": {
     "defaultMessage": "استمر"
+  },
+  "button.copy-filename": {
+    "defaultMessage": "انسخ اسم الملف"
   },
   "button.copy-id": {
     "defaultMessage": "نسخ المعرف"
@@ -121,9 +163,6 @@
   },
   "button.reinstall-modpack": {
     "defaultMessage": "إعادة تثبيت حزمة التعديل"
-  },
-  "button.remove": {
-    "defaultMessage": "إزالة"
   },
   "button.remove-image": {
     "defaultMessage": "إزالة الصورة"
@@ -217,12 +256,6 @@
   },
   "content.confirm-deletion.admonition-header": {
     "defaultMessage": "تحذير الحذف"
-  },
-  "content.confirm-deletion.delete-button": {
-    "defaultMessage": "احذف {count} {count, plural, one {{itemType, select, project {project} version {version} user {user} other {project}}} other {{itemType, select, project {مشاريع} version {versions} user {users} other {projects}}}}"
-  },
-  "content.confirm-deletion.header": {
-    "defaultMessage": "حذف {count, plural, one {{itemType, select, project {project} version {version} user {user} other {content}}} other {{itemType, select, project {مشاريع} version {versions} user {users} other {contents}}}}"
   },
   "content.confirm-modpack-update.admonition-header": {
     "defaultMessage": "تحذير {action, select, downgrade {خفض الٳصدار} other {التحديث}}"
@@ -566,9 +599,6 @@
   "omorphia.component.badge.label.failed": {
     "defaultMessage": "فشل"
   },
-  "omorphia.component.badge.label.listed": {
-    "defaultMessage": "مدرج"
-  },
   "omorphia.component.badge.label.moderator": {
     "defaultMessage": "مشرف"
   },
@@ -604,9 +634,6 @@
   },
   "omorphia.component.badge.label.unsafe": {
     "defaultMessage": "يفشل"
-  },
-  "omorphia.component.badge.label.withheld": {
-    "defaultMessage": "محجوز"
   },
   "omorphia.component.copy.action.copy": {
     "defaultMessage": "نسخ الكود للحافظة"
@@ -664,9 +691,6 @@
   },
   "payment-method.jcb": {
     "defaultMessage": "JCB"
-  },
-  "payment-method.mastercard": {
-    "defaultMessage": "MasterCard"
   },
   "payment-method.paypal": {
     "defaultMessage": "PayPal"

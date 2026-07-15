@@ -1,3 +1,4 @@
+use std::error::Error;
 use std::str::FromStr;
 
 use async_trait::async_trait;
@@ -13,7 +14,7 @@ pub use s3_host::{S3BucketConfig, S3Host};
 #[derive(Error, Debug)]
 pub enum FileHostingError {
     #[error("S3 error when {0}: {1}")]
-    S3Error(&'static str, s3::error::S3Error),
+    S3Error(&'static str, #[source] Box<dyn Error + Send + Sync>),
     #[error("File system error in file hosting: {0}")]
     FileSystemError(#[from] std::io::Error),
     #[error("Invalid Filename")]
@@ -44,7 +45,11 @@ pub enum FileHostPublicity {
 }
 
 #[async_trait]
-pub trait FileHost {
+pub trait FileHost: Send + Sync {
+    /// Uploads a file at the exact storage key provided.
+    ///
+    /// Callers must URL-decode keys derived from public URLs before passing
+    /// them here, and URL-encode this key before exposing it in a public URL.
     async fn upload_file(
         &self,
         content_type: &str,
@@ -53,17 +58,35 @@ pub trait FileHost {
         file_bytes: Bytes,
     ) -> Result<UploadFileData, FileHostingError>;
 
+    /// Returns a private URL for the exact storage key provided.
+    ///
+    /// Callers must URL-decode keys derived from public URLs before passing
+    /// them here.
     async fn get_url_for_private_file(
         &self,
         file_name: &str,
         expiry_secs: u32,
     ) -> Result<String, FileHostingError>;
 
+    /// Deletes the file at the exact storage key provided.
+    ///
+    /// Callers must URL-decode keys derived from public URLs before passing
+    /// them here.
     async fn delete_file(
         &self,
         file_name: &str,
         file_publicity: FileHostPublicity,
     ) -> Result<DeleteFileData, FileHostingError>;
+
+    /// Reads the file at the exact storage key provided.
+    ///
+    /// Callers must URL-decode keys derived from public URLs before passing
+    /// them here.
+    async fn read_file(
+        &self,
+        file_name: &str,
+        file_publicity: FileHostPublicity,
+    ) -> Result<Bytes, FileHostingError>;
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]

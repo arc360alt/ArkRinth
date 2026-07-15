@@ -21,14 +21,18 @@
 					</h2>
 				</div>
 				<template v-if="!history">
-					<Button v-if="data.hasRead" @click="updateRoute()">
-						<HistoryIcon />
-						{{ formatMessage(messages.viewHistory) }}
-					</Button>
-					<Button v-if="notifications.length > 0" color="danger" @click="readAll()">
-						<CheckCheckIcon />
-						{{ formatMessage(messages.markAllAsRead) }}
-					</Button>
+					<ButtonStyled v-if="data.hasRead">
+						<button @click="updateRoute()">
+							<HistoryIcon />
+							{{ formatMessage(messages.viewHistory) }}
+						</button>
+					</ButtonStyled>
+					<ButtonStyled v-if="notifications.length > 0" color="red">
+						<button @click="readAll()">
+							<CheckCheckIcon />
+							{{ formatMessage(messages.markAllAsRead) }}
+						</button>
+					</ButtonStyled>
 				</template>
 			</div>
 			<Chips
@@ -67,7 +71,7 @@
 <script setup>
 import { CheckCheckIcon, HistoryIcon } from '@modrinth/assets'
 import {
-	Button,
+	ButtonStyled,
 	Chips,
 	commonMessages,
 	defineMessages,
@@ -90,31 +94,31 @@ const { formatMessage } = useVIntl()
 
 const messages = defineMessages({
 	historyLabel: {
-		id: 'dashboard.notifications.history.label',
+		id: 'dashboard.overview.notifications.history.label',
 		defaultMessage: 'History',
 	},
 	notificationHistoryTitle: {
-		id: 'dashboard.notifications.history.title',
+		id: 'dashboard.overview.notifications.history.title',
 		defaultMessage: 'Notification history',
 	},
 	viewHistory: {
-		id: 'dashboard.notifications.button.view-history',
+		id: 'dashboard.overview.notifications.button.view-history',
 		defaultMessage: 'View history',
 	},
 	markAllAsRead: {
-		id: 'dashboard.notifications.button.mark-all-as-read',
+		id: 'dashboard.overview.notifications.button.mark-all-as-read',
 		defaultMessage: 'Mark all as read',
 	},
 	loadingNotifications: {
-		id: 'dashboard.notifications.loading',
+		id: 'dashboard.overview.notifications.loading',
 		defaultMessage: 'Loading notifications...',
 	},
 	errorLoadingNotifications: {
-		id: 'dashboard.notifications.error.loading',
+		id: 'dashboard.overview.notifications.error.loading',
 		defaultMessage: 'Error loading notifications:',
 	},
 	noUnreadNotifications: {
-		id: 'dashboard.notifications.empty.no-unread',
+		id: 'dashboard.overview.notifications.empty.no-unread',
 		defaultMessage: "You don't have any unread notifications.",
 	},
 })

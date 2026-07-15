@@ -12,7 +12,11 @@ import { ref } from 'vue'
 
 import ServerModalBody from '@/components/ui/world/modal/ServerModalBody.vue'
 import type { GameInstance } from '@/helpers/types'
-import { add_server_to_profile, type ServerPackStatus, type ServerWorld } from '@/helpers/worlds.ts'
+import {
+	add_server_to_instance,
+	type ServerPackStatus,
+	type ServerWorld,
+} from '@/helpers/worlds.ts'
 
 const { handleError } = injectNotificationManager()
 const { formatMessage } = useVIntl()
@@ -35,8 +39,8 @@ async function addServer(play: boolean) {
 	const serverName = name.value ? name.value : address.value
 	const resourcePackStatus = resourcePack.value
 	const index =
-		(await add_server_to_profile(
-			props.instance.path,
+		(await add_server_to_instance(
+			props.instance.id,
 			serverName,
 			address.value,
 			resourcePackStatus,
@@ -93,7 +97,7 @@ defineExpose({ show, hide })
 		<template #actions>
 			<div class="flex gap-2 justify-end">
 				<ButtonStyled type="outlined">
-					<button class="!border !border-surface-4" @click="hide()">
+					<button @click="hide()">
 						<XIcon />
 						{{ formatMessage(commonMessages.cancelButton) }}
 					</button>

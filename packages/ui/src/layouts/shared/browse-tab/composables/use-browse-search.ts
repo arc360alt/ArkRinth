@@ -4,8 +4,14 @@ import { computed, nextTick, ref, shallowRef, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 import { useDebugLogger } from '#ui/composables/debug-logger'
-import type { FilterType, FilterValue, ProjectType, SortType } from '#ui/utils/search'
-import { useSearch } from '#ui/utils/search'
+import type {
+	EnvironmentSearchOverride,
+	FilterType,
+	FilterValue,
+	ProjectType,
+	SortType,
+} from '#ui/utils/search'
+import { LOADER_FILTER_TYPES, useSearch } from '#ui/utils/search'
 import { useServerSearch } from '#ui/utils/server-search'
 
 import type { BrowseSearchResponse } from '../types'
@@ -18,6 +24,7 @@ export interface UseBrowseSearchOptions {
 		categories: Labrinth.Tags.v2.Category[]
 	}>
 	providedFilters?: ComputedRef<FilterValue[]>
+	environmentOverride?: ComputedRef<EnvironmentSearchOverride | undefined>
 	search: (params: string) => Promise<BrowseSearchResponse>
 	persistentQueryParams: string[]
 	getExtraQueryParams?: () => Record<string, string | undefined>
@@ -60,14 +67,6 @@ export interface BrowseSearchState {
 	onFilterChange: () => void
 }
 
-const LOADER_FILTER_TYPES = [
-	'mod_loader',
-	'plugin_loader',
-	'modpack_loader',
-	'shader_loader',
-	'plugin_platform',
-] as const
-
 export function useBrowseSearch(options: UseBrowseSearchOptions): BrowseSearchState {
 	const debug = useDebugLogger('BrowseSearch')
 	const route = useRoute()
@@ -90,7 +89,12 @@ export function useBrowseSearch(options: UseBrowseSearchOptions): BrowseSearchSt
 		sortTypes,
 		requestParams,
 		createPageParams,
-	} = useSearch(projectTypes, options.tags, options.providedFilters ?? computed(() => []))
+	} = useSearch(
+		projectTypes,
+		options.tags,
+		options.providedFilters ?? computed(() => []),
+		options.environmentOverride ?? computed(() => undefined),
+	)
 
 	const {
 		serverCurrentSortType,
@@ -180,6 +184,26 @@ export function useBrowseSearch(options: UseBrowseSearchOptions): BrowseSearchSt
 	let searchVersion = 0
 	let searchDebounceTimer: ReturnType<typeof setTimeout> | null = null
 
+	const providedFiltersOrEmpty = computed(() => options.providedFilters?.value ?? [])
+
+	watch(
+		[
+			query,
+			maxResults,
+			options.projectType,
+			currentSortType,
+			serverCurrentSortType,
+			currentFilters,
+			serverCurrentFilters,
+			overriddenProvidedFilterTypes,
+			providedFiltersOrEmpty,
+		],
+		() => {
+			currentPage.value = 1
+		},
+		{ deep: true },
+	)
+
 	watch(effectiveRequestParams, (newVal, oldVal) => {
 		debug('effectiveRequestParams changed', {
 			from: oldVal?.substring(0, 80),
@@ -250,9 +274,7 @@ export function useBrowseSearch(options: UseBrowseSearchOptions): BrowseSearchSt
 
 		const extraParams = options.getExtraQueryParams?.() ?? {}
 		for (const [key, value] of Object.entries(extraParams)) {
-			if (value !== undefined) {
-				persistentParams[key] = value
-			}
+			persistentParams[key] = value
 		}
 
 		const params = {

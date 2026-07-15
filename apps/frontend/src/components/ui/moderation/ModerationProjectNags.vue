@@ -24,15 +24,19 @@
 			</div>
 			<div class="input-group">
 				<ButtonStyled circular>
-					<button :class="!collapsed && '[&>svg]:rotate-180'" @click="$emit('toggleCollapsed')">
+					<button :class="{ '[&>svg]:rotate-180': !collapsed }" @click="$emit('toggleCollapsed')">
 						<DropdownIcon class="duration-250 transition-transform ease-in-out" />
 					</button>
 				</ButtonStyled>
 			</div>
 		</div>
-		<div v-if="!collapsed" class="grid-display width-16 mt-4">
-			<div v-for="nag in visibleNags" :key="nag.id" class="grid-display__item">
-				<span class="flex items-center gap-2 font-semibold">
+		<div v-if="!collapsed" class="mt-4 grid grid-cols-[repeat(auto-fit,minmax(15rem,1fr))] gap-2">
+			<div
+				v-for="nag in visibleNags"
+				:key="nag.id"
+				class="flex flex-col gap-3 rounded-2xl border border-solid border-surface-5 bg-surface-2 p-4"
+			>
+				<span class="flex items-center gap-2 font-medium text-contrast">
 					<component
 						:is="nag.icon || getDefaultIcon(nag.status)"
 						v-tooltip="getStatusTooltip(nag.status)"
@@ -52,7 +56,7 @@
 					:to="`/${project.project_type}/${project.slug ? project.slug : project.id}/${
 						nag.link.path
 					}`"
-					class="goto-link"
+					class="goto-link mt-auto"
 				>
 					{{ getFormattedMessage(nag.link.title) }}
 					<ChevronRightIcon aria-hidden="true" class="featured-header-chevron" />
@@ -229,7 +233,7 @@ const visibleNags = computed<Nag[]>(() => {
 			link: {
 				path: 'moderation',
 				title: messages.visitModerationPage,
-				shouldShow: () => props.routeName !== 'type-id-moderation',
+				shouldShow: () => props.routeName !== 'type-project-moderation',
 			},
 		})
 	}

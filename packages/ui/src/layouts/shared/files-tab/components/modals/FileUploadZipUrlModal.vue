@@ -37,6 +37,7 @@
 				</div>
 				<StyledInput
 					v-model="url"
+					v-tooltip="props.disabled ? props.disabledTooltip : undefined"
 					:icon="LinkIcon"
 					type="url"
 					:placeholder="
@@ -44,7 +45,7 @@
 							? 'https://www.curseforge.com/minecraft/modpacks/.../files/6412259'
 							: 'https://www.example.com/.../modpack-name-1.0.2.zip'
 					"
-					:disabled="submitted"
+					:disabled="submitted || props.disabled"
 					:error="touched && !!error"
 					autocomplete="off"
 					@focus="touched = true"
@@ -63,7 +64,7 @@
 		<template #actions>
 			<div class="flex w-full items-center justify-end gap-2">
 				<ButtonStyled type="outlined">
-					<button type="button" class="!border !border-surface-4" @click="hide">
+					<button type="button" @click="hide">
 						<XIcon />
 						{{
 							submitted
@@ -74,8 +75,8 @@
 				</ButtonStyled>
 				<ButtonStyled color="brand">
 					<button
-						v-tooltip="error"
-						:disabled="submitted || !!error || backupInProgress"
+						v-tooltip="submitTooltip"
+						:disabled="submitDisabled"
 						type="submit"
 						@click="handleSubmit"
 					>
@@ -117,6 +118,17 @@ import InlineBackupCreator from '../../../content-tab/components/modals/InlineBa
 const { addNotification } = injectNotificationManager()
 const client = injectModrinthClient()
 const { formatMessage } = useVIntl()
+
+const props = withDefaults(
+	defineProps<{
+		disabled?: boolean
+		disabledTooltip?: string
+	}>(),
+	{
+		disabled: false,
+		disabledTooltip: undefined,
+	},
+)
 
 const messages = defineMessages({
 	cfHeader: {
@@ -239,9 +251,17 @@ const error = computed(() => {
 	return ''
 })
 
+const submitDisabled = computed(
+	() => submitted.value || props.disabled || !!error.value || backupInProgress.value,
+)
+const submitTooltip = computed(() => {
+	if (props.disabled) return props.disabledTooltip
+	return error.value || undefined
+})
+
 const handleSubmit = async () => {
 	touched.value = true
-	if (error.value) return
+	if (submitDisabled.value) return
 
 	submitted.value = true
 	try {
@@ -270,6 +290,8 @@ const handleSubmit = async () => {
 }
 
 const show = (isCf: boolean) => {
+	if (props.disabled) return
+
 	cf.value = isCf
 	url.value = ''
 	submitted.value = false

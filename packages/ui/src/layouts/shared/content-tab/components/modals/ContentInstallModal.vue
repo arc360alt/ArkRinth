@@ -49,7 +49,13 @@
 			<span class="font-semibold text-contrast">
 				{{ formatMessage(messages.instanceType) }}
 			</span>
-			<Chips v-model="tab" :items="tabs" :format-label="formatTabLabel" :never-empty="true" />
+			<Chips
+				v-model="tab"
+				:items="tabs"
+				:format-label="formatTabLabel"
+				:never-empty="true"
+				:capitalize="false"
+			/>
 		</div>
 
 		<div class="h-px bg-divider" />
@@ -70,7 +76,6 @@
 				<ButtonStyled type="outlined" circular>
 					<button
 						v-tooltip="`${hideUninstallable ? 'Show' : 'Hide'} unavailable`"
-						class="!border-surface-4 !border"
 						@click="hideUninstallable = !hideUninstallable"
 					>
 						<EyeOffIcon v-if="hideUninstallable" />
@@ -93,14 +98,10 @@
 					v-for="inst in filteredInstances"
 					:key="inst.id"
 					class="flex items-center justify-between px-6 py-1.5"
-					:class="
-						!inst.compatible ? 'opacity-40' : inst.installed ? 'opacity-60' : 'hover:bg-surface-3'
-					"
+					:class="inst.installed ? 'opacity-60' : 'hover:bg-surface-3'"
 				>
 					<button
-						v-tooltip="
-							!inst.compatible ? 'This instance is not compatible with this project' : undefined
-						"
+						v-tooltip="!inst.compatible ? formatMessage(messages.incompatibleTooltip) : undefined"
 						class="flex min-w-0 cursor-pointer items-center gap-2.5 overflow-hidden border-0 bg-transparent p-0 text-left"
 						@click="emit('navigate', inst)"
 					>
@@ -109,14 +110,23 @@
 							inst.name
 						}}</span>
 					</button>
-					<ButtonStyled v-if="inst.installed" :disabled="true">
-						<button>
+					<ButtonStyled v-if="inst.installed">
+						<button disabled>
 							<CheckIcon />
 							{{ formatMessage(messages.installedBadge) }}
 						</button>
 					</ButtonStyled>
-					<ButtonStyled v-else-if="inst.compatible" :disabled="inst.installing">
-						<button @click="emit('install', inst)">
+					<ButtonStyled
+						v-else
+						:type="inst.compatible ? 'standard' : 'outlined'"
+						:color="inst.compatible ? 'standard' : 'orange'"
+					>
+						<button
+							v-tooltip="!inst.compatible ? formatMessage(messages.incompatibleTooltip) : undefined"
+							:disabled="inst.installing"
+							@click="emit('install', inst)"
+						>
+							<TriangleAlertIcon v-if="!inst.compatible" />
 							{{
 								inst.installing
 									? formatMessage(commonMessages.installingLabel)
@@ -134,17 +144,13 @@
 				<Avatar :src="iconPreviewUrl ?? undefined" size="5rem" rounded="2xl" />
 				<div class="flex flex-col gap-2">
 					<ButtonStyled type="outlined">
-						<button class="!border-surface-4 !border" @click="selectIcon">
+						<button @click="selectIcon">
 							<UploadIcon />
 							{{ formatMessage(messages.selectIcon) }}
 						</button>
 					</ButtonStyled>
 					<ButtonStyled type="outlined">
-						<button
-							class="!border-surface-4 !border"
-							:disabled="!iconPreviewUrl"
-							@click="removeIcon"
-						>
+						<button :disabled="!iconPreviewUrl" @click="removeIcon">
 							<XIcon />
 							{{ formatMessage(messages.removeIcon) }}
 						</button>
@@ -213,7 +219,7 @@
 					</span>
 				</div>
 				<ButtonStyled type="outlined">
-					<button class="!border-surface-4 !border" @click="modal?.hide()">
+					<button @click="modal?.hide()">
 						<XIcon />
 						{{ formatMessage(commonMessages.cancelButton) }}
 					</button>
@@ -222,7 +228,7 @@
 
 			<div v-else class="flex items-center justify-end gap-2">
 				<ButtonStyled type="outlined">
-					<button class="!border-surface-4 !border" @click="modal?.hide()">
+					<button @click="modal?.hide()">
 						<XIcon />
 						{{ formatMessage(commonMessages.cancelButton) }}
 					</button>
@@ -246,10 +252,11 @@ import {
 	EyeIcon,
 	EyeOffIcon,
 	SearchIcon,
+	TriangleAlertIcon,
 	UploadIcon,
 	XIcon,
 } from '@modrinth/assets'
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 
 import AutoLink from '#ui/components/base/AutoLink.vue'
 import Avatar from '#ui/components/base/Avatar.vue'
@@ -294,6 +301,11 @@ const messages = defineMessages({
 	installButton: {
 		id: 'instances.content-install.install-button',
 		defaultMessage: 'Install',
+	},
+	incompatibleTooltip: {
+		id: 'instances.content-install.incompatible-tooltip',
+		defaultMessage:
+			'This instance uses a different loader or game version than this project supports.',
 	},
 	selectIcon: {
 		id: 'instances.content-install.select-icon',
@@ -451,7 +463,7 @@ function removeIcon() {
 function resetState() {
 	tab.value = props.defaultTab ?? 'existing'
 	searchFilter.value = ''
-	hideUninstallable.value = true
+	hideUninstallable.value = false
 	instanceName.value = `New instance (${props.instances.length + 1})`
 	iconPath.value = null
 	iconPreviewUrl.value = null
@@ -469,8 +481,16 @@ function resetState() {
 	selectedGameVersion.value = preferred ?? defaultVersion
 }
 
+watch(
+	() => props.loading,
+	(loading, wasLoading) => {
+		if (wasLoading && !loading) {
+			tab.value = props.defaultTab ?? 'existing'
+		}
+	},
+)
+
 function handleHide() {
-	resetState()
 	emit('cancel')
 }
 

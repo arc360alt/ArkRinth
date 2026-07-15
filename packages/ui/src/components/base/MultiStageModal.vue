@@ -74,7 +74,7 @@
 			>
 				<ButtonStyled v-if="leftButtonConfig" type="outlined">
 					<button
-						class="!border-surface-5 !shadow-none"
+						v-tooltip="leftButtonConfig.tooltip"
 						:class="leftButtonConfig.buttonClass"
 						:disabled="leftButtonConfig.disabled"
 						@click="leftButtonConfig.onClick"
@@ -85,6 +85,7 @@
 				</ButtonStyled>
 				<ButtonStyled v-if="rightButtonConfig" :color="rightButtonConfig.color">
 					<button
+						v-tooltip="rightButtonConfig.tooltip"
 						class="!shadow-none"
 						:class="rightButtonConfig.buttonClass"
 						:disabled="rightButtonConfig.disabled || rightButtonConfig.loading"
@@ -129,6 +130,7 @@ export interface StageButtonConfig {
 	color?: InstanceType<typeof ButtonStyled>['$props']['color']
 	disabled?: boolean
 	loading?: boolean
+	tooltip?: string
 	iconClass?: string | null
 	buttonClass?: string | null
 	onClick?: () => void

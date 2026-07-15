@@ -15,9 +15,11 @@
 				Math.round(overallProgress * 100)
 			}}%)
 		</span>
-		<template v-if="cancelUpload" #top-right-actions>
+		<template v-if="cancelable" #top-right-actions>
 			<ButtonStyled type="outlined" color="blue">
-				<button class="!border" type="button" @click="cancelUpload()">Cancel</button>
+				<button class="!border" type="button" :disabled="cancelling" @click="$emit('cancel')">
+					Cancel
+				</button>
 			</ButtonStyled>
 		</template>
 	</Admonition>
@@ -25,17 +27,33 @@
 
 <script setup lang="ts">
 import { UploadIcon } from '@modrinth/assets'
-import { formatBytes } from '@modrinth/utils'
 import { computed } from 'vue'
 
 import Admonition from '#ui/components/base/Admonition.vue'
 import ButtonStyled from '#ui/components/base/ButtonStyled.vue'
+import { useFormatBytes } from '#ui/composables'
 import { injectModrinthServerContext } from '#ui/providers'
+
+withDefaults(
+	defineProps<{
+		cancelable?: boolean
+		cancelling?: boolean
+	}>(),
+	{
+		cancelable: true,
+		cancelling: false,
+	},
+)
+
+defineEmits<{
+	cancel: []
+}>()
+
+const formatBytes = useFormatBytes()
 
 const ctx = injectModrinthServerContext()
 
 const state = computed(() => ctx.uploadState.value)
-const cancelUpload = computed(() => ctx.cancelUpload.value)
 
 const overallProgress = computed(() => {
 	const s = state.value

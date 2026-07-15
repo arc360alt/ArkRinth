@@ -1,6 +1,15 @@
 <script setup lang="ts">
-import { CheckCircleIcon, XCircleIcon } from '@modrinth/assets'
 import {
+	CheckCircleIcon,
+	CoffeeIcon,
+	FolderSearchIcon,
+	RefreshCwIcon,
+	SearchIcon,
+	SpinnerIcon,
+	XCircleIcon,
+} from '@modrinth/assets'
+import {
+	ButtonStyled,
 	Checkbox,
 	defineMessages,
 	injectNotificationManager,
@@ -8,11 +17,13 @@ import {
 	StyledInput,
 	useVIntl,
 } from '@modrinth/ui'
+import { open } from '@tauri-apps/plugin-dialog'
 import { computed, readonly, ref, watch } from 'vue'
 
-import JavaSelector from '@/components/ui/JavaSelector.vue'
+import JavaDetectionModal from '@/components/ui/JavaDetectionModal.vue'
+import useJavaTest from '@/composables/useJavaTest'
 import useMemorySlider from '@/composables/useMemorySlider'
-import { edit, get_optimal_jre_key } from '@/helpers/profile'
+import { edit, get_optimal_jre_key } from '@/helpers/instance'
 import { get } from '@/helpers/settings.ts'
 import { injectInstanceSettings } from '@/providers/instance-settings'
 
@@ -25,9 +36,54 @@ const { instance } = injectInstanceSettings()
 
 const globalSettings = (await get().catch(handleError)) as unknown as AppSettings
 
+const optimalJava = readonly(await get_optimal_jre_key(instance.value.id).catch(handleError))
+
 const overrideJavaInstall = ref(!!instance.value.java_path)
-const optimalJava = readonly(await get_optimal_jre_key(instance.value.path).catch(handleError))
-const javaInstall = ref({ path: optimalJava.path ?? instance.value.java_path })
+const javaPath = ref(instance.value.java_path ?? optimalJava?.path ?? '')
+
+const activePath = computed(() =>
+	overrideJavaInstall.value ? javaPath.value : (optimalJava?.path ?? ''),
+)
+
+watch(overrideJavaInstall, (enabled) => {
+	if (enabled && !javaPath.value) {
+		javaPath.value = optimalJava?.path ?? ''
+	}
+})
+
+const { testingJava, javaTestResult, testJavaInstallationDebounced, testJavaInstallation } =
+	useJavaTest()
+
+const hoveringTest = ref(false)
+let hasInitialized = false
+
+watch(
+	activePath,
+	(newPath) => {
+		if (newPath && optimalJava?.parsed_version) {
+			if (!hasInitialized) {
+				testJavaInstallation(newPath, optimalJava?.parsed_version, false)
+				hasInitialized = true
+			} else {
+				testJavaInstallationDebounced(newPath, optimalJava?.parsed_version)
+			}
+		}
+	},
+	{ immediate: true },
+)
+
+const javaDetectionModal = ref<{ show: (version: number, current: object) => void } | null>(null)
+
+async function handleBrowseJava() {
+	const result = await open({ multiple: false })
+	if (result) {
+		javaPath.value = result
+	}
+}
+
+function handleDetectJava() {
+	javaDetectionModal.value?.show(optimalJava?.parsed_version, { path: javaPath.value })
+}
 
 const overrideJavaArgs = ref((instance.value.extra_launch_args?.length ?? 0) > 0)
 const javaArgs = ref(
@@ -48,11 +104,11 @@ const { maxMemory, snapPoints } = (await useMemorySlider().catch(handleError)) a
 	snapPoints: number[]
 }
 
-const editProfileObject = computed(() => {
+const editInstanceObject = computed(() => {
 	return {
 		java_path:
-			overrideJavaInstall.value && javaInstall.value.path !== ''
-				? javaInstall.value.path.replace('java.exe', 'javaw.exe')
+			overrideJavaInstall.value && javaPath.value
+				? javaPath.value.replace('java.exe', 'javaw.exe')
 				: null,
 		extra_launch_args: overrideJavaArgs.value
 			? javaArgs.value.trim().split(/\s+/).filter(Boolean)
@@ -71,7 +127,7 @@ const editProfileObject = computed(() => {
 watch(
 	[
 		overrideJavaInstall,
-		javaInstall,
+		javaPath,
 		overrideJavaArgs,
 		javaArgs,
 		overrideEnvVars,
@@ -80,7 +136,7 @@ watch(
 		memory,
 	],
 	async () => {
-		await edit(instance.value.path, editProfileObject.value)
+		await edit(instance.value.id, editInstanceObject.value)
 	},
 	{ deep: true },
 )
@@ -90,17 +146,45 @@ const messages = defineMessages({
 		id: 'instance.settings.tabs.java.java-installation',
 		defaultMessage: 'Java installation',
 	},
+	customJavaInstallation: {
+		id: 'instance.settings.tabs.java.custom-java-installation',
+		defaultMessage: 'Custom Java installation',
+	},
+	javaPathPlaceholder: {
+		id: 'instance.settings.tabs.java.java-path-placeholder',
+		defaultMessage: '/path/to/java',
+	},
+	javaMemory: {
+		id: 'instance.settings.tabs.java.java-memory',
+		defaultMessage: 'Memory allocated',
+	},
+	customMemoryAllocation: {
+		id: 'instance.settings.tabs.java.custom-memory-allocation',
+		defaultMessage: 'Custom memory allocation',
+	},
 	javaArguments: {
 		id: 'instance.settings.tabs.java.java-arguments',
 		defaultMessage: 'Java arguments',
+	},
+	customJavaArguments: {
+		id: 'instance.settings.tabs.java.custom-java-arguments',
+		defaultMessage: 'Custom Java arguments',
+	},
+	enterJavaArguments: {
+		id: 'instance.settings.tabs.java.enter-java-arguments',
+		defaultMessage: 'Enter Java arguments...',
 	},
 	javaEnvironmentVariables: {
 		id: 'instance.settings.tabs.java.environment-variables',
 		defaultMessage: 'Environment variables',
 	},
-	javaMemory: {
-		id: 'instance.settings.tabs.java.java-memory',
-		defaultMessage: 'Memory allocated',
+	customEnvironmentVariables: {
+		id: 'instance.settings.tabs.java.custom-environment-variables',
+		defaultMessage: 'Custom environment variables',
+	},
+	enterEnvironmentVariables: {
+		id: 'instance.settings.tabs.java.enter-environment-variables',
+		defaultMessage: 'Enter environmental variables...',
 	},
 	hooks: {
 		id: 'instance.settings.tabs.java.hooks',
@@ -111,7 +195,8 @@ const messages = defineMessages({
 
 <template>
 	<div>
-		<h2 id="project-name" class="m-0 mb-2.5 text-lg font-semibold text-contrast block">
+		<JavaDetectionModal ref="javaDetectionModal" @submit="(val) => (javaPath = val.path)" />
+		<h2 class="m-0 mb-2 text-lg font-extrabold text-contrast block">
 			{{ formatMessage(messages.javaInstallation) }}
 		</h2>
 		<Checkbox v-model="overrideJavaInstall" label="Custom Java installation" class="mb-2.5" />
@@ -136,18 +221,15 @@ const messages = defineMessages({
 					>
 				</template>
 			</div>
-			<div
-				v-if="javaInstall && !overrideJavaInstall"
-				class="p-4 bg-bg rounded-xl text-xs text-secondary leading-none font-mono"
-			>
-				{{ javaInstall.path }}
-			</div>
-		</template>
-		<JavaSelector v-if="overrideJavaInstall || !javaInstall" v-model="javaInstall" />
-		<h2 id="project-name" class="mt-6 mb-2.5 text-lg font-semibold text-contrast block">
+		</div>
+		<h2 class="mt-4 mb-1 text-lg font-extrabold text-contrast block">
 			{{ formatMessage(messages.javaMemory) }}
 		</h2>
-		<Checkbox v-model="overrideMemorySettings" label="Custom memory allocation" class="mb-2.5" />
+		<Checkbox
+			v-model="overrideMemorySettings"
+			:label="formatMessage(messages.customMemoryAllocation)"
+			class="mb-2"
+		/>
 		<Slider
 			id="max-memory"
 			v-model="memory.maximum"
@@ -159,28 +241,36 @@ const messages = defineMessages({
 			:snap-range="512"
 			unit="MB"
 		/>
-		<h2 id="project-name" class="mt-6 mb-2.5 text-lg font-semibold text-contrast block">
+		<h2 class="mt-4 mb-1 text-lg font-extrabold text-contrast block">
 			{{ formatMessage(messages.javaArguments) }}
 		</h2>
-		<Checkbox v-model="overrideJavaArgs" label="Custom java arguments" class="my-2" />
+		<Checkbox
+			v-model="overrideJavaArgs"
+			:label="formatMessage(messages.customJavaArguments)"
+			class="my-2"
+		/>
 		<StyledInput
 			id="java-args"
 			v-model="javaArgs"
 			autocomplete="off"
 			:disabled="!overrideJavaArgs"
-			placeholder="Enter java arguments..."
+			:placeholder="formatMessage(messages.enterJavaArguments)"
 			wrapper-class="w-full"
 		/>
-		<h2 id="project-name" class="mt-6 mb-2.5 text-lg font-semibold text-contrast block">
+		<h2 class="mt-4 mb-1 text-lg font-extrabold text-contrast block">
 			{{ formatMessage(messages.javaEnvironmentVariables) }}
 		</h2>
-		<Checkbox v-model="overrideEnvVars" label="Custom environment variables" class="mb-2.5" />
+		<Checkbox
+			v-model="overrideEnvVars"
+			:label="formatMessage(messages.customEnvironmentVariables)"
+			class="mb-2"
+		/>
 		<StyledInput
 			id="env-vars"
 			v-model="envVars"
 			autocomplete="off"
 			:disabled="!overrideEnvVars"
-			placeholder="Enter environmental variables..."
+			:placeholder="formatMessage(messages.enterEnvironmentVariables)"
 			wrapper-class="w-full"
 		/>
 	</div>

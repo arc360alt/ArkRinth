@@ -28,26 +28,44 @@ export function createLoaderParsers(
 			if (metadata.dependencies) {
 				const neoForgeDependency = Object.values(metadata.dependencies)
 					.flat()
-					.find((dependency: any) => dependency.modId === 'neoforge')
+					.filter((dependency: any) => dependency.modId === 'neoforge')
+					.map((dependency: any) => dependency.versionRange)
+					.find((range) => range)
+				const minecraftDependency = Object.values(metadata.dependencies)
+					.flat()
+					.filter((dependency: any) => dependency.modId === 'minecraft')
+					.map((dependency: any) => dependency.versionRange)
+					.find((range) => range)
 
-				if (neoForgeDependency) {
-					try {
-						// https://docs.neoforged.net/docs/gettingstarted/versioning/#neoforge
-						const mcVersionRange = (neoForgeDependency as any).versionRange
-							.replace('-beta', '')
-							.replace(
-								/(\d+)(?:\.(\d+))?(?:\.(\d+)?)?/g,
-								(_match: string, major: string, minor: string) => {
-									return `1.${major}${minor ? '.' + minor : ''}`
-								},
-							)
-						newGameVersions = getGameVersionsMatchingMavenRange(
-							mcVersionRange,
-							simplifiedGameVersions,
-						)
-					} catch {
-						// Ignore parsing errors, just leave game_versions empty
-					}
+				if (minecraftDependency) {
+					newGameVersions = getGameVersionsMatchingMavenRange(
+						minecraftDependency,
+						simplifiedGameVersions,
+					)
+				} else if (neoForgeDependency) {
+					// https://docs.neoforged.net/docs/gettingstarted/versioning/#neoforge
+					// NeoForge's versioning changed after Mojang changed from 1.<major>.<minor> to <year>.<drop>.<patch>, so both cases need to be handled
+					const neoPre26Regex = /^(?<mc_major>\d+)(?:\.(?<mc_minor>\d+))?(?:\.(?<neo>\d+)?)?$/
+					const neoPost26Regex =
+						/^(?<mc_year>\d+)(?:\.(?<mc_drop>\d+))?(?:\.(?<mc_patch>\d+)?)?(?:\.(\d+))?$/
+
+					newGameVersions = getGameVersionsMatchingMavenRange(
+						neoForgeDependency.replace('-beta', ''),
+						simplifiedGameVersions,
+						(version) => {
+							const matchPre26 = version.match(neoPre26Regex)
+							if (matchPre26 && matchPre26.groups) {
+								const { mc_major, mc_minor } = matchPre26.groups
+								return mc_minor ? `1.${mc_major}.${mc_minor}` : `1.${mc_major}`
+							}
+							const matchPost26 = version.match(neoPost26Regex)
+							if (matchPost26 && matchPost26.groups) {
+								const { mc_year, mc_drop, mc_patch } = matchPost26.groups
+								return `${mc_year}${mc_drop ? `.${mc_drop}` : ''}${mc_patch ? `.${mc_patch}` : ''}`
+							}
+							return version
+						},
+					)
 				}
 			}
 
@@ -114,14 +132,22 @@ export function createLoaderParsers(
 				),
 			}
 		},
-		// Fabric
+		// Fabric (or Babric for mc version beta 1.7.3)
 		'fabric.mod.json': (file: string): InferredVersionInfo => {
 			const metadata = JSON.parse(file) as any
 
-			const detectedGameVersions = metadata.depends
+			const mcDependency = metadata.depends?.minecraft
+			const mcDependencies = Array.isArray(mcDependency) ? mcDependency : [mcDependency]
+
+			let detectedGameVersions = metadata.depends
 				? getGameVersionsMatchingSemverRange(metadata.depends.minecraft, simplifiedGameVersions)
 				: []
 			const loaders: string[] = []
+
+			// Detect Beta 1.7.3 -> Babric
+			const hasBabricVersion = mcDependencies.some(
+				(version: string | undefined) => version?.includes('1.0.0-beta.7.3'), // this is fabric's normalized mc version format
+			)
 
 			// Detect 1.3-1.13 -> legacy-fabric
 			const hasLegacyVersions = detectedGameVersions.some((version) => {
@@ -129,8 +155,16 @@ export function createLoaderParsers(
 				return match && parseInt(match[1]) >= 3 && parseInt(match[1]) <= 13
 			})
 
-			if (hasLegacyVersions) loaders.push('legacy-fabric')
-			else loaders.push('fabric')
+			if (hasBabricVersion) {
+				loaders.push('babric')
+				detectedGameVersions = gameVersions
+					.filter((version) => version.version === 'b1.7.3')
+					.map((version) => version.version)
+			} else if (hasLegacyVersions) {
+				loaders.push('legacy-fabric')
+			} else {
+				loaders.push('fabric')
+			}
 
 			return {
 				name: `${project.title} ${metadata.version}`,

@@ -12,7 +12,7 @@
 		<div class="col-start-2 flex min-w-0 flex-1 flex-col gap-2">
 			<div
 				v-if="header || $slots.header || normalizedTimestamp"
-				class="flex flex-wrap items-center gap-2 text-lg font-bold leading-6"
+				class="flex flex-wrap items-center gap-2 text-lg font-semibold leading-6"
 			>
 				<slot name="header">{{ header }}</slot>
 				<span
@@ -24,7 +24,7 @@
 					{{ relativeTimeLabel }}
 				</span>
 			</div>
-			<div class="font-normal text-contrast/85">
+			<div class="font-normal text-contrast/85 leading-tight">
 				<slot>{{ body }}</slot>
 			</div>
 			<div v-if="showActionsUnderneath || $slots.actions" class="mt-2">
@@ -80,7 +80,7 @@ import ButtonStyled from './ButtonStyled.vue'
 
 const props = withDefaults(
 	defineProps<{
-		type?: 'info' | 'warning' | 'critical' | 'success'
+		type?: 'info' | 'warning' | 'critical' | 'success' | 'moderation' | 'circle-warning'
 		header?: string
 		body?: string
 		showActionsUnderneath?: boolean
@@ -139,34 +139,43 @@ const timestampTooltip = computed(() => {
 const typeClasses = {
 	info: 'border-brand-blue bg-bg-blue',
 	warning: 'border-brand-orange bg-bg-orange',
+	'circle-warning': 'border-brand-orange bg-bg-orange',
 	critical: 'border-brand-red bg-bg-red',
 	success: 'border-brand-green bg-bg-green',
+	moderation: 'border-brand-orange bg-bg-orange',
 }
 
 const iconClasses = {
 	info: 'text-brand-blue',
 	warning: 'text-brand-orange',
+	'circle-warning': 'text-brand-orange',
 	critical: 'text-brand-red',
 	success: 'text-brand-green',
+	moderation: 'text-brand-orange',
 }
 
 const buttonColors = {
 	info: 'blue',
 	warning: 'orange',
+	'circle-warning': 'orange',
 	critical: 'red',
 	success: 'green',
+	moderation: 'orange',
 } as const
 
 const progressTrackClasses = {
 	info: 'bg-brand-blue/20',
 	warning: 'bg-brand-orange/20',
+	'circle-warning': 'bg-brand-orange/20',
 	critical: 'bg-brand-red/20',
 	success: 'bg-brand-green/20',
+	moderation: 'bg-brand-orange/20',
 }
 
 const progressFillClasses = {
 	info: 'bg-brand-blue',
 	warning: 'bg-brand-orange',
+	'circle-warning': 'bg-brand-orange',
 	critical: 'bg-brand-red',
 	success: 'bg-brand-green',
 	blue: 'bg-brand-blue',

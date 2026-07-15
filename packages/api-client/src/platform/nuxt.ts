@@ -5,6 +5,8 @@ import type { CircuitBreakerState, CircuitBreakerStorage } from '../features/cir
 import type { ClientConfig } from '../types/client'
 import type { RequestOptions } from '../types/request'
 import type { UploadHandle, UploadRequestOptions } from '../types/upload'
+import { appendRequestParams, parseResponseErrorData, toFetchBody } from '../utils/fetch'
+import { GenericSyncClient } from './sync-generic'
 import { GenericWebSocketClient } from './websocket-generic'
 import { XHRUploadClient } from './xhr-upload-client'
 
@@ -66,13 +68,17 @@ export interface NuxtClientConfig extends ClientConfig {
  * ```typescript
  * // In a Nuxt composable
  * const config = useRuntimeConfig()
- * const auth = await useAuth()
  *
  * const client = new NuxtModrinthClient({
  *   userAgent: 'my-nuxt-app/1.0.0',
  *   rateLimitKey: import.meta.server ? config.rateLimitKey : undefined,
  *   features: [
- *     new AuthFeature({ token: () => auth.value.token })
+ *     new AuthFeature({
+ *       token: async () => getOAuthToken()
+ *     }),
+ *     new CircuitBreakerFeature({
+ *       storage: new NuxtCircuitBreakerStorage()
+ *     })
  *   ]
  * })
  *
@@ -89,6 +95,12 @@ export class NuxtModrinthClient extends XHRUploadClient {
 
 		Object.defineProperty(this.archon, 'sockets', {
 			value: new GenericWebSocketClient(this),
+			writable: false,
+			enumerable: true,
+			configurable: false,
+		})
+		Object.defineProperty(this.archon, 'sync', {
+			value: new GenericSyncClient(this),
 			writable: false,
 			enumerable: true,
 			configurable: false,
@@ -163,6 +175,40 @@ export class NuxtModrinthClient extends XHRUploadClient {
 		}
 	}
 
+	protected async executeStreamRequest(
+		url: string,
+		options: RequestOptions,
+	): Promise<ReadableStream<Uint8Array>> {
+		try {
+			const response = await fetch(appendRequestParams(url, options.params), {
+				method: options.method ?? 'GET',
+				headers: options.headers,
+				body: toFetchBody(options.body),
+				signal: options.signal,
+				// @ts-expect-error - import.meta is provided by Nuxt
+				cache: import.meta.server ? undefined : 'no-store',
+			})
+
+			if (!response.ok) {
+				throw this.createNormalizedError(
+					new Error(`HTTP ${response.status}: ${response.statusText}`),
+					response.status,
+					await parseResponseErrorData(response),
+				)
+			}
+
+			if (!response.body) {
+				throw new ModrinthApiError('Streaming response has no readable body', {
+					statusCode: response.status,
+				})
+			}
+
+			return response.body
+		} catch (error) {
+			throw this.normalizeError(error)
+		}
+	}
+
 	protected normalizeError(error: unknown): ModrinthApiError {
 		if (error instanceof FetchError) {
 			return this.createNormalizedError(error, error.response?.status, error.data)
@@ -171,9 +217,9 @@ export class NuxtModrinthClient extends XHRUploadClient {
 		return super.normalizeError(error)
 	}
 
-	protected buildDefaultHeaders(): Record<string, string> {
+	protected async buildDefaultHeaders(): Promise<Record<string, string>> {
 		const headers: Record<string, string> = {
-			...super.buildDefaultHeaders(),
+			...(await super.buildDefaultHeaders()),
 		}
 
 		// Use the resolved key (populated by resolveRateLimitKey in request())

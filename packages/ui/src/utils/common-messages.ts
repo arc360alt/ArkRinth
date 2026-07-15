@@ -1,4 +1,6 @@
-import { defineMessages } from '../composables/i18n'
+import type { Labrinth } from '@modrinth/api-client'
+
+import { defineMessage, defineMessages, type MessageDescriptor } from '../composables/i18n'
 
 export const commonMessages = defineMessages({
 	acceptButton: {
@@ -25,9 +27,17 @@ export const commonMessages = defineMessages({
 		id: 'badge.beta',
 		defaultMessage: 'Beta',
 	},
+	release: {
+		id: 'badge.release',
+		defaultMessage: 'Release',
+	},
 	allProjectType: {
 		id: 'project-type.all',
 		defaultMessage: 'All',
+	},
+	addServerToInstanceButton: {
+		id: 'button.add-server-to-instance',
+		defaultMessage: 'Add server to instance',
 	},
 	backButton: {
 		id: 'button.back',
@@ -133,6 +143,10 @@ export const commonMessages = defineMessages({
 		id: 'label.filter-by',
 		defaultMessage: 'Filter by',
 	},
+	filtersLabel: {
+		id: 'label.filters',
+		defaultMessage: 'Filters',
+	},
 	followButton: {
 		id: 'button.follow',
 		defaultMessage: 'Follow',
@@ -181,6 +195,10 @@ export const commonMessages = defineMessages({
 		id: 'label.no',
 		defaultMessage: 'No',
 	},
+	noPermissionAction: {
+		id: 'action.no-permission',
+		defaultMessage: 'You do not have permission.',
+	},
 	notificationsLabel: {
 		id: 'label.notifications',
 		defaultMessage: 'Notifications',
@@ -188,6 +206,14 @@ export const commonMessages = defineMessages({
 	openFolderButton: {
 		id: 'button.open-folder',
 		defaultMessage: 'Open folder',
+	},
+	openInBrowserButton: {
+		id: 'button.open-in-browser',
+		defaultMessage: 'Open in browser',
+	},
+	openInModrinthButton: {
+		id: 'button.open-in-modrinth',
+		defaultMessage: 'Open in Modrinth',
 	},
 	orLabel: {
 		id: 'label.or',
@@ -385,6 +411,38 @@ export const commonMessages = defineMessages({
 		id: 'label.installation-info',
 		defaultMessage: 'Installation info',
 	},
+	installButton: {
+		id: 'button.install',
+		defaultMessage: 'Install',
+	},
+	installedLabel: {
+		id: 'label.installed',
+		defaultMessage: 'Installed',
+	},
+	validatingLabel: {
+		id: 'label.validating',
+		defaultMessage: 'Validating',
+	},
+	selectedLabel: {
+		id: 'label.selected',
+		defaultMessage: 'Selected',
+	},
+	installingContentLabel: {
+		id: 'label.installing-content',
+		defaultMessage: 'Installing content',
+	},
+	hideInstalledContentLabel: {
+		id: 'label.hide-installed-content',
+		defaultMessage: 'Hide content already installed',
+	},
+	hideSelectedContentLabel: {
+		id: 'label.hide-selected-content',
+		defaultMessage: 'Hide selected content',
+	},
+	serverOnlyLabel: {
+		id: 'label.server-only',
+		defaultMessage: 'Server only',
+	},
 	installedModpackTitle: {
 		id: 'label.installed-modpack',
 		defaultMessage: 'Installed modpack',
@@ -451,6 +509,10 @@ export const commonMessages = defineMessages({
 		id: 'label.version',
 		defaultMessage: 'Version',
 	},
+	viewLabel: {
+		id: 'label.view',
+		defaultMessage: 'View',
+	},
 	projectLabel: {
 		id: 'label.project',
 		defaultMessage: 'Project',
@@ -486,6 +548,10 @@ export const commonMessages = defineMessages({
 	copyLinkButton: {
 		id: 'button.copy-link',
 		defaultMessage: 'Copy link',
+	},
+	switchToVersionButton: {
+		id: 'button.switch-to-version',
+		defaultMessage: 'Switch to version',
 	},
 	switchVersionButton: {
 		id: 'button.switch-version',
@@ -743,6 +809,8 @@ export function normalizeProjectType(type: string): string {
 	return PROJECT_TYPE_ALIASES[type] ?? type
 }
 
+type FormatMessage = (descriptor: MessageDescriptor, values?: Record<string, unknown>) => string
+
 export const commonProjectTypeCategoryMessages = defineMessages({
 	datapack: {
 		id: 'project-type.datapack.category',
@@ -848,6 +916,120 @@ export const commonProjectTypeSentenceMessages = defineMessages({
 	},
 })
 
+type ProjectTypeMessageKey = keyof typeof commonProjectTypeSentenceMessages
+
+function getProjectTypeMessageKey(type: string | undefined): ProjectTypeMessageKey {
+	const normalized = normalizeProjectType(type ?? 'project')
+	return normalized in commonProjectTypeSentenceMessages
+		? (normalized as ProjectTypeMessageKey)
+		: 'project'
+}
+
+export function getProjectTypeCategoryMessage(type: string | undefined): MessageDescriptor {
+	return commonProjectTypeCategoryMessages[getProjectTypeMessageKey(type)]
+}
+
+export function getProjectTypeTitleMessage(type: string | undefined): MessageDescriptor {
+	return commonProjectTypeTitleMessages[getProjectTypeMessageKey(type)]
+}
+
+export function getProjectTypeSentenceMessage(type: string | undefined): MessageDescriptor {
+	return commonProjectTypeSentenceMessages[getProjectTypeMessageKey(type)]
+}
+
+export function formatProjectTypeSentence(
+	formatMessage: FormatMessage,
+	type: string | undefined,
+	count = 1,
+): string {
+	return formatMessage(getProjectTypeSentenceMessage(type), { count })
+}
+
+export const contentItemTypeMessages = defineMessages({
+	item: {
+		id: 'content-type.item.lowercase',
+		defaultMessage: '{count, plural, one {item} other {items}}',
+	},
+	content: {
+		id: 'content-type.content.lowercase',
+		defaultMessage: 'content',
+	},
+})
+
+export function formatContentTypeSentence(
+	formatMessage: FormatMessage,
+	type: string | undefined,
+	count = 1,
+	fallback: keyof typeof contentItemTypeMessages = 'item',
+): string {
+	if (type) {
+		return formatProjectTypeSentence(formatMessage, type, count)
+	}
+
+	return formatMessage(contentItemTypeMessages[fallback], { count })
+}
+
+export const reportItemTypeMessages = defineMessages({
+	project: {
+		id: 'report.item-type.project',
+		defaultMessage: 'project',
+	},
+	version: {
+		id: 'report.item-type.version',
+		defaultMessage: 'version',
+	},
+	user: {
+		id: 'report.item-type.user',
+		defaultMessage: 'user',
+	},
+	content: {
+		id: 'report.item-type.content',
+		defaultMessage: 'content',
+	},
+})
+
+export function formatReportItemType(
+	formatMessage: FormatMessage,
+	type: string | undefined,
+): string {
+	const key =
+		type && type in reportItemTypeMessages
+			? (type as keyof typeof reportItemTypeMessages)
+			: 'content'
+	return formatMessage(reportItemTypeMessages[key])
+}
+
+export const fileItemTypeMessages = defineMessages({
+	file: {
+		id: 'files.item-type.file',
+		defaultMessage: 'file',
+	},
+	files: {
+		id: 'files.item-type.files',
+		defaultMessage: 'files',
+	},
+	folder: {
+		id: 'files.item-type.folder',
+		defaultMessage: 'folder',
+	},
+	folders: {
+		id: 'files.item-type.folders',
+		defaultMessage: 'folders',
+	},
+})
+
+export function formatFileItemType(
+	formatMessage: FormatMessage,
+	type: string | undefined,
+	plural = false,
+): string {
+	if (type === 'directory') {
+		return formatMessage(plural ? fileItemTypeMessages.folders : fileItemTypeMessages.folder)
+	}
+
+	return formatMessage(plural ? fileItemTypeMessages.files : fileItemTypeMessages.file)
+}
+
 export const commonSettingsMessages = defineMessages({
 	account: {
 		id: 'settings.account.title',
@@ -952,9 +1134,17 @@ export const commonProjectSettingsMessages = defineMessages({
 		id: 'project.settings.versions.title',
 		defaultMessage: 'Versions',
 	},
+	permissions: {
+		id: 'project.settings.versions.permissions',
+		defaultMessage: 'Permissions',
+	},
 	view: {
 		id: 'project.settings.view.title',
 		defaultMessage: 'View',
+	},
+	withheldVersionsWarningResolve: {
+		id: 'project.versions.withheld-versions-warning.resolve-button',
+		defaultMessage: 'Resolve',
 	},
 })
 
@@ -1035,7 +1225,7 @@ export const paymentMethodMessages = defineMessages({
 	},
 	mastercard: {
 		id: 'payment-method.mastercard',
-		defaultMessage: 'MasterCard',
+		defaultMessage: 'Mastercard',
 	},
 	paypal: {
 		id: 'payment-method.paypal',
@@ -1090,3 +1280,91 @@ export const paymentMethodMessages = defineMessages({
 		defaultMessage: 'Charities',
 	},
 })
+
+export const externalProjectLicenseStatusMessages = defineMessages({
+	yes: {
+		id: 'external-project-license-status.yes',
+		defaultMessage: 'Yes',
+	},
+	'with-attribution-and-source': {
+		id: 'external-project-license-status.with-attribution-and-source',
+		defaultMessage: 'With attribution and source',
+	},
+	'with-attribution': {
+		id: 'external-project-license-status.with-attribution',
+		defaultMessage: 'With attribution',
+	},
+	no: {
+		id: 'external-project-license-status.no',
+		defaultMessage: 'No',
+	},
+	'permanent-no': {
+		id: 'external-project-license-status.permanent-no',
+		defaultMessage: 'Permanent no',
+	},
+	unidentified: {
+		id: 'external-project-license-status.unidentified',
+		defaultMessage: 'Unidentified',
+	},
+})
+
+export const projectCompatibilityMessages = defineMessages({
+	title: {
+		id: `project.about.compatibility.title`,
+		defaultMessage: 'Compatibility',
+	},
+	minecraftJava: {
+		id: `project.about.compatibility.game.minecraftJava`,
+		defaultMessage: 'Minecraft: Java Edition',
+	},
+	platforms: {
+		id: `project.about.compatibility.platforms`,
+		defaultMessage: 'Platforms',
+	},
+	platformsPlural: {
+		id: `project.about.compatibility.platforms-plural`,
+		defaultMessage: '{count, plural, one {Platform} other {Platforms}}',
+	},
+	environments: {
+		id: `project.about.compatibility.environments`,
+		defaultMessage: 'Supported environments',
+	},
+})
+
+export const fileTypeMessages: Record<
+	Labrinth.Versions.v3.FileType | 'primary',
+	MessageDescriptor
+> = {
+	primary: defineMessage({
+		id: 'version.file-type.primary',
+		defaultMessage: 'Primary',
+	}),
+	unknown: defineMessage({
+		id: 'version.file-type.unknown',
+		defaultMessage: 'Other',
+	}),
+	'required-resource-pack': defineMessage({
+		id: 'version.file-type.required-resource-pack',
+		defaultMessage: 'Required resource pack',
+	}),
+	'optional-resource-pack': defineMessage({
+		id: 'version.file-type.optional-resource-pack',
+		defaultMessage: 'Optional resource pack',
+	}),
+	'sources-jar': defineMessage({
+		id: 'version.file-type.sources-jar',
+		defaultMessage: 'Source jar',
+	}),
+	'dev-jar': defineMessage({
+		id: 'version.file-type.dev-jar',
+		defaultMessage: 'Dev jar',
+	}),
+	'javadoc-jar': defineMessage({
+		id: 'version.file-type.javadoc-jar',
+		defaultMessage: 'Javadoc jar',
+	}),
+	signature: defineMessage({
+		id: 'version.file-type.signature',
+		defaultMessage: 'Signature file',
+	}),
+}

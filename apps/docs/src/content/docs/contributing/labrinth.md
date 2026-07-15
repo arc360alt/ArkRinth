@@ -1,6 +1,8 @@
 ---
 title: Labrinth (API)
 description: Guide for contributing to Modrinth's backend
+sidebar:
+  order: 4
 ---
 
 This project is part of our [monorepo](https://github.com/modrinth/code). You can find it in the `apps/labrinth` directory. The instructions below assume that you have switched your working directory to the `apps/labrinth` subdirectory.
@@ -89,13 +91,13 @@ The OAuth configuration options are fairly self-explanatory. For help setting up
 
 </details>
 
-#### Ready to open a PR?
+## Ready to open a PR?
 
 If you're prepared to contribute by submitting a pull request, ensure you have met the following criteria:
 
 - `cargo fmt --all` has been run.
 - `cargo clippy --all-targets` has been run.
-- `cargo sqlx prepare` has been run.
+- `cargo sqlx prepare -- --tests` has been run.
 
 > Note: If you encounter issues with `sqlx` saying 'no queries found' after running `cargo sqlx prepare`, you may need to ensure the installed version of `sqlx-cli` matches the current version of `sqlx` used [in labrinth](https://github.com/modrinth/labrinth/blob/master/Cargo.toml).
 

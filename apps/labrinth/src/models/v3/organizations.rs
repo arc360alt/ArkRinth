@@ -1,9 +1,10 @@
+use super::moderation_notes::ModerationNote;
 use super::teams::TeamMember;
 use crate::models::ids::{OrganizationId, TeamId};
 use serde::{Deserialize, Serialize};
 
 /// An organization of users who control a project
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, utoipa::ToSchema)]
 pub struct Organization {
     /// The id of the organization
     pub id: OrganizationId,
@@ -23,6 +24,8 @@ pub struct Organization {
 
     /// A list of the members of the organization
     pub members: Vec<TeamMember>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub moderation_notes: Option<Option<ModerationNote>>,
 }
 
 impl Organization {
@@ -39,6 +42,7 @@ impl Organization {
             members: team_members,
             icon_url: data.icon_url,
             color: data.color,
+            moderation_notes: None,
         }
     }
 }

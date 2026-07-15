@@ -21,7 +21,7 @@ import Checkbox from '#ui/components/base/Checkbox.vue'
 import type { Option as OverflowMenuOption } from '#ui/components/base/OverflowMenu.vue'
 import TeleportOverflowMenu from '#ui/components/base/TeleportOverflowMenu.vue'
 import Toggle from '#ui/components/base/Toggle.vue'
-import { useVIntl } from '#ui/composables/i18n'
+import { defineMessages, useVIntl } from '#ui/composables/i18n'
 import { commonMessages } from '#ui/utils/common-messages'
 import { truncatedTooltip } from '#ui/utils/truncate'
 
@@ -33,6 +33,13 @@ import type {
 } from '../types'
 
 const { formatMessage } = useVIntl()
+
+const messages = defineMessages({
+	selectProject: {
+		id: 'content.card.select-project',
+		defaultMessage: 'Select {project}',
+	},
+})
 
 interface Props {
 	project: ContentCardProject
@@ -48,9 +55,13 @@ interface Props {
 	hideSwitchVersion?: boolean
 	overflowOptions?: OverflowMenuOption[]
 	disabled?: boolean
+	disabledTooltip?: string | null
+	toggleDisabled?: boolean
+	toggleDisabledTooltip?: string | null
 	showCheckbox?: boolean
 	hideDelete?: boolean
 	hideActions?: boolean
+	inline?: boolean
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -66,15 +77,20 @@ const props = withDefaults(defineProps<Props>(), {
 	hideSwitchVersion: false,
 	overflowOptions: undefined,
 	disabled: false,
+	disabledTooltip: undefined,
+	toggleDisabled: false,
+	toggleDisabledTooltip: undefined,
 	showCheckbox: false,
 	hideDelete: false,
 	hideActions: false,
+	inline: false,
 })
 
 const selected = defineModel<boolean>('selected')
 
 const emit = defineEmits<{
 	'update:enabled': [value: boolean]
+	select: [value: boolean, event?: MouseEvent]
 	delete: [event: MouseEvent]
 	update: []
 	switchVersion: []
@@ -91,6 +107,7 @@ const versionNumberRef = ref<HTMLElement | null>(null)
 const fileNameRef = ref<HTMLElement | null>(null)
 
 const isDisabled = computed(() => props.disabled || props.installing)
+const isToggleDisabled = computed(() => isDisabled.value || props.toggleDisabled)
 
 const clientWarningMessage = computed(() => {
 	switch (props.clientWarning) {
@@ -110,8 +127,13 @@ const deleteHovered = ref(false)
 <template>
 	<div
 		role="row"
-		class="flex h-[74px] items-center justify-between gap-4 px-3"
-		:class="{ 'opacity-50': disabled }"
+		class="flex items-center justify-between"
+		:class="{
+			'h-[74px] gap-4 px-3': !inline,
+			'gap-3': inline,
+			'opacity-50 grayscale': disabled && !installing,
+			'opacity-50': installing,
+		}"
 	>
 		<div
 			class="flex min-w-0 items-center gap-4"
@@ -122,9 +144,9 @@ const deleteHovered = ref(false)
 			<Checkbox
 				v-if="showCheckbox"
 				:model-value="selected ?? false"
-				:aria-label="`Select ${project.title}`"
+				:aria-label="formatMessage(messages.selectProject, { project: project.title })"
 				class="shrink-0"
-				@update:model-value="selected = $event"
+				@update:model-value="(value, event) => emit('select', value, event)"
 			/>
 
 			<div
@@ -133,7 +155,7 @@ const deleteHovered = ref(false)
 			>
 				<div
 					v-tooltip="installing ? formatMessage(commonMessages.installingLabel) : undefined"
-					class="relative shrink-0"
+					class="relative flex shrink-0 items-center"
 				>
 					<Avatar
 						:src="project.icon_url"
@@ -163,8 +185,20 @@ const deleteHovered = ref(false)
 						>
 							{{ project.title }}
 						</AutoLink>
-						<Tooltip v-if="isClientOnly">
-							<TriangleAlertIcon class="size-4 shrink-0 text-orange" />
+						<slot name="title-badges" />
+						<Tooltip
+							v-if="isClientOnly"
+							theme="dismissable-prompt"
+							class="inline-flex shrink-0"
+							:triggers="['hover', 'focus']"
+							no-auto-focus
+						>
+							<span
+								class="inline-flex size-5 shrink-0 cursor-help items-center justify-center"
+								tabindex="0"
+							>
+								<TriangleAlertIcon class="pointer-events-none size-4 text-orange" />
+							</span>
 							<template #popper>
 								<div class="max-w-[18rem] text-sm">
 									{{ formatMessage(clientWarningMessage) }}
@@ -273,7 +307,11 @@ const deleteHovered = ref(false)
 					hover-color-fill="background"
 				>
 					<button
-						v-tooltip="formatMessage(commonMessages.updateAvailableLabel)"
+						v-tooltip="
+							isDisabled && disabledTooltip
+								? disabledTooltip
+								: formatMessage(commonMessages.updateAvailableLabel)
+						"
 						:disabled="isDisabled"
 						@click="emit('update')"
 					>
@@ -286,7 +324,11 @@ const deleteHovered = ref(false)
 					type="transparent"
 				>
 					<button
-						v-tooltip="formatMessage(commonMessages.switchVersionButton)"
+						v-tooltip="
+							isDisabled && disabledTooltip
+								? disabledTooltip
+								: formatMessage(commonMessages.switchVersionButton)
+						"
 						:disabled="isDisabled"
 						@click="emit('switchVersion')"
 					>
@@ -297,8 +339,13 @@ const deleteHovered = ref(false)
 
 			<Toggle
 				v-if="enabled !== undefined"
+				v-tooltip="
+					isToggleDisabled && (toggleDisabledTooltip || disabledTooltip)
+						? (toggleDisabledTooltip ?? disabledTooltip)
+						: undefined
+				"
 				:model-value="enabled"
-				:disabled="isDisabled"
+				:disabled="isToggleDisabled"
 				:aria-label="project.title"
 				class="my-auto"
 				@update:model-value="(val) => emit('update:enabled', val as boolean)"
@@ -307,11 +354,13 @@ const deleteHovered = ref(false)
 			<ButtonStyled v-if="hasDeleteListener && !props.hideDelete" circular type="transparent">
 				<button
 					v-tooltip="
-						formatMessage(
-							shiftHeld && deleteHovered
-								? commonMessages.deleteImmediatelyLabel
-								: commonMessages.deleteLabel,
-						)
+						isDisabled && disabledTooltip
+							? disabledTooltip
+							: formatMessage(
+									shiftHeld && deleteHovered
+										? commonMessages.deleteImmediatelyLabel
+										: commonMessages.deleteLabel,
+								)
 					"
 					:disabled="isDisabled"
 					@click="emit('delete', $event)"

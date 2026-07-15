@@ -11,7 +11,7 @@
 			<div
 				v-if="visible"
 				ref="menuRef"
-				class="experimental-styles-within fixed isolate z-[9999] flex w-fit min-w-[180px] flex-col gap-2 overflow-hidden rounded-2xl border border-solid border-surface-5 bg-bg-raised p-2 shadow-lg"
+				class="fixed isolate z-[9999] flex w-fit min-w-[180px] flex-col gap-2 overflow-hidden rounded-2xl border border-solid border-surface-5 bg-bg-raised p-2 shadow-lg"
 				:style="{ left: `${position.x}px`, top: `${position.y}px` }"
 				role="menu"
 				tabindex="-1"
@@ -85,6 +85,7 @@ import { commonMessages } from '#ui/utils/common-messages'
 
 import { injectFileManager } from '../providers/file-manager'
 import type { FileContextMenuOption, FileItem } from '../types'
+import { joinDisplayPath } from '../utils'
 
 const { formatMessage } = useVIntl()
 const { addNotification } = injectNotificationManager()
@@ -129,9 +130,7 @@ function handleCopyFilename() {
 
 function getFullPath() {
 	if (!currentItem.value) return ''
-	const basePath = ctx.basePath?.value
-	const itemPath = currentItem.value.path
-	return basePath ? `${basePath}/${itemPath}`.replace(/\/+/g, '/') : itemPath
+	return joinDisplayPath(ctx.basePath?.value, currentItem.value.path)
 }
 
 function handleCopyPath() {

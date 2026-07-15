@@ -1,15 +1,216 @@
 {
+  "app.action-bar.downloading-java": {
+    "message": "正在下載 Java {version}"
+  },
+  "app.action-bar.downloading-update": {
+    "message": "正在下載更新"
+  },
+  "app.action-bar.downloads": {
+    "message": "下載"
+  },
+  "app.action-bar.hide-more-running-instances": {
+    "message": "隱藏更多執行中的實例"
+  },
+  "app.action-bar.install.copied-details": {
+    "message": "已複製"
+  },
+  "app.action-bar.install.copy-details": {
+    "message": "複製詳細資訊"
+  },
+  "app.action-bar.install.dismiss": {
+    "message": "忽略"
+  },
+  "app.action-bar.install.open-instance": {
+    "message": "開啟實例"
+  },
+  "app.action-bar.install.retry": {
+    "message": "重試"
+  },
+  "app.action-bar.install.summary.app-closing": {
+    "message": "由於應用程式關閉而取消"
+  },
+  "app.action-bar.install.summary.bad-modpack-file": {
+    "message": "無法讀取模組包"
+  },
+  "app.action-bar.install.summary.canceled": {
+    "message": "已取消"
+  },
+  "app.action-bar.install.summary.cleanup-incomplete": {
+    "message": "未完成清理"
+  },
+  "app.action-bar.install.summary.content-download-failed": {
+    "message": "無法下載檔案"
+  },
+  "app.action-bar.install.summary.corrupt-download": {
+    "message": "下載的檔案已損毀"
+  },
+  "app.action-bar.install.summary.could-not-save-files": {
+    "message": "無法儲存檔案"
+  },
+  "app.action-bar.install.summary.download-failed": {
+    "message": "無法完成下載"
+  },
+  "app.action-bar.install.summary.instance-not-found": {
+    "message": "找不到實例"
+  },
+  "app.action-bar.install.summary.invalid-file-path": {
+    "message": "檔案路徑無效"
+  },
+  "app.action-bar.install.summary.invalid-modpack": {
+    "message": "模組包資料無效"
+  },
+  "app.action-bar.install.summary.invalid-modpack-files": {
+    "message": "模組包檔案的詮釋資料無效"
+  },
+  "app.action-bar.install.summary.java-setup-failed": {
+    "message": "無法完成 Java 設定"
+  },
+  "app.action-bar.install.summary.loader-setup-failed": {
+    "message": "無法設定載入器"
+  },
+  "app.action-bar.install.summary.local-data-error": {
+    "message": "無法更新本地資料"
+  },
+  "app.action-bar.install.summary.minecraft-setup-failed": {
+    "message": "無法設定 Minecraft"
+  },
+  "app.action-bar.install.summary.modrinth-unreachable": {
+    "message": "無法連線到 Modrinth"
+  },
+  "app.action-bar.install.summary.no-write-permission": {
+    "message": "沒有寫入權限"
+  },
+  "app.action-bar.install.summary.pack-download-failed": {
+    "message": "無法下載模組包"
+  },
+  "app.action-bar.install.summary.unexpected-error": {
+    "message": "出了點狀況"
+  },
+  "app.action-bar.install.unknown-instance": {
+    "message": "未知的實例"
+  },
+  "app.action-bar.installs": {
+    "message": "安裝"
+  },
+  "app.action-bar.make-primary-instance": {
+    "message": "設為主要實例"
+  },
+  "app.action-bar.no-instances-running": {
+    "message": "沒有執行中的實例"
+  },
+  "app.action-bar.offline": {
+    "message": "離線"
+  },
+  "app.action-bar.primary-instance": {
+    "message": "主要實例"
+  },
+  "app.action-bar.reload-to-update": {
+    "message": "重新載入即可更新"
+  },
+  "app.action-bar.show-more-running-instances": {
+    "message": "顯示更多執行中的實例"
+  },
+  "app.action-bar.stop-instance": {
+    "message": "停止實例"
+  },
+  "app.action-bar.update": {
+    "message": "更新"
+  },
+  "app.action-bar.view-active-downloads": {
+    "message": "查看正在下載的項目"
+  },
+  "app.action-bar.view-instance": {
+    "message": "查看實例"
+  },
+  "app.action-bar.view-logs": {
+    "message": "查看紀錄"
+  },
+  "app.appearance-settings.advanced-rendering.description": {
+    "message": "啟用進階繪製（如模糊效果），若無硬體加速可能會導致效能問題。"
+  },
+  "app.appearance-settings.advanced-rendering.title": {
+    "message": "進階繪製"
+  },
+  "app.appearance-settings.color-theme.description": {
+    "message": "請選擇你偏好的 Modrinth App 色彩主題。"
+  },
+  "app.appearance-settings.color-theme.title": {
+    "message": "色彩主題"
+  },
+  "app.appearance-settings.default-landing-page.description": {
+    "message": "變更啟動器開啟時的頁面。"
+  },
+  "app.appearance-settings.default-landing-page.home": {
+    "message": "首頁"
+  },
+  "app.appearance-settings.default-landing-page.library": {
+    "message": "遊戲庫"
+  },
+  "app.appearance-settings.default-landing-page.title": {
+    "message": "預設起始頁面"
+  },
+  "app.appearance-settings.hide-nametag.description": {
+    "message": "在外觀頁面中隱藏玩家上方的名牌。"
+  },
+  "app.appearance-settings.hide-nametag.title": {
+    "message": "隱藏名牌"
+  },
+  "app.appearance-settings.jump-back-into-worlds.description": {
+    "message": "在首頁的「繼續遊玩」區塊中顯示最近進入的世界。"
+  },
+  "app.appearance-settings.jump-back-into-worlds.title": {
+    "message": "繼續遊玩世界"
+  },
+  "app.appearance-settings.minimize-launcher.description": {
+    "message": "當 Minecraft 處理程序啟動時最小化啟動器。"
+  },
+  "app.appearance-settings.minimize-launcher.title": {
+    "message": "最小化啟動器"
+  },
+  "app.appearance-settings.native-decorations.description": {
+    "message": "使用系統內建的視窗外框（需要重啟應用程式）。"
+  },
+  "app.appearance-settings.native-decorations.title": {
+    "message": "原生視窗"
+  },
+  "app.appearance-settings.select-option": {
+    "message": "選擇選項"
+  },
+  "app.appearance-settings.show-play-time.description": {
+    "message": "顯示你在該實例的遊玩時數。"
+  },
+  "app.appearance-settings.show-play-time.title": {
+    "message": "顯示遊玩時數"
+  },
+  "app.appearance-settings.skip-non-essential-warnings.description": {
+    "message": "自動跳過低風險操作的確認提示，例如重複安裝模組包、常規內容刪除、批次更新、取消連結模組包以及修復提示。高風險警告仍會顯示。"
+  },
+  "app.appearance-settings.skip-non-essential-warnings.title": {
+    "message": "跳過非必要的警告"
+  },
+  "app.appearance-settings.toggle-sidebar.description": {
+    "message": "啟用切換側邊欄的功能。"
+  },
+  "app.appearance-settings.toggle-sidebar.title": {
+    "message": "切換側邊欄"
+  },
+  "app.appearance-settings.unknown-pack-warning.description": {
+    "message": "如果你嘗試安裝非 Modrinth 代管的 Modrinth 封裝檔案 (.mrpack)，我們會在安裝前確保你已了解相關風險。"
+  },
+  "app.appearance-settings.unknown-pack-warning.title": {
+    "message": "在安裝未知模組包前發出警告"
+  },
   "app.auth-servers.unreachable.body": {
     "message": "Minecraft 驗證伺服器現在可能無法使用。請檢查網際網路連線，然後再試一次。"
   },
   "app.auth-servers.unreachable.header": {
     "message": "無法連線到驗證伺服器"
   },
-  "app.browse.add-server-to-instance": {
-    "message": "將伺服器新增到實例"
-  },
   "app.browse.add-servers-to-instance": {
-    "message": "將伺服器新增到實例"
+    "message": "將伺服器新增至實例"
+  },
+  "app.browse.add-to-an-instance": {
+    "message": "新增至實例"
   },
   "app.browse.add-to-instance": {
     "message": "新增至實例"
@@ -21,7 +222,10 @@
     "message": "已新增"
   },
   "app.browse.already-added": {
-    "message": "已新增"
+    "message": "已經新增"
+  },
+  "app.browse.back-to-instance": {
+    "message": "回到實例"
   },
   "app.browse.discover-content": {
     "message": "探索內容"
@@ -32,14 +236,20 @@
   "app.browse.hide-added-servers": {
     "message": "隱藏已新增的伺服器"
   },
-  "app.browse.hide-installed-content": {
-    "message": "隱藏已安裝的內容"
+  "app.browse.project-type.modpacks": {
+    "message": "模組包"
   },
-  "app.browse.install-content-to-instance": {
-    "message": "安裝至實例中"
+  "app.browse.server-instance-content-warning": {
+    "message": "加入內容可能會導致加入伺服器時發生相容性問題。當你更新伺服器實例內容時，任何新增的內容也會遺失。"
+  },
+  "app.browse.server.installing": {
+    "message": "安裝中"
+  },
+  "app.content-install.no-compatible-versions": {
+    "message": "沒有符合 {compatibilityLabel} 的可用版本。請選擇一個版本強制安裝。不會自動安裝相依模組。"
   },
   "app.export-modal.description-placeholder": {
-    "message": "輸入模組包描述..."
+    "message": "輸入模組包描述……"
   },
   "app.export-modal.export-button": {
     "message": "匯出"
@@ -53,14 +263,65 @@
   "app.export-modal.modpack-name-placeholder": {
     "message": "模組包名稱"
   },
-  "app.export-modal.select-files-label": {
-    "message": "選擇要包含在模組包中的檔案與資料夾"
-  },
   "app.export-modal.version-number-label": {
     "message": "版本號碼"
   },
   "app.export-modal.version-number-placeholder": {
     "message": "1.0.0"
+  },
+  "app.install.phase.downloading_content": {
+    "message": "正在下載內容"
+  },
+  "app.install.phase.downloading_minecraft": {
+    "message": "正在下載 Minecraft"
+  },
+  "app.install.phase.downloading_pack_file": {
+    "message": "正在下載模組包檔案"
+  },
+  "app.install.phase.extracting_overrides": {
+    "message": "正在解壓縮覆寫檔案"
+  },
+  "app.install.phase.finalizing": {
+    "message": "即將完成"
+  },
+  "app.install.phase.preparing_instance": {
+    "message": "已排入安裝佇列"
+  },
+  "app.install.phase.preparing_java": {
+    "message": "正在準備 Java"
+  },
+  "app.install.phase.preparing_java.downloading": {
+    "message": "正在下載 Java {version}"
+  },
+  "app.install.phase.preparing_java.extracting": {
+    "message": "正在解壓縮 Java {version}"
+  },
+  "app.install.phase.preparing_java.fetching-metadata": {
+    "message": "正在擷取 Java {version}"
+  },
+  "app.install.phase.preparing_java.resolving": {
+    "message": "正在準備 Java {version}"
+  },
+  "app.install.phase.preparing_java.validating": {
+    "message": "正在驗證 Java {version}"
+  },
+  "app.install.phase.reading_pack_manifest": {
+    "message": "正在讀取模組包清單"
+  },
+  "app.install.phase.resolving_loader": {
+    "message": "正在解析載入器"
+  },
+  "app.install.phase.resolving_minecraft": {
+    "message": "正在解析 Minecraft"
+  },
+  "app.install.phase.resolving_pack": {
+    "message": "正在解析內容"
+  },
+  "app.install.phase.rolling_back": {
+    "message": "正在復原"
+  },
+  "app.install.phase.running_loader_processors": {
+    "message": "正在執行載入器處理程式"
   },
   "app.instance.confirm-delete.admonition-body": {
     "message": "你實例中的所有資料將被永久刪除，包含你的世界、設定檔以及所有已安裝的內容。"
@@ -75,25 +336,34 @@
     "message": "刪除實例"
   },
   "app.instance.modpack-already-installed.body": {
-    "message": "此模組包已經安裝在<bold>{instanceName}</bold> 實例中了，您確定要再次安裝嗎？"
+    "message": "這個模組包已經安裝在實例「<bold>{instanceName}</bold>」中了，確定要再次安裝嗎？"
   },
   "app.instance.modpack-already-installed.create": {
     "message": "建立"
   },
   "app.instance.modpack-already-installed.header": {
-    "message": "模組包已經安裝"
+    "message": "模組包已安裝"
   },
   "app.instance.modpack-already-installed.instance": {
     "message": "實例"
+  },
+  "app.instance.mods.bulk-update.downloading-projects": {
+    "message": "正在下載專案 {current, number}/{total, number}..."
+  },
+  "app.instance.mods.bulk-update.finishing": {
+    "message": "正在結束更新..."
+  },
+  "app.instance.mods.bulk-update.resolving-versions": {
+    "message": "正在解析版本..."
   },
   "app.instance.mods.content-type-project": {
     "message": "專案"
   },
   "app.instance.mods.project-was-added": {
-    "message": "新增了「{name}」"
+    "message": "已新增「{name}」"
   },
   "app.instance.mods.projects-were-added": {
-    "message": "新增了 {count} 個專案"
+    "message": "已新增 {count} 個專案"
   },
   "app.instance.mods.share-text": {
     "message": "快來看看我在模組包中使用的專案！"
@@ -102,7 +372,7 @@
     "message": "分享模組包內容"
   },
   "app.instance.mods.successfully-uploaded": {
-    "message": "上傳成功"
+    "message": "已成功上傳"
   },
   "app.instance.worlds.add-server": {
     "message": "新增伺服器"
@@ -110,11 +380,17 @@
   "app.instance.worlds.browse-servers": {
     "message": "瀏覽伺服器"
   },
-  "app.instance.worlds.delete-world-description": {
-    "message": "「{name}」將會被**永久刪除**，且無法還原。"
+  "app.instance.worlds.delete-world-modal.delete-button": {
+    "message": "刪除世界"
   },
-  "app.instance.worlds.delete-world-title": {
-    "message": "你確定要永久刪除這個世界嗎？"
+  "app.instance.worlds.delete-world-modal.title": {
+    "message": "刪除世界"
+  },
+  "app.instance.worlds.delete-world-modal.warning-body": {
+    "message": "這個世界將會被永久刪除，此操作無法復原。"
+  },
+  "app.instance.worlds.delete-world-modal.warning-header": {
+    "message": "即將刪除 {name}"
   },
   "app.instance.worlds.filter-modded": {
     "message": "模組"
@@ -134,23 +410,20 @@
   "app.instance.worlds.no-worlds-heading": {
     "message": "未新增任何伺服器或世界"
   },
-  "app.instance.worlds.remove-server-description": {
-    "message": "「{name}」將從你的清單中移除（包含遊戲內），且無法還原。"
+  "app.instance.worlds.remove-server-modal.remove-button": {
+    "message": "移除伺服器"
   },
-  "app.instance.worlds.remove-server-description-with-address": {
-    "message": "「{name}」({address}) 將從你的清單中移除（包含遊戲內），且無法還原。"
+  "app.instance.worlds.remove-server-modal.title": {
+    "message": "移除伺服器"
   },
-  "app.instance.worlds.remove-server-title": {
-    "message": "你確定要移除「{name}」嗎？"
+  "app.instance.worlds.remove-server-modal.warning-body": {
+    "message": "這個伺服器將從你的伺服器清單中移除。如果你記得伺服器位址，稍後可以將其重新新增回來。"
+  },
+  "app.instance.worlds.remove-server-modal.warning-header": {
+    "message": "即將移除 {name}"
   },
   "app.instance.worlds.search-worlds-placeholder": {
     "message": "搜尋 {count} 個世界..."
-  },
-  "app.instance.worlds.this-server": {
-    "message": "這個伺服器"
-  },
-  "app.modal.install-to-play.content-required": {
-    "message": "所需內容"
   },
   "app.modal.install-to-play.header": {
     "message": "安裝以遊玩"
@@ -159,19 +432,10 @@
     "message": "安裝"
   },
   "app.modal.install-to-play.mod-count": {
-    "message": "{count} 個模組"
-  },
-  "app.modal.install-to-play.required-modpack": {
-    "message": "所需模組包"
-  },
-  "app.modal.install-to-play.server-requires-mods": {
-    "message": "這個伺服器需要模組才能遊玩。請點選「安裝」以從 Modrinth 設定所需的檔案，完成後即可直接加入伺服器。"
+    "message": "{count, plural, other {# 個模組}}"
   },
   "app.modal.install-to-play.shared-instance": {
     "message": "共用實例"
-  },
-  "app.modal.install-to-play.shared-server-instance": {
-    "message": "共用伺服器實例"
   },
   "app.modal.install-to-play.view-contents": {
     "message": "檢視內容"
@@ -179,11 +443,32 @@
   "app.modal.update-to-play.header": {
     "message": "更新以遊玩"
   },
-  "app.modal.update-to-play.update-required": {
-    "message": "需要更新"
-  },
   "app.modal.update-to-play.update-required-description": {
     "message": "需要更新才能遊玩「{name}」。請更新至最新版本以啟動遊戲。"
+  },
+  "app.project.install-button.already-installed": {
+    "message": "這個專案已安裝"
+  },
+  "app.project.install-button.switch-version": {
+    "message": "切換版本"
+  },
+  "app.project.install-context.back-to-browse": {
+    "message": "返回瀏覽"
+  },
+  "app.project.install-context.install-content-to-instance": {
+    "message": "將內容安裝至實例"
+  },
+  "app.project.version.all-versions": {
+    "message": "所有版本"
+  },
+  "app.project.version.download-in-browser": {
+    "message": "在瀏覽器中下載"
+  },
+  "app.project.version.installing": {
+    "message": "正在安裝"
+  },
+  "app.project.versions.already-installed": {
+    "message": "已安裝"
   },
   "app.settings.developer-mode-enabled": {
     "message": "開發人員模式已啟用。"
@@ -209,8 +494,155 @@
   "app.settings.tabs.resource-management": {
     "message": "資源管理"
   },
-  "app.update-popup.body": {
-    "message": "Modrinth App v{version} 已準備好安裝！立即重新載入以更新，或在關閉 Modrinth App 時自動更新。"
+  "app.skins.add-button": {
+    "message": "新增外觀"
+  },
+  "app.skins.add-button.drag-and-drop": {
+    "message": "拖曳"
+  },
+  "app.skins.apply-button": {
+    "message": "套用"
+  },
+  "app.skins.delete-button": {
+    "message": "刪除外觀"
+  },
+  "app.skins.delete-modal.description": {
+    "message": "這會永久刪除所選的外觀，這個動作無法復原。"
+  },
+  "app.skins.delete-modal.title": {
+    "message": "你確定要刪除這個外觀嗎？"
+  },
+  "app.skins.dropped-file-error.text": {
+    "message": "無法讀取拖曳的檔案。"
+  },
+  "app.skins.dropped-file-error.title": {
+    "message": "處理檔案時發生錯誤"
+  },
+  "app.skins.edit-button": {
+    "message": "編輯外觀"
+  },
+  "app.skins.modal.add-skin-button": {
+    "message": "新增外觀"
+  },
+  "app.skins.modal.add-title": {
+    "message": "新增外觀"
+  },
+  "app.skins.modal.arm-style-section": {
+    "message": "手臂身形"
+  },
+  "app.skins.modal.arm-style-slim": {
+    "message": "苗條"
+  },
+  "app.skins.modal.arm-style-wide": {
+    "message": "寬"
+  },
+  "app.skins.modal.cape-fallback-name": {
+    "message": "披風"
+  },
+  "app.skins.modal.cape-section": {
+    "message": "披風"
+  },
+  "app.skins.modal.edit-title": {
+    "message": "編輯外觀"
+  },
+  "app.skins.modal.make-edit-first-tooltip": {
+    "message": "請先對外觀進行編輯！"
+  },
+  "app.skins.modal.no-cape-tooltip": {
+    "message": "無披風"
+  },
+  "app.skins.modal.none-cape-option": {
+    "message": "無"
+  },
+  "app.skins.modal.replace-texture-button": {
+    "message": "取代材質"
+  },
+  "app.skins.modal.save-skin-button": {
+    "message": "儲存外觀"
+  },
+  "app.skins.modal.saving-tooltip": {
+    "message": "正在儲存..."
+  },
+  "app.skins.modal.texture-section": {
+    "message": "材質"
+  },
+  "app.skins.modal.upload-skin-first-tooltip": {
+    "message": "請先上傳外觀檔案！"
+  },
+  "app.skins.preview.edit-button": {
+    "message": "編輯外觀"
+  },
+  "app.skins.previewing-badge": {
+    "message": "預覽"
+  },
+  "app.skins.rate-limit.text": {
+    "message": "你變更外觀的頻率太過頻繁。Mojang 伺服器已暫時封鎖後續請求，請稍等片刻，然後再試一次。"
+  },
+  "app.skins.rate-limit.title": {
+    "message": "慢一點！"
+  },
+  "app.skins.reorder-error.text": {
+    "message": "無法儲存你的外觀排序。"
+  },
+  "app.skins.reorder-error.title": {
+    "message": "重新排序外觀失敗"
+  },
+  "app.skins.section.builders-and-biomes": {
+    "message": "建造者＆生態域"
+  },
+  "app.skins.section.chaos-cubed": {
+    "message": "混沌立方"
+  },
+  "app.skins.section.chase-the-skies": {
+    "message": "追逐天空"
+  },
+  "app.skins.section.default-skins": {
+    "message": "預設外觀"
+  },
+  "app.skins.section.minecon-earth-2017": {
+    "message": "MINECON Earth 2017"
+  },
+  "app.skins.section.modrinth": {
+    "message": "Modrinth"
+  },
+  "app.skins.section.modrinth-pride": {
+    "message": "Modrinth 驕傲"
+  },
+  "app.skins.section.modrinth-pride.tooltip": {
+    "message": "這些外觀是你在驕傲月期間捐款給 Modrinth 驕傲月籌款活動所獲得的。"
+  },
+  "app.skins.section.mounts-of-mayhem": {
+    "message": "群騎紛爭"
+  },
+  "app.skins.section.saved-skins": {
+    "message": "已儲存外觀"
+  },
+  "app.skins.section.striding-hero": {
+    "message": "Striding Hero"
+  },
+  "app.skins.section.the-copper-age": {
+    "message": "銅器時代"
+  },
+  "app.skins.section.the-garden-awakens": {
+    "message": "蒼園覺醒"
+  },
+  "app.skins.section.tiny-takeover": {
+    "message": "小鬼當家"
+  },
+  "app.skins.sign-in.button": {
+    "message": "登入"
+  },
+  "app.skins.sign-in.description": {
+    "message": "請登入你的 Minecraft 帳號以使用 Modrinth App 的外觀管理功能。"
+  },
+  "app.skins.sign-in.rinthbot-alt": {
+    "message": "興奮的 Modrinth 機器人"
+  },
+  "app.skins.sign-in.title": {
+    "message": "請登入"
+  },
+  "app.skins.title": {
+    "message": "外觀選擇工具"
   },
   "app.update-popup.body.download-complete": {
     "message": "Modrinth App v{version} 已完成下載！立即重新載入以更新，或在關閉 Modrinth App 時自動更新。"
@@ -231,7 +663,7 @@
     "message": "下載完成"
   },
   "app.update-popup.reload": {
-    "message": "重新載入"
+    "message": "重新載入即可更新"
   },
   "app.update-popup.title": {
     "message": "有可用的更新"
@@ -241,15 +673,6 @@
   },
   "app.update.complete-toast.title": {
     "message": "版本 {version} 已成功安裝！"
-  },
-  "app.update.download-update": {
-    "message": "下載更新"
-  },
-  "app.update.downloading-update": {
-    "message": "正在下載更新 ({percent}%)"
-  },
-  "app.update.reload-to-update": {
-    "message": "重新載入即可安裝更新"
   },
   "app.world.server-modal.placeholder-address": {
     "message": "example.modrinth.gg"
@@ -273,7 +696,7 @@
     "message": "新增好友"
   },
   "friends.action.view-friend-requests": {
-    "message": "{count} 個好友邀請"
+    "message": "{count} 個好友{count, plural, other {邀請}}"
   },
   "friends.add-friend.submit": {
     "message": "送出好友邀請"
@@ -321,7 +744,7 @@
     "message": "待處理"
   },
   "friends.no-friends-match": {
-    "message": "沒有符合「{query}」的好友"
+    "message": "找不到相符「{query}」的好友"
   },
   "friends.search-friends-placeholder": {
     "message": "搜尋好友..."
@@ -426,19 +849,43 @@
     "message": "選擇圖示"
   },
   "instance.settings.tabs.general.library-groups": {
-    "message": "實例庫群組"
+    "message": "遊戲庫群組"
   },
   "instance.settings.tabs.general.library-groups.create": {
     "message": "建立新的群組"
   },
   "instance.settings.tabs.general.library-groups.description": {
-    "message": "實例庫群組讓你可以將實例整理到實例庫中的不同分類。"
+    "message": "遊戲庫群組讓你可以將實例整理到遊戲庫中的不同分類。"
   },
   "instance.settings.tabs.general.library-groups.enter-name": {
     "message": "輸入群組名稱"
   },
   "instance.settings.tabs.general.name": {
     "message": "名稱"
+  },
+  "instance.settings.tabs.general.update-channel": {
+    "message": "更新通道"
+  },
+  "instance.settings.tabs.general.update-channel.alpha": {
+    "message": "Alpha 版"
+  },
+  "instance.settings.tabs.general.update-channel.alpha.description": {
+    "message": "相容的正式版、Beta 版和 Alpha 版本都會顯示在可用更新中。"
+  },
+  "instance.settings.tabs.general.update-channel.beta": {
+    "message": "Beta 版"
+  },
+  "instance.settings.tabs.general.update-channel.beta.description": {
+    "message": "相容的正式版和 Beta 版本都會顯示在可用更新中。"
+  },
+  "instance.settings.tabs.general.update-channel.release": {
+    "message": "正式版"
+  },
+  "instance.settings.tabs.general.update-channel.release.description": {
+    "message": "僅有正式版會顯示在可用更新中。"
+  },
+  "instance.settings.tabs.general.update-channel.select": {
+    "message": "選擇更新通道"
   },
   "instance.settings.tabs.hooks": {
     "message": "啟動掛勾"
@@ -447,10 +894,10 @@
     "message": "自訂啟動掛勾"
   },
   "instance.settings.tabs.hooks.description": {
-    "message": "掛勾讓進階使用者能在遊戲啟動前和啟動後執行特定的系統命令。"
+    "message": "掛勾讓進階使用者能在遊戲啟動前和啟動後執行特定的系統指令。"
   },
   "instance.settings.tabs.hooks.post-exit": {
-    "message": "結束後執行"
+    "message": "結束後"
   },
   "instance.settings.tabs.hooks.post-exit.description": {
     "message": "遊戲關閉後執行。"
@@ -488,6 +935,24 @@
   "instance.settings.tabs.java": {
     "message": "Java 和記憶體"
   },
+  "instance.settings.tabs.java.custom-environment-variables": {
+    "message": "自訂環境變數"
+  },
+  "instance.settings.tabs.java.custom-java-arguments": {
+    "message": "自訂 Java 參數"
+  },
+  "instance.settings.tabs.java.custom-java-installation": {
+    "message": "自訂 Java 安裝"
+  },
+  "instance.settings.tabs.java.custom-memory-allocation": {
+    "message": "自訂記憶體分配"
+  },
+  "instance.settings.tabs.java.enter-environment-variables": {
+    "message": "輸入環境變數..."
+  },
+  "instance.settings.tabs.java.enter-java-arguments": {
+    "message": "輸入 Java 參數..."
+  },
   "instance.settings.tabs.java.environment-variables": {
     "message": "環境變數"
   },
@@ -502,6 +967,9 @@
   },
   "instance.settings.tabs.java.java-memory": {
     "message": "記憶體配置"
+  },
+  "instance.settings.tabs.java.java-path-placeholder": {
+    "message": "/path/to/java"
   },
   "instance.settings.tabs.window": {
     "message": "視窗"
@@ -542,6 +1010,9 @@
   "instance.worlds.copy_address": {
     "message": "複製位址"
   },
+  "instance.worlds.create_shortcut": {
+    "message": "建立捷徑"
+  },
   "instance.worlds.dont_show_on_home": {
     "message": "不要在首頁顯示"
   },
@@ -574,6 +1045,24 @@
   },
   "instance.worlds.world_in_use": {
     "message": "世界正在使用中"
+  },
+  "minecraft-account.add-account": {
+    "message": "新增帳號"
+  },
+  "minecraft-account.label": {
+    "message": "Minecraft 帳號"
+  },
+  "minecraft-account.not-signed-in": {
+    "message": "未登入"
+  },
+  "minecraft-account.remove-account": {
+    "message": "移除帳號"
+  },
+  "minecraft-account.select-account": {
+    "message": "選擇帳號"
+  },
+  "minecraft-account.sign-in": {
+    "message": "登入 Minecraft"
   },
   "search.filter.locked.instance": {
     "message": "由該實例提供"
