@@ -209,6 +209,93 @@ const {
 	hideLoaderChips,
 	hideLoaderVersion,
 } = ctx
+
+const messages = defineMessages({
+	selectIcon: {
+		id: 'creation-flow.modal.custom-setup.icon.select',
+		defaultMessage: 'Select icon',
+	},
+	removeIcon: {
+		id: 'creation-flow.modal.custom-setup.icon.remove',
+		defaultMessage: 'Remove icon',
+	},
+	nameLabel: {
+		id: 'creation-flow.modal.custom-setup.name.label',
+		defaultMessage: 'Name',
+	},
+	instanceNamePlaceholder: {
+		id: 'creation-flow.modal.custom-setup.name.placeholder',
+		defaultMessage: 'Enter instance name',
+	},
+	loaderLabel: {
+		id: 'creation-flow.modal.custom-setup.loader.label',
+		defaultMessage: 'Loader',
+	},
+	contentLoaderLabel: {
+		id: 'creation-flow.modal.custom-setup.content-loader.label',
+		defaultMessage: 'Content loader',
+	},
+	noVersionsAvailable: {
+		id: 'creation-flow.modal.custom-setup.options.no-versions-available',
+		defaultMessage: 'No versions available',
+	},
+	selectGameVersion: {
+		id: 'creation-flow.modal.custom-setup.game-version.placeholder',
+		defaultMessage: 'Select game version',
+	},
+	searchGameVersion: {
+		id: 'creation-flow.modal.custom-setup.game-version.search-placeholder',
+		defaultMessage: 'Search game version...',
+	},
+	buildNumberLabel: {
+		id: 'creation-flow.modal.custom-setup.build-number.label',
+		defaultMessage: 'Build number',
+	},
+	loaderVersionLabel: {
+		id: 'creation-flow.modal.custom-setup.loader-version.label',
+		defaultMessage: 'Loader version',
+	},
+	selectBuildNumber: {
+		id: 'creation-flow.modal.custom-setup.build-number.placeholder',
+		defaultMessage: 'Select build number',
+	},
+	selectLoaderVersion: {
+		id: 'creation-flow.modal.custom-setup.loader-version.placeholder',
+		defaultMessage: 'Select loader version',
+	},
+	searchBuildNumber: {
+		id: 'creation-flow.modal.custom-setup.build-number.search-placeholder',
+		defaultMessage: 'Search build number...',
+	},
+	searchLoaderVersion: {
+		id: 'creation-flow.modal.custom-setup.loader-version.search-placeholder',
+		defaultMessage: 'Search loader version...',
+	},
+	stableLoaderVersionType: {
+		id: 'creation-flow.modal.custom-setup.loader-version-type.stable',
+		defaultMessage: 'Stable',
+	},
+	latestLoaderVersionType: {
+		id: 'creation-flow.modal.custom-setup.loader-version-type.latest',
+		defaultMessage: 'Latest',
+	},
+	otherLoaderVersionType: {
+		id: 'creation-flow.modal.custom-setup.loader-version-type.other',
+		defaultMessage: 'Other',
+	},
+})
+
+function formatLoaderVersionTypeLabel(type: LoaderVersionType): string {
+	switch (type) {
+		case 'stable':
+			return formatMessage(messages.stableLoaderVersionType)
+		case 'latest':
+			return formatMessage(messages.latestLoaderVersionType)
+		case 'other':
+			return formatMessage(messages.otherLoaderVersionType)
+	}
+}
+
 const isOptiArkSetup = computed(() => ctx.setupType.value === 'optiark')
 
 // For instance flow, prepend 'vanilla' to available loaders.
@@ -304,12 +391,13 @@ function buildRendererOptions(categories: Record<string, OptiArkApiCategory>) {
 }
 
 function buildVersionOptionLabel(version: OptiArkVersionOption) {
-	return version.note ? `${version.label} - ${version.note}` : version.label
+	const label = version.supported ? version.label : `${version.label} (Unsupported)`
+	return version.note ? `${label} - ${version.note}` : label
 }
 
 function isInstallableOptiArkVersion(version: OptiArkApiVersion) {
 	const url = version.url?.trim()
-	if (!version.supported || !url) return false
+	if (!url) return false
 	return url.toLowerCase().endsWith('.mrpack')
 }
 
@@ -585,16 +673,7 @@ watch(
 	() => selectedLoader.value,
 	async (loader) => {
 		if (isOptiArkSetup.value) return
-		if (!loader || loader === 'vanilla') return
-		if (loader === 'paper') {
-			await fetchPaperSupportedVersions()
-			return
-		}
-		if (loader === 'purpur') {
-			await fetchPurpurSupportedVersions()
-			return
-		}
-		await fetchLoaderManifest(loader)
+		await fetchLoaderMetadata(loader)
 	},
 	{ immediate: true },
 )

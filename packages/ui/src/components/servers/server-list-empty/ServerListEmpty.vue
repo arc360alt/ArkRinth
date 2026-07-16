@@ -57,7 +57,7 @@
 							{{ formatMessage(messages.playWithFriendsTitle) }}
 						</p>
 						<p class="text-base font-normal text-primary">
-							Invite friends and get them set up right in the Arkrinth App.
+							Invite friends and get them set up right in the NyxRinth App.
 						</p>
 					</div>
 				</div>
@@ -73,7 +73,7 @@
 						</button>
 					</ButtonStyled>
 
-				<p class="this">This is a separate app from the Arkrinth App.</p>
+				<p class="this">This is a separate app from the NyxRinth App.</p>
 				</div>
 
 			</div>

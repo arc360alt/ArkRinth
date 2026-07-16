@@ -15,12 +15,13 @@ import {
 	HomeIcon,
 	LeftArrowIcon,
 	LibraryIcon,
+	LogInIcon,
 	LogOutIcon,
+	NewspaperIcon,
 	NotepadTextIcon,
 	PlusIcon,
 	RefreshCwIcon,
 	RightArrowIcon,
-	ServerStackIcon,
 	SettingsIcon,
 	UserIcon,
 	WorldIcon,
@@ -37,6 +38,7 @@ import {
 	defineMessages,
 	I18nDebugPanel,
 	LoadingBar,
+	NewsArticleCard,
 	NotificationPanel,
 	OverflowMenu,
 	PopupNotificationPanel,
@@ -77,6 +79,7 @@ import InstallToPlayModal from '@/components/ui/modal/InstallToPlayModal.vue'
 import ModpackAlreadyInstalledModal from '@/components/ui/modal/ModpackAlreadyInstalledModal.vue'
 import UpdateToPlayModal from '@/components/ui/modal/UpdateToPlayModal.vue'
 import NavButton from '@/components/ui/NavButton.vue'
+import PrideFundraiserBanner from '@/components/ui/PrideFundraiserBanner.vue'
 import QuickInstanceSwitcher from '@/components/ui/QuickInstanceSwitcher.vue'
 import SplashScreen from '@/components/ui/SplashScreen.vue'
 import WindowControls from '@/components/ui/WindowControls.vue'
@@ -93,7 +96,6 @@ import { cancelLogin, get as getCreds, login, logout } from '@/helpers/mr_auth.t
 import { mergeUrlQuery, parseModrinthLink } from '@/helpers/project-links.ts'
 import { get as getSettings, set as setSettings } from '@/helpers/settings.ts'
 import { get_opening_command, initialize_state } from '@/helpers/state'
-import { hasActivePride26Midas, hasMidasBadge } from '@/helpers/user-campaigns.ts'
 import {
 	areUpdatesEnabled,
 	enqueueUpdateForInstallation,
@@ -200,12 +202,6 @@ const tauriApiClient = new TauriModrinthClient({
 	],
 })
 provideModrinthClient(tauriApiClient)
-const { data: authenticatedModrinthUser } = useQuery({
-	queryKey: computed(() => ['authenticated-user', 'campaigns', credentials.value?.user?.id]),
-	queryFn: () => tauriApiClient.labrinth.users_v3.getAuthenticated(),
-	enabled: () => !!credentials.value?.session,
-	retry: false,
-})
 providePageContext({
 	hierarchicalSidebarAvailable: ref(true),
 	showAds: ref(false),
@@ -235,6 +231,7 @@ const {
 	handleBrowseModpacks,
 	searchModpacks,
 	getProjectVersions,
+	getLoaderManifest,
 	getOptiArkDownloads,
 	setModpackAlreadyInstalledModal,
 	handleModpackDuplicateCreateAnyway,
@@ -265,10 +262,6 @@ const criticalErrorMessage = ref()
 
 const isMaximized = ref(false)
 
-function handleNativeDecorationsChanged(event) {
-	nativeDecorations.value = !!event?.detail
-}
-
 const authUnreachableDebug = useDebugLogger('AuthReachableChecker')
 const authServerQuery = useQuery({
 	queryKey: ['authServerReachability'],
@@ -295,7 +288,6 @@ onMounted(async () => {
 
 	document.querySelector('body').addEventListener('click', handleClick)
 	document.querySelector('body').addEventListener('auxclick', handleAuxClick)
-	window.addEventListener('native-decorations-changed', handleNativeDecorationsChanged)
 
 	checkUpdates()
 })
@@ -303,7 +295,8 @@ onMounted(async () => {
 onUnmounted(async () => {
 	document.querySelector('body').removeEventListener('click', handleClick)
 	document.querySelector('body').removeEventListener('auxclick', handleAuxClick)
-	window.removeEventListener('native-decorations-changed', handleNativeDecorationsChanged)
+	unsubscribeSidebarToggle()
+	clearDelayedUpdatePopup()
 
 	await unlistenUpdateDownload?.()
 })
@@ -404,18 +397,18 @@ async function setupApp() {
 		}),
 	)
 
-	// fetch(`https://api.modrinth.com/appCriticalAnnouncement.json?version=${version}`)
-	//	.then((response) => response.json())
-	//	.then((res) => {
-	//		if (res && res.header && res.body) {
-	//			criticalErrorMessage.value = res
-	//		}
-	//	})
-	//	.catch(() => {
-	//		console.log(
-	//			`No critical announcement found at https://api.modrinth.com/appCriticalAnnouncement.json?version=${version}`,
-	//		)
-	//	})
+	fetch(`https://api.modrinth.com/appCriticalAnnouncement.json?version=${version}`)
+		.then((response) => response.json())
+		.then((res) => {
+			if (res && res.header && res.body) {
+				criticalErrorMessage.value = res
+			}
+		})
+		.catch(() => {
+			console.log(
+				`No critical announcement found at https://api.modrinth.com/appCriticalAnnouncement.json?version=${version}`,
+			)
+		})
 
 	fetch(`https://modrinth.com/news/feed/articles.json`)
 		.then((response) => response.json())
@@ -700,17 +693,6 @@ async function logOut() {
 	await fetchCredentials()
 }
 
-const hasPlus = computed(
-	() =>
-		!!credentials.value?.user &&
-		(hasMidasBadge(credentials.value.user) ||
-			hasActivePride26Midas(authenticatedModrinthUser.value?.campaigns?.pride_26)),
-)
-
-const showAd = computed(
-	() => sidebarVisible.value && !hasPlus.value && credentials.value !== undefined,
-)
-
 async function fetchIntercomToken() {
 	const creds = await getCreds()
 	if (!creds?.session) {
@@ -736,14 +718,6 @@ async function fetchIntercomToken() {
 	}
 	return await response.json()
 }
-
-watch(showAd, () => {
-	if (!showAd.value) {
-		hide_ads_window(true)
-	} else {
-		init_ads_window(true)
-	}
-})
 
 onMounted(() => {
 	invoke('show_window')
@@ -1408,6 +1382,7 @@ provideAppUpdateDownloadProgress(appUpdateDownload)
 			:fetch-existing-instance-names="fetchExistingInstanceNames"
 			:search-modpacks="searchModpacks"
 			:get-project-versions="getProjectVersions"
+			:get-loader-manifest="getLoaderManifest"
 			:get-opti-ark-downloads="getOptiArkDownloads"
 			@create="handleCreate"
 			@browse-modpacks="handleBrowseModpacks"
@@ -1445,14 +1420,6 @@ provideAppUpdateDownloadProgress(appUpdateDownload)
 				"
 			>
 				<LibraryIcon />
-			</NavButton>
-			<NavButton
-				v-tooltip.right="'Nodecraft Hosting'"
-				to="/hosting/manage"
-				:is-primary="(r) => r.path === '/hosting/manage' || r.path === '/hosting/manage/'"
-				:is-subpage="(r) => r.path.startsWith('/hosting/manage/') && r.path !== '/hosting/manage/'"
-			>
-				<ServerStackIcon />
 			</NavButton>
 			<div class="h-px w-6 mx-auto my-2 bg-surface-5"></div>
 			<suspense>
@@ -1503,11 +1470,14 @@ provideAppUpdateDownloadProgress(appUpdateDownload)
 				</template>
 				<template #sign-out> <LogOutIcon /> Sign out </template>
 			</OverflowMenu>
+			<NavButton v-else v-tooltip.right="'Sign in to a Modrinth account'" :to="() => signIn()">
+				<LogInIcon class="text-brand" />
+			</NavButton>
 		</div>
 		<div data-tauri-drag-region class="app-grid-statusbar bg-bg-raised h-[--top-bar-height] flex">
 			<div data-tauri-drag-region class="flex min-w-0 flex-1 overflow-hidden p-3">
 				<span class="font-bold text-lg text-contrast pointer-events-none tracking-tight"
-					>ArkRinth</span
+					>NyxRinth</span
 				>
 				<div data-tauri-drag-region class="flex shrink-0 items-center gap-1 ml-3">
 					<button
@@ -1631,12 +1601,10 @@ provideAppUpdateDownloadProgress(appUpdateDownload)
 		</div>
 		<div
 			class="app-sidebar mt-px shrink-0 flex flex-col border-0 border-l-[1px] border-[--brand-gradient-border] border-solid"
-			:class="{ 'has-plus': hasPlus }"
 		>
 			<div
 				v-overlay-scrollbars="sidebarOverlayScrollbarsOptions"
 				class="app-sidebar-scrollable flex-grow shrink relative"
-				:class="{ 'pb-12': !hasPlus }"
 				data-overlayscrollbars-initialize
 			>
 				<div id="sidebar-teleport-target" class="sidebar-teleport-content"></div>
@@ -1652,9 +1620,27 @@ provideAppUpdateDownloadProgress(appUpdateDownload)
 							<FriendsList :credentials="credentials" :sign-in="() => signIn()" />
 						</suspense>
 					</div>
+					<PrideFundraiserBanner
+						v-if="prideFundraiserEnabled"
+						class="p-4 border-0 border-b-[1px] border-[--brand-gradient-border] border-solid"
+					/>
+					<div v-if="news && news.length > 0" class="p-4 flex flex-col items-center">
+						<h3 class="text-base mb-4 text-primary font-medium m-0 text-left w-full">News</h3>
+						<div class="space-y-4 flex flex-col items-center w-full">
+							<NewsArticleCard
+								v-for="(item, index) in news"
+								:key="`news-${index}`"
+								:article="item"
+							/>
+							<ButtonStyled color="brand" size="large">
+								<a href="https://modrinth.com/news" target="_blank" class="my-4">
+									<NewspaperIcon /> View all news
+								</a>
+							</ButtonStyled>
+						</div>
+					</div>
 				</div>
 			</div>
-			<template v-if="showAd"> </template>
 		</div>
 	</div>
 	<I18nDebugPanel />
@@ -1781,21 +1767,6 @@ provideAppUpdateDownloadProgress(appUpdateDownload)
 	--color-button-bg-hover: var(--brand-gradient-border);
 	--color-divider: var(--brand-gradient-border);
 	--color-divider-dark: var(--brand-gradient-border);
-}
-
-.app-sidebar::after {
-	content: '';
-	position: absolute;
-	bottom: 0;
-	left: 0;
-	right: 0;
-	height: 5rem;
-	background: var(--brand-gradient-fade-out-color);
-	pointer-events: none;
-}
-
-.app-sidebar.has-plus::after {
-	display: none;
 }
 
 .disable-advanced-rendering {

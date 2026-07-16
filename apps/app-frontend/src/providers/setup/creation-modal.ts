@@ -14,11 +14,13 @@ import { trackEvent } from '@/helpers/analytics'
 import { get_project_versions, get_search_results } from '@/helpers/cache.js'
 import { import_instance } from '@/helpers/import.js'
 import {
-	create_profile_and_install,
-	create_profile_and_install_from_file,
-	create_profile_and_install_from_url,
-} from '@/helpers/pack'
-import { create, list } from '@/helpers/profile.js'
+	type CreatePackLocation,
+	install_create_instance,
+	install_create_modpack_instance,
+	install_get_modpack_preview,
+} from '@/helpers/install'
+import { list } from '@/helpers/instance'
+import { get_loader_versions as getLoaderManifest } from '@/helpers/metadata.js'
 import type { InstanceLoader } from '@/helpers/types'
 import { useTheming } from '@/store/state'
 
@@ -72,17 +74,21 @@ export function setupCreationModal(notificationManager: AbstractWebNotificationM
 					config.optiarkVersionLabel.value ||
 					`OptiArk ${config.optiarkRenderer.value ?? 'Base'}`
 
-				await create_profile_and_install_from_url(config.optiarkVersionUrl.value, name).catch(
-					(error) => {
+				installationModal.value?.hide()
+
+				await install_create_modpack_instance({
+					type: 'fromUrl',
+					url: config.optiarkVersionUrl.value,
+					title: name,
+					icon_url: config.optiarkRendererIconUrl.value ?? undefined,
+				}).catch((error) => {
 					throw new Error(
 						error instanceof Error
 							? `Failed to install OptiArk base: ${error.message}`
 							: 'Failed to install OptiArk base',
 					)
-					},
-				)
+				})
 
-				installationModal.value?.hide()
 				trackEvent('InstanceCreate', {
 					source: 'CreationModalOptiArk',
 				})
@@ -219,7 +225,7 @@ export function setupCreationModal(notificationManager: AbstractWebNotificationM
 	}
 
 	async function getOptiArkDownloads() {
-		const response = await tauriFetch('https://oaapi.arc360hub.com/api/downloads', {
+		const response = await tauriFetch('https://neocraft.arc360hub.com/downloads.json', {
 			method: 'GET',
 		})
 		if (!response.ok) {
@@ -236,6 +242,7 @@ export function setupCreationModal(notificationManager: AbstractWebNotificationM
 		handleBrowseModpacks,
 		searchModpacks,
 		getProjectVersions,
+		getLoaderManifest,
 		getOptiArkDownloads,
 		setModpackAlreadyInstalledModal,
 		handleModpackDuplicateCreateAnyway,

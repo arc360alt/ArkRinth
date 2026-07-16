@@ -9,6 +9,7 @@ import {
 	SpinnerIcon,
 } from '@modrinth/assets'
 import {
+	Admonition,
 	ButtonStyled,
 	commonMessages,
 	ConfirmModal,
@@ -64,6 +65,15 @@ const messages = defineMessages({
 	skinSelectorTitle: {
 		id: 'app.skins.title',
 		defaultMessage: 'Skin selector',
+	},
+	offlineAccountWarningHeader: {
+		id: 'app.skins.offline-account-warning.header',
+		defaultMessage: 'Skins are unavailable for offline accounts',
+	},
+	offlineAccountWarningBody: {
+		id: 'app.skins.offline-account-warning.body',
+		defaultMessage:
+			"Offline accounts aren't signed in to Mojang, so skin and cape changes can't be synced. Sign in with a Microsoft account to change your skin.",
 	},
 	modrinthPrideSection: {
 		id: 'app.skins.section.modrinth-pride',
@@ -293,8 +303,12 @@ const skinTexture = computedAsync(async () => {
 const capeTexture = computed(() => currentCape.value?.texture)
 const skinVariant = computed(() => selectedSkin.value?.variant)
 const skinNametag = computed(() => (themeStore.hideNametagSkinsPage ? undefined : username.value))
+const isOfflineAccount = computed(() => currentUser.value?.access_token === 'OFFLINE_ACCESS_TOKEN')
 const isSkinManagementReadOnly = computed(
-	() => offline.value || (authServerQuery.isError.value && !authServerQuery.isLoading.value),
+	() =>
+		offline.value ||
+		isOfflineAccount.value ||
+		(authServerQuery.isError.value && !authServerQuery.isLoading.value),
 )
 const hasPendingSkinChange = computed(
 	() => !skinsMatch(selectedSkin.value, originalSelectedSkin.value),
@@ -551,51 +565,167 @@ function updateLocalSkin(savedSkin: Skin, applied: boolean, previousSkin?: Skin)
 
 		return {
 			...skin,
-			is_equipped: skin.texture_key === newSkin.texture_key,
+			is_equipped: applied ? false : skin.is_equipped,
 		}
 	})
 
-	selectedSkin.value = skins.value.find((s) => s.texture_key === newSkin.texture_key) || null
+	if (!foundSkin) {
+		insertLocalSkin({
+			...savedSkin,
+			is_equipped: applied || savedSkin.is_equipped,
+		})
+	}
+
+	if (applied) {
+		const locallyEquippedSkin =
+			skins.value.find((skin) => skin.texture_key === savedSkin.texture_key) ?? savedSkin
+
+		originalSelectedSkin.value = locallyEquippedSkin
+		selectedSkin.value = locallyEquippedSkin
+		void accountsCard.value?.setEquippedSkin(locallyEquippedSkin)
+	} else {
+		const locallySavedSkin =
+			skins.value.find((skin) => skin.texture_key === savedSkin.texture_key) ?? savedSkin
+
+		if (replacesSelectedSkin) {
+			selectedSkin.value = locallySavedSkin
+		}
+
+		if (replacesOriginalSkin) {
+			originalSelectedSkin.value = locallySavedSkin
+		}
+	}
+
+	generateSkinPreviews(skins.value, capes.value)
+}
+
+async function reorderSavedSkins(orderedSkins: Skin[]) {
+	const previousSkins = skins.value
+	const previousSelectedSkin = selectedSkin.value
+	const previousOriginalSelectedSkin = originalSelectedSkin.value
+	const orderedTextureKeys = orderedSkins.map((skin) => skin.texture_key)
+	const orderedTextureKeySet = new Set(orderedTextureKeys)
+	const remainingSavedSkins = previousSkins.filter(
+		(skin) => skin.source !== 'default' && !orderedTextureKeySet.has(skin.texture_key),
+	)
+	const defaultSkins = previousSkins.filter((skin) => skin.source === 'default')
+	const nextSavedSkins = [...orderedSkins, ...remainingSavedSkins]
+
+	skins.value = [...nextSavedSkins, ...defaultSkins]
+	generateSkinPreviews(skins.value, capes.value)
 
 	try {
-		await equip_skin(newSkin)
-		if (accountsCard.value) {
-			await accountsCard.value.refreshValues()
-		}
-	} catch (error) {
-		selectedSkin.value = previousSkin
-		skins.value = previousSkinsList
+		const persistedSavedSkins = await preserveExternalSkins(nextSavedSkins)
 
-		if ((error as { message?: string })?.message?.includes('429 Too Many Requests')) {
-			notifications.addNotification({
-				type: 'error',
-				title: 'Slow down!',
-				text: "You're changing your skin too frequently. Mojang's servers have temporarily blocked further requests. Please wait a moment before trying again.",
-			})
-		} else {
-			handleError(error as Error)
+		if (persistedSavedSkins.some((skin, index) => skin !== nextSavedSkins[index])) {
+			skins.value = [...persistedSavedSkins, ...defaultSkins]
+			generateSkinPreviews(skins.value, capes.value)
 		}
+
+		await set_custom_skin_order(
+			persistedSavedSkins
+				.filter((skin) => skin.source === 'custom')
+				.map((skin) => skin.texture_key),
+		)
+	} catch (error) {
+		skins.value = previousSkins
+		selectedSkin.value = previousSelectedSkin
+		originalSelectedSkin.value = previousOriginalSelectedSkin
+		generateSkinPreviews(skins.value, capes.value)
+		addNotification({
+			type: 'error',
+			title: formatMessage(messages.reorderSkinErrorTitle),
+			text: error instanceof Error ? error.message : formatMessage(messages.reorderSkinErrorText),
+		})
+		await loadSkins()
 	}
 }
 
-async function handleCapeSelected(cape: Cape | undefined) {
-	const previousDefaultCape = defaultCape.value
-	const previousCapesList = [...capes.value]
+async function preserveExternalSkins(skinsToPersist: Skin[]) {
+	const preservedSkins: Skin[] = []
 
-	capes.value = capes.value.map((c) => ({
-		...c,
-		is_equipped: cape ? c.id === cape.id : false,
-	}))
+	for (const skin of skinsToPersist) {
+		if (skin.source !== 'custom_external') {
+			preservedSkins.push(skin)
+			continue
+		}
 
-	defaultCape.value = cape ? capes.value.find((c) => c.id === cape.id) : undefined
+		const textureBlob = await normalize_skin_texture(skin.texture)
+		const capeId = skin.cape_id ? capes.value.find((cape) => cape.id === skin.cape_id) : undefined
+		const savedSkin = await save_custom_skin(skin, textureBlob, skin.variant, capeId, false)
+		const preservedSkin: Skin = {
+			...savedSkin,
+			source: 'custom',
+			is_equipped: skin.is_equipped,
+		}
 
+		if (skinsMatchIgnoringSource(selectedSkin.value, skin)) {
+			selectedSkin.value = preservedSkin
+		}
+
+		if (skinsMatchIgnoringSource(originalSelectedSkin.value, skin)) {
+			originalSelectedSkin.value = preservedSkin
+			void accountsCard.value?.setEquippedSkin(preservedSkin)
+		}
+
+		preservedSkins.push(preservedSkin)
+	}
+
+	return preservedSkins
+}
+
+function schedulePendingSkinRefresh() {
+	if (pendingSkinRefreshTimeout !== null) {
+		window.clearTimeout(pendingSkinRefreshTimeout)
+	}
+
+	const pendingProfileId = currentUserId.value
+
+	pendingSkinRefreshTimeout = window.setTimeout(async () => {
+		pendingSkinRefreshTimeout = null
+
+		if (isUnmounted) {
+			return
+		}
+
+		try {
+			if (pendingProfileId) {
+				await flush_pending_skin_change_for_profile(pendingProfileId)
+			} else {
+				await flush_pending_skin_change()
+			}
+		} catch (error) {
+			handleError(error as Error)
+			schedulePendingSkinRefresh()
+			return
+		}
+
+		if (accountsCard.value) {
+			await accountsCard.value.refreshValues()
+		}
+
+		await loadCapes()
+		await loadSkins()
+	}, PENDING_SKIN_REFRESH_DELAY_MS)
+}
+
+async function applySelectedSkin() {
+	const skinToApply = selectedSkin.value
+	if (
+		!skinToApply ||
+		!hasPendingSkinChange.value ||
+		isApplyingSkin.value ||
+		isSkinManagementReadOnly.value
+	)
+		return
+
+	isApplyingSkin.value = true
 	try {
-		await set_default_cape(cape)
+		await equip_skin(skinToApply)
+		setLocallyEquippedSkin(skinToApply)
+		schedulePendingSkinRefresh()
 	} catch (error) {
-		defaultCape.value = previousDefaultCape
-		capes.value = previousCapesList
-
-		if ((error as { message?: string })?.message?.includes('429 Too Many Requests')) {
+		if (isMinecraftSkinRateLimitError(error)) {
 			notifications.addNotification({
 				type: 'error',
 				title: formatMessage(messages.rateLimitTitle),
@@ -913,6 +1043,13 @@ await loadSkins()
 			<h1 class="m-0 text-2xl font-bold flex items-center gap-2">
 				{{ formatMessage(messages.skinSelectorTitle) }}
 			</h1>
+			<Admonition
+				v-if="isOfflineAccount"
+				type="warning"
+				class="mt-4"
+				:header="formatMessage(messages.offlineAccountWarningHeader)"
+				:body="formatMessage(messages.offlineAccountWarningBody)"
+			/>
 			<div
 				class="ml-5 mt-4 flex h-[calc(80vh-1rem)] items-center justify-center max-[700px]:h-[calc(50vh-1rem)]"
 			>
@@ -932,94 +1069,62 @@ await loadSkins()
 						</div>
 					</template>
 					<template #subtitle>
-						<ButtonStyled :disabled="!!selectedSkin?.cape_id">
+						<div
+							v-if="hasPendingSkinChange"
+							class="flex max-w-[calc(100vw-2rem)] flex-wrap items-center justify-center gap-2 px-2"
+						>
 							<button
-								v-tooltip="
-									selectedSkin?.cape_id
-										? 'The equipped skin is overriding the default cape.'
-										: undefined
-								"
-								:disabled="!!selectedSkin?.cape_id"
-								@click="
-									(e: MouseEvent) =>
-										selectCapeModal?.show(
-											e,
-											selectedSkin?.texture_key,
-											currentCape,
-											skinTexture,
-											skinVariant,
-										)
-								"
+								class="flex h-10 min-w-0 cursor-pointer items-center justify-center gap-2 rounded-[14px] border-0 bg-surface-4 px-4 py-2.5 text-base font-semibold leading-5 text-contrast shadow-md transition-[filter,transform] duration-200 enabled:hover:brightness-[--hover-brightness] enabled:focus-visible:brightness-[--hover-brightness] enabled:active:scale-95 disabled:cursor-not-allowed disabled:opacity-50 [&>svg]:size-5 [&>svg]:shrink-0"
+								:disabled="isApplyingSkin || isSkinManagementReadOnly"
+								@click="resetSelectedSkin"
 							>
-								<UpdatedIcon />
-								Change cape
+								<RotateCounterClockwiseIcon />
+								{{ formatMessage(commonMessages.resetButton) }}
 							</button>
-						</ButtonStyled>
+							<button
+								class="flex h-10 min-w-0 cursor-pointer items-center justify-center gap-2 rounded-[14px] border-0 bg-brand px-4 py-2.5 text-base font-semibold leading-5 text-[rgba(0,0,0,0.9)] shadow-md transition-[filter,transform] duration-200 enabled:hover:brightness-[--hover-brightness] enabled:focus-visible:brightness-[--hover-brightness] enabled:active:scale-95 disabled:cursor-not-allowed disabled:opacity-50 [&>svg]:size-5 [&>svg]:shrink-0"
+								:disabled="isApplyingSkin || isSkinManagementReadOnly"
+								@click="applySelectedSkin"
+							>
+								<SpinnerIcon v-if="isApplyingSkin" class="animate-spin" />
+								<CheckIcon v-else />
+								{{ formatMessage(messages.applyButton) }}
+							</button>
+						</div>
+						<button
+							v-else
+							class="flex h-10 min-w-0 cursor-pointer items-center justify-center gap-2 rounded-[14px] border-0 bg-surface-4 px-4 py-2.5 text-base font-semibold leading-5 shadow-md transition-[filter,transform] duration-200 enabled:hover:brightness-[--hover-brightness] enabled:focus-visible:brightness-[--hover-brightness] enabled:active:scale-95 disabled:cursor-not-allowed disabled:opacity-50 [&>svg]:size-5 [&>svg]:shrink-0"
+							:disabled="!selectedSkin || isSkinManagementReadOnly"
+							@click="(e: MouseEvent) => selectedSkin && editSkinModal?.show(e, selectedSkin)"
+						>
+							<EditIcon />
+							{{ formatMessage(messages.editSkinButton) }}
+						</button>
 					</template>
 				</SkinPreviewRenderer>
 			</div>
 		</div>
 
-		<div class="skins-container">
-			<section class="flex flex-col gap-2 mt-1">
-				<h2 class="text-lg font-bold m-0 text-primary">Saved skins</h2>
-				<div class="skin-card-grid">
-					<SkinLikeTextButton class="skin-card" @click="openUploadSkinModal">
-						<template #icon>
-							<PlusIcon class="size-8" />
-						</template>
-						<span>Add a skin</span>
-					</SkinLikeTextButton>
-
-					<SkinButton
-						v-for="skin in savedSkins"
-						:key="`saved-skin-${skin.texture_key}`"
-						class="skin-card"
-						:forward-image-src="getBakedSkinTextures(skin)?.forwards"
-						:backward-image-src="getBakedSkinTextures(skin)?.backwards"
-						:selected="selectedSkin === skin"
-						@select="changeSkin(skin)"
-					>
-						<template #overlay-buttons>
-							<Button
-								color="brand"
-								aria-label="Edit skin"
-								class="pointer-events-auto"
-								@click.stop="(e: MouseEvent) => editSkinModal?.show(e, skin)"
-							>
-								<EditIcon /> Edit
-							</Button>
-							<Button
-								v-show="!skin.is_equipped"
-								v-tooltip="'Delete skin'"
-								aria-label="Delete skin"
-								color="red"
-								class="!rounded-[100%] pointer-events-auto"
-								icon-only
-								@click.stop="() => confirmDeleteSkin(skin)"
-							>
-								<TrashIcon />
-							</Button>
-						</template>
-					</SkinButton>
-				</div>
-			</section>
-
-			<section class="flex flex-col gap-2 mt-6">
-				<h2 class="text-lg font-bold m-0 text-primary">Default skins</h2>
-				<div class="skin-card-grid">
-					<SkinButton
-						v-for="skin in defaultSkins"
-						:key="`default-skin-${skin.texture_key}`"
-						class="skin-card"
-						:forward-image-src="getBakedSkinTextures(skin)?.forwards"
-						:backward-image-src="getBakedSkinTextures(skin)?.backwards"
-						:selected="selectedSkin === skin"
-						:tooltip="skin.name"
-						@select="changeSkin(skin)"
-					/>
-				</div>
-			</section>
+		<div class="pt-2">
+			<VirtualSkinSectionList
+				ref="skinSectionList"
+				:saved-skins="savedSkins"
+				:default-skin-sections="defaultSkinSections"
+				:get-baked-skin-textures="getBakedSkinTextures"
+				:is-skin-selected="isSkinSelected"
+				:is-skin-active="isSkinActive"
+				:is-add-skin-button-drag-active="isAddSkinButtonDragActive"
+				:read-only="isSkinManagementReadOnly"
+				@select="changeSkin"
+				@edit="(skin, event) => editSkinModal?.show(event, skin)"
+				@delete="confirmDeleteSkin"
+				@reorder-saved-skins="reorderSavedSkins"
+				@add-skin="openAddSkinFileBrowser"
+				@add-skin-dragenter="onAddSkinDragOver"
+				@add-skin-dragover="onAddSkinDragOver"
+				@add-skin-dragleave="onAddSkinDragLeave"
+				@add-skin-drop="onAddSkinDrop"
+			/>
 		</div>
 	</div>
 

@@ -31,56 +31,285 @@ use std::sync::{
     atomic::{AtomicU64, Ordering},
 };
 
-use super::install_from::{
-    CreatePack, CreatePackLocation, PackFormat, generate_pack_from_file,
-    generate_pack_from_url, generate_pack_from_version_id,
-};
+use super::install_from::{CreatePack, CreatePackFile, PackFormat};
 use crate::data::ProjectType;
 use std::io::{Cursor, ErrorKind};
+use std::path::{Path, PathBuf};
+use tokio::io::AsyncWriteExt;
+use tokio::sync::Mutex;
 
-/// Install a pack
-/// Wrapper around install_pack_files that generates a pack creation description, and
-/// attempts to install the pack files. If it fails, it will remove the profile (fail safely)
-/// Install a modpack from a mrpack file (a modrinth .zip format)
-pub async fn install_zipped_mrpack(
-    location: CreatePackLocation,
-    profile_path: String,
-) -> crate::Result<String> {
-    // Get file from description
-    let create_pack: CreatePack = match location {
-        CreatePackLocation::FromVersionId {
-            project_id,
-            version_id,
-            title,
-            icon_url,
-        } => {
-            generate_pack_from_version_id(
-                project_id,
-                version_id,
-                title,
-                icon_url,
-                profile_path.clone(),
-                None,
+type ExtractProgressFn<'a> = dyn FnMut(u64) -> Pin<Box<dyn Future<Output = crate::Result<()>> + Send + 'a>>
+    + Send
+    + 'a;
+const MODPACK_CONTENT_DOWNLOAD_CONCURRENCY: usize = 4;
+
+#[derive(Clone)]
+struct ModpackContentInstallContext {
+    instance_id: String,
+    instance_path: String,
+    instance_full_path: PathBuf,
+    download_meta: DownloadMeta,
+    pack_version_id: Option<String>,
+    pack_project_id: Option<String>,
+    reporter: InstallProgressReporter,
+    modpack_details: InstallPhaseDetails,
+    content_progress: Arc<AtomicU64>,
+    content_bytes_progress: Arc<AtomicU64>,
+    active_download_bytes: Arc<Mutex<HashMap<String, u64>>>,
+    file_infos_by_hash: Arc<HashMap<String, CachedFile>>,
+    num_files: usize,
+    content_total_bytes: u64,
+}
+
+impl ModpackContentInstallContext {
+    async fn mark_downloaded(
+        &self,
+        file_size: u64,
+        event: InstallJobEventKind,
+    ) -> crate::Result<()> {
+        let current = self.content_progress.fetch_add(1, Ordering::Relaxed) + 1;
+        let current_bytes = self
+            .content_bytes_progress
+            .fetch_add(file_size, Ordering::Relaxed)
+            + file_size;
+
+        self.reporter
+            .update_with_events(
+                InstallPhaseId::DownloadingContent,
+                Some(InstallProgress {
+                    current,
+                    total: self.num_files as u64,
+                    secondary: (self.content_total_bytes > 0).then_some(
+                        InstallProgressSecondary {
+                            current: current_bytes
+                                .min(self.content_total_bytes),
+                            total: self.content_total_bytes,
+                        },
+                    ),
+                }),
+                self.modpack_details.clone(),
+                vec![event],
             )
-            .await?
+            .await
+    }
+
+    async fn remove_active_download(&self, path: &str) {
+        let mut active_download_bytes = self.active_download_bytes.lock().await;
+        active_download_bytes.remove(path);
+    }
+
+    async fn update_active_download(
+        &self,
+        path: String,
+        downloaded: u64,
+    ) -> u64 {
+        let mut active_download_bytes = self.active_download_bytes.lock().await;
+        active_download_bytes.insert(path, downloaded);
+        active_download_bytes.values().sum::<u64>()
+    }
+}
+
+enum MrpackZipReader {
+    Memory(async_zip::tokio::read::seek::ZipFileReader<Cursor<bytes::Bytes>>),
+    // Local imports stay on disk so large .mrpacks do not have to fit in memory.
+    File(FsZipFileReader),
+}
+
+impl MrpackZipReader {
+    async fn new(file: &CreatePackFile) -> crate::Result<Self> {
+        match file {
+            CreatePackFile::Bytes(file) => Ok(Self::Memory(
+                SeekZipFileReader::with_tokio(Cursor::new(file.clone()))
+                    .await
+                    .map_err(|_| {
+                        crate::Error::from(crate::ErrorKind::InputError(
+                            "Failed to read input modpack zip".to_string(),
+                        ))
+                    })?,
+            )),
+            CreatePackFile::Path(path) => Ok(Self::File(
+                FsZipFileReader::new(path).await.map_err(|_| {
+                    crate::Error::from(crate::ErrorKind::InputError(
+                        "Failed to read input modpack zip".to_string(),
+                    ))
+                })?,
+            )),
         }
-        CreatePackLocation::FromUrl {
-            url,
-            title,
-            icon_url,
-        } => {
-            generate_pack_from_url(url, title, icon_url, profile_path.clone()).await?
+    }
+
+    fn file(&self) -> &async_zip::ZipFile {
+        match self {
+            Self::Memory(reader) => reader.file(),
+            Self::File(reader) => reader.file(),
         }
-        CreatePackLocation::FromFile { path } => {
-            generate_pack_from_file(path, profile_path.clone()).await?
+    }
+
+    async fn read_entry_to_string(
+        &mut self,
+        index: usize,
+    ) -> crate::Result<String> {
+        let mut value = String::new();
+        match self {
+            Self::Memory(reader) => {
+                let mut reader = reader.reader_with_entry(index).await?;
+                reader.read_to_string_checked(&mut value).await?;
+            }
+            Self::File(reader) => {
+                let mut reader = reader.reader_with_entry(index).await?;
+                reader.read_to_string_checked(&mut value).await?;
+            }
         }
+
+        Ok(value)
+    }
+
+    async fn hash_entry(
+        &mut self,
+        index: usize,
+    ) -> crate::Result<(u64, String)> {
+        match self {
+            Self::Memory(reader) => {
+                hash_zip_entry(reader.reader_with_entry(index).await?).await
+            }
+            Self::File(reader) => {
+                hash_zip_entry(reader.reader_with_entry(index).await?).await
+            }
+        }
+    }
+
+    async fn extract_entry(
+        &mut self,
+        index: usize,
+        path: &Path,
+        semaphore: &crate::util::fetch::IoSemaphore,
+        progress: Option<&mut ExtractProgressFn<'_>>,
+    ) -> crate::Result<(u64, String)> {
+        match self {
+            Self::Memory(reader) => {
+                extract_zip_entry(
+                    reader.reader_with_entry(index).await?,
+                    path,
+                    semaphore,
+                    progress,
+                )
+                .await
+            }
+            Self::File(reader) => {
+                extract_zip_entry(
+                    reader.reader_with_entry(index).await?,
+                    path,
+                    semaphore,
+                    progress,
+                )
+                .await
+            }
+        }
+    }
+}
+
+async fn hash_zip_entry<R>(
+    mut reader: ZipEntryReader<'_, R, WithEntry<'_>>,
+) -> crate::Result<(u64, String)>
+where
+    R: futures_lite::io::AsyncBufRead + Unpin,
+{
+    let expected_crc32 = reader.entry().crc32();
+    let mut hasher = sha1_smol::Sha1::new();
+    let mut size = 0;
+    let mut buffer = vec![0; 262144];
+
+    loop {
+        let bytes_read =
+            futures_lite::io::AsyncReadExt::read(&mut reader, &mut buffer)
+                .await?;
+        if bytes_read == 0 {
+            break;
+        }
+
+        hasher.update(&buffer[..bytes_read]);
+        size += bytes_read as u64;
+    }
+
+    if reader.compute_hash() != expected_crc32 {
+        return Err(async_zip::error::ZipError::CRC32CheckError.into());
+    }
+
+    Ok((size, hasher.digest().to_string()))
+}
+
+pub(crate) async fn get_external_files_from_mrpack(
+    file: &CreatePackFile,
+) -> crate::Result<Vec<String>> {
+    let mut zip_reader = MrpackZipReader::new(file).await?;
+    let Some(manifest_idx) =
+        zip_reader.file().entries().iter().position(|entry| {
+            matches!(entry.filename().as_str(), Ok("modrinth.index.json"))
+        })
+    else {
+        return Err(crate::Error::from(crate::ErrorKind::InputError(
+            "No pack manifest found in mrpack".to_string(),
+        )));
     };
 
-    // Install pack files, and if it fails, fail safely by removing the profile
-    let result = install_zipped_mrpack_files(create_pack, false).await;
+    let manifest = zip_reader.read_entry_to_string(manifest_idx).await?;
+    let pack: PackFormat = serde_json::from_str(&manifest)?;
+    let mut candidates = pack
+        .files
+        .into_iter()
+        .filter_map(|file| {
+            let path = file.path.as_str();
+            let hash = file.hashes.get(&PackFileHash::Sha1)?.clone();
+            let file_name = path.rsplit('/').next()?.to_string();
+            Some((file_name, hash))
+        })
+        .collect::<Vec<_>>();
 
-    match result {
-        Ok(profile) => Ok(profile),
+    let override_entries = zip_reader
+        .file()
+        .entries()
+        .iter()
+        .enumerate()
+        .filter_map(|(index, entry)| {
+            let path = entry.filename().as_str().ok()?;
+            let relative_path = path
+                .strip_prefix("overrides/")
+                .or_else(|| path.strip_prefix("client-overrides/"))?;
+            if path.ends_with('/')
+                || ProjectType::get_from_parent_folder(relative_path).is_none()
+            {
+                return None;
+            }
+            let file_name = relative_path.rsplit('/').next()?.to_string();
+            Some((index, file_name))
+        })
+        .collect::<Vec<_>>();
+
+    for (index, file_name) in override_entries {
+        let (_, hash) = zip_reader.hash_entry(index).await?;
+        candidates.push((file_name, hash));
+    }
+
+    if candidates.is_empty() {
+        return Ok(Vec::new());
+    }
+
+    let state = State::get().await?;
+    let hashes = candidates
+        .iter()
+        .map(|(_, hash)| hash.as_str())
+        .collect::<Vec<_>>();
+    let recognized_hashes = match CachedEntry::get_file_many(
+        &hashes,
+        None,
+        &state.pool,
+        &state.api_semaphore,
+    )
+    .await
+    {
+        Ok(files) => files
+            .into_iter()
+            .map(|file| file.hash)
+            .collect::<HashSet<_>>(),
         Err(err) => {
             tracing::warn!("Failed to look up files in imported mrpack: {err}");
             HashSet::new()
@@ -798,23 +1027,28 @@ pub(crate) async fn install_zipped_mrpack_files_with_reporter(
                 )
                 .await?;
 
-        write(
-            &profile::get_full_path(&profile_path)
-                .await?
-                .join(relative_override_file_path.as_str()),
-            &file_bytes,
-            &state.io_semaphore,
-        )
-        .await?;
-
-        emit_loading(
-            &loading_bar,
-            30.0 / override_file_entries_count as f64,
-            Some(&format!(
-                "Extracting override {}/{override_file_entries_count}",
-                i + 1
-            )),
-        )?;
+            if let Some(project_type) = ProjectType::get_from_parent_folder(
+                relative_override_file_path.as_str(),
+            ) {
+                reporter
+                    .preserve_failure_context(
+                        record_context,
+                        crate::state::instances::commands::record_project_file(
+                            &instance_id,
+                            relative_override_file_path.as_str(),
+                            &hash,
+                            size,
+                            project_type,
+                            modpack_source_kind(version_id.as_deref()),
+                            None,
+                            None,
+                            state,
+                        )
+                        .await,
+                    )
+                    .await?;
+            }
+        }
     }
 
     // If the icon doesn't exist, we expect icon.png to be a potential icon.

@@ -199,27 +199,72 @@ const messages = defineMessages({
 		<h2 class="m-0 mb-2 text-lg font-extrabold text-contrast block">
 			{{ formatMessage(messages.javaInstallation) }}
 		</h2>
-		<Checkbox v-model="overrideJavaInstall" label="Custom Java installation" class="mb-2.5" />
-		<template v-if="!overrideJavaInstall">
-			<div class="flex my-2 items-center gap-2 font-semibold">
-				<template v-if="javaInstall">
-					<CheckCircleIcon class="text-green h-4 w-4" />
-					<span>Using default Java {{ optimalJava.major_version }} installation:</span>
-				</template>
-				<template v-else-if="optimalJava">
-					<XCircleIcon class="text-brand-red h-5 w-5" />
-					<span
-						>Could not find a default Java {{ optimalJava.major_version }} installation. Please set
-						one below:</span
+		<Checkbox
+			v-model="overrideJavaInstall"
+			:label="formatMessage(messages.customJavaInstallation)"
+			class="mb-2"
+		/>
+		<div class="flex gap-4 p-4 bg-bg rounded-2xl">
+			<div class="flex gap-3 items-start flex-1 min-w-0">
+				<div
+					class="w-10 h-10 flex items-center justify-center rounded-full bg-button-bg border-solid border-[1px] border-button-border p-2 mt-1 shrink-0 [&_svg]:h-full [&_svg]:w-full"
+				>
+					<CoffeeIcon />
+				</div>
+				<div class="flex flex-col gap-2 flex-1 min-w-0">
+					<span class="font-semibold leading-none mt-2"
+						>Java {{ optimalJava?.parsed_version }}</span
 					>
-				</template>
-				<template v-else>
-					<XCircleIcon class="text-brand-red h-5 w-5" />
-					<span
-						>Could not automatically determine a Java installation to use. Please set one
-						below:</span
-					>
-				</template>
+					<div class="flex gap-2 items-center">
+						<StyledInput
+							:model-value="activePath"
+							:disabled="!overrideJavaInstall"
+							autocomplete="off"
+							:placeholder="formatMessage(messages.javaPathPlaceholder)"
+							wrapper-class="flex-1 min-w-0"
+							@update:model-value="(val) => (javaPath = String(val))"
+						/>
+						<ButtonStyled
+							:color="
+								!hoveringTest && !testingJava
+									? javaTestResult === true
+										? 'green'
+										: 'red'
+									: 'standard'
+							"
+							color-fill="text"
+						>
+							<button
+								:disabled="!overrideJavaInstall || testingJava"
+								@click="testJavaInstallation(activePath, optimalJava?.parsed_version, true)"
+								@mouseenter="overrideJavaInstall && (hoveringTest = true)"
+								@mouseleave="hoveringTest = false"
+							>
+								<SpinnerIcon v-if="testingJava" class="animate-spin h-4 w-4" />
+								<CheckCircleIcon
+									v-else-if="javaTestResult === true && !hoveringTest"
+									class="h-4 w-4"
+								/>
+								<XCircleIcon v-else-if="javaTestResult !== true && !hoveringTest" class="h-4 w-4" />
+								<RefreshCwIcon v-else-if="overrideJavaInstall" class="h-4 w-4" />
+							</button>
+						</ButtonStyled>
+					</div>
+					<div v-if="overrideJavaInstall" class="flex gap-2">
+						<ButtonStyled>
+							<button @click="handleDetectJava">
+								<SearchIcon />
+								Detect
+							</button>
+						</ButtonStyled>
+						<ButtonStyled>
+							<button @click="handleBrowseJava">
+								<FolderSearchIcon />
+								Browse
+							</button>
+						</ButtonStyled>
+					</div>
+				</div>
 			</div>
 		</div>
 		<h2 class="mt-4 mb-1 text-lg font-extrabold text-contrast block">

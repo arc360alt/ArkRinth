@@ -1,66 +1,76 @@
 <template>
-	<ContentPageLayout>
-		<template #modals>
-			<ShareModalWrapper
-				ref="shareModal"
-				:share-title="formatMessage(messages.shareTitle)"
-				:share-text="formatMessage(messages.shareText)"
-				:open-in-new-tab="false"
-			/>
-			<ModpackContentModal
-				ref="modpackContentModal"
-				:modpack-name="linkedModpackProject?.title"
-				:modpack-icon-url="linkedModpackProject?.icon_url ?? undefined"
-				:enable-toggle="!props.isServerInstance"
-				:get-overflow-options="getOverflowOptions"
-				:switch-version="handleSwitchVersion"
-				@update:enabled="handleModpackContentToggle"
-				@bulk:enable="handleModpackContentBulkToggle"
-				@bulk:disable="handleModpackContentBulkToggle"
-			/>
-			<ConfirmModpackUpdateModal
-				ref="modpackUpdateConfirmModal"
-				:downgrade="isModpackUpdateDowngrade"
-				:backup-tip="
-					[linkedModpackProject?.title, pendingModpackUpdateVersion?.version_number]
-						.filter(Boolean)
-						.join(' ')
-				"
-				@confirm="handleModpackUpdateConfirm"
-				@cancel="handleModpackUpdateCancel"
-			/>
-			<ModpackZipTypeModal ref="modpackZipTypeModal" />
-			<ExportModal v-if="projects.length > 0" ref="exportModal" :instance="instance" />
-			<ContentUpdaterModal
-				v-if="updatingProject || updatingModpack"
-				ref="contentUpdaterModal"
-				:versions="updatingProjectVersions"
-				:current-game-version="instance.game_version"
-				:current-loader="instance.loader"
-				:current-version-id="
-					updatingModpack
-						? (instance.linked_data?.version_id ?? '')
-						: (updatingProject?.version?.id ?? '')
-				"
-				:is-app="true"
-				:project-type="updatingModpack ? 'modpack' : updatingProject?.project_type"
-				:project-icon-url="
-					updatingModpack ? linkedModpackProject?.icon_url : updatingProject?.project?.icon_url
-				"
-				:project-name="
-					updatingModpack
-						? (linkedModpackProject?.title ?? formatMessage(commonMessages.modpackLabel))
-						: (updatingProject?.project?.title ?? updatingProject?.file_name)
-				"
-				:loading="loadingVersions"
-				:loading-changelog="loadingChangelog"
-				@update="handleModalUpdate"
-				@cancel="resetUpdateState"
-				@version-select="handleVersionSelect"
-				@version-hover="handleVersionHover"
-			/>
-		</template>
-	</ContentPageLayout>
+	<ReadyTransition :pending="loading">
+		<ContentPageLayout>
+			<template #modals>
+				<UnknownFileWarningModal
+					ref="unknownFileWarningModal"
+					mode="mod"
+					:file-name="unknownFileName"
+					@cancel="resolveUnknownFileWarning(false)"
+					@continue="handleUnknownFileContinue"
+				/>
+				<ModpackZipTypeModal ref="modpackZipTypeModal" />
+				<ShareModalWrapper
+					ref="shareModal"
+					:share-title="formatMessage(messages.shareTitle)"
+					:share-text="formatMessage(messages.shareText)"
+					:open-in-new-tab="false"
+				/>
+				<ModpackContentModal
+					ref="modpackContentModal"
+					:modpack-name="displayedModpackProject?.title"
+					:modpack-icon-url="displayedModpackProject?.icon_url ?? undefined"
+					:enable-toggle="!props.isServerInstance"
+					:busy="isBulkOperating"
+					:get-overflow-options="getOverflowOptions"
+					:switch-version="handleSwitchVersion"
+					@update:enabled="handleModpackContentToggle"
+					@bulk:enable="(items) => handleModpackContentBulkToggle(items, true)"
+					@bulk:disable="(items) => handleModpackContentBulkToggle(items, false)"
+				/>
+				<ConfirmModpackUpdateModal
+					ref="modpackUpdateConfirmModal"
+					:downgrade="isModpackUpdateDowngrade"
+					:backup-tip="
+						[displayedModpackProject?.title, pendingModpackUpdateVersion?.version_number]
+							.filter(Boolean)
+							.join(' ')
+					"
+					@confirm="handleModpackUpdateConfirm"
+					@cancel="handleModpackUpdateCancel"
+				/>
+				<ExportModal v-if="projects.length > 0" ref="exportModal" :instance="instance" />
+				<ContentUpdaterModal
+					v-if="updatingProject || updatingModpack"
+					ref="contentUpdaterModal"
+					:versions="updatingProjectVersions"
+					:current-game-version="instance.game_version"
+					:current-loader="instance.loader"
+					:current-version-id="
+						updatingModpack
+							? (instance.link?.version_id ?? '')
+							: (updatingProject?.version?.id ?? '')
+					"
+					:is-app="true"
+					:project-type="updatingModpack ? 'modpack' : updatingProject?.project_type"
+					:project-icon-url="
+						updatingModpack ? displayedModpackProject?.icon_url : updatingProject?.project?.icon_url
+					"
+					:project-name="
+						updatingModpack
+							? (displayedModpackProject?.title ?? formatMessage(commonMessages.modpackLabel))
+							: (updatingProject?.project?.title ?? updatingProject?.file_name)
+					"
+					:loading="loadingVersions"
+					:loading-changelog="loadingChangelog"
+					@update="handleModalUpdate"
+					@cancel="resetUpdateState"
+					@version-select="handleVersionSelect"
+					@version-hover="handleVersionHover"
+				/>
+			</template>
+		</ContentPageLayout>
+	</ReadyTransition>
 	<Transition name="fade">
 		<div
 			v-if="dragUploadOverlayVisible"
@@ -90,12 +100,12 @@ import {
 	type BulkOperationStatus,
 	commonMessages,
 	ConfirmModpackUpdateModal,
+	ContentCardLayout as ContentPageLayout,
 	type ContentItem,
 	type ContentModpackCardCategory,
 	type ContentModpackCardProject,
 	type ContentModpackCardVersion,
 	type ContentOwner,
-	ContentCardLayout as ContentPageLayout,
 	ContentUpdaterModal,
 	defineMessages,
 	injectNotificationManager,
@@ -104,8 +114,11 @@ import {
 	type OverflowMenuOption,
 	provideAppBackup,
 	provideContentManager,
+	ReadyTransition,
+	UnknownFileWarningModal,
 	useDebugLogger,
-	useVIntl
+	useVIntl,
+	versionChangesGameVersion,
 } from '@modrinth/ui'
 import { useQuery, useQueryClient } from '@tanstack/vue-query'
 import { convertFileSrc } from '@tauri-apps/api/core'
@@ -170,6 +183,18 @@ const messages = defineMessages({
 	contentTypeProject: {
 		id: 'app.instance.mods.content-type-project',
 		defaultMessage: 'project',
+	},
+	bulkUpdateResolvingVersions: {
+		id: 'app.instance.mods.bulk-update.resolving-versions',
+		defaultMessage: 'Resolving versions...',
+	},
+	bulkUpdateDownloadingProjects: {
+		id: 'app.instance.mods.bulk-update.downloading-projects',
+		defaultMessage: 'Downloading {current, number}/{total, number} projects...',
+	},
+	bulkUpdateFinishing: {
+		id: 'app.instance.mods.bulk-update.finishing',
+		defaultMessage: 'Finishing update...',
 	},
 	dragUploadOverlayTitle: {
 		id: 'app.instance.mods.drag-upload-overlay.title',
@@ -304,8 +329,24 @@ const exportModal = ref(null)
 const contentUpdaterModal = ref<InstanceType<typeof ContentUpdaterModal> | null>()
 const modpackContentModal = ref<InstanceType<typeof ModpackContentModal> | null>()
 const modpackUpdateConfirmModal = ref<InstanceType<typeof ConfirmModpackUpdateModal> | null>()
+const unknownFileWarningModal = ref<InstanceType<typeof UnknownFileWarningModal> | null>()
 const modpackZipTypeModal = ref<InstanceType<typeof ModpackZipTypeModal> | null>()
+const unknownFileName = ref('')
+let resolveUnknownFileConfirmation: ((confirmed: boolean) => void) | null = null
 
+const modpackContentQueryKey = computed(() => ['linkedModpackContent', props.instance.id])
+const modpackContentQuery = useQuery({
+	queryKey: modpackContentQueryKey,
+	queryFn: () => get_linked_modpack_content(props.instance.id),
+	enabled: computed(
+		() =>
+			!!props.instance?.id &&
+			!!props.instance?.link &&
+			props.instance.install_stage === 'installed',
+	),
+})
+
+// TODO: Extract content operation and updater modal state into composables; this page currently owns file mutations, dependency installs, busy flags, and version selection flow.
 const updatingProject = ref<ContentItem | null>(null)
 const updatingProjectVersions = ref<Labrinth.Versions.v2.Version[]>([])
 const loadingVersions = ref(false)
@@ -573,6 +614,27 @@ async function handleUnknownFileContinue(dontShowAgain: boolean) {
 		}
 	}
 	resolveUnknownFileWarning(true)
+}
+
+function getFileName(filePath: string) {
+	return filePath.split(/[\\/]/).pop() ?? filePath
+}
+
+async function getDroppedProjectType(
+	filePath: string,
+): Promise<'mod' | 'resourcepack' | 'shaderpack' | 'cancelled' | null> {
+	const loweredPath = filePath.toLowerCase()
+
+	if (loweredPath.endsWith('.jar')) {
+		return 'mod'
+	}
+
+	if (loweredPath.endsWith('.zip')) {
+		const selectedType = await modpackZipTypeModal.value?.show(getFileName(filePath))
+		return selectedType ?? 'cancelled'
+	}
+
+	return null
 }
 
 async function toggleDisableMod(mod: ContentItem, desiredEnabled?: boolean) {
@@ -1290,27 +1352,7 @@ function applyContentData(contentData: InstanceContentData) {
 	}
 
 	loading.value = false
-}
-
-function getFileName(filePath: string) {
-	return filePath.split(/[\\/]/).pop() ?? filePath
-}
-
-async function getDroppedProjectType(
-	filePath: string,
-): Promise<'mod' | 'resourcepack' | 'shaderpack' | 'cancelled' | null> {
-	const loweredPath = filePath.toLowerCase()
-
-	if (loweredPath.endsWith('.jar')) {
-		return 'mod'
-	}
-
-	if (loweredPath.endsWith('.zip')) {
-		const selectedType = await modpackZipTypeModal.value?.show(getFileName(filePath))
-		return selectedType ?? 'cancelled'
-	}
-
-	return null
+	return true
 }
 
 provideAppBackup({
@@ -1497,48 +1539,54 @@ const removeBeforeEach = router.beforeEach(() => {
 	savedModalState = state ?? null
 })
 
-const unlisten = await getCurrentWebview().onDragDropEvent(async (event) => {
-	if (event.payload.type === 'enter' || event.payload.type === 'over') {
-		dragUploadOverlayVisible.value = true
-		dragUploadOverlayCount.value = event.payload.paths?.length ?? 0
-		return
-	}
+let isUnmounted = false
+let unlistenDragDrop: UnlistenFn | null = null
+let unlistenInstances: UnlistenFn | null = null
 
-	if (event.payload.type === 'leave') {
-		dragUploadOverlayVisible.value = false
-		dragUploadOverlayCount.value = 0
-		return
-	}
+onMounted(() => {
+	void getCurrentWebview()
+		.onDragDropEvent(async (event) => {
+			if (event.payload.type === 'enter' || event.payload.type === 'over') {
+				dragUploadOverlayVisible.value = true
+				dragUploadOverlayCount.value = event.payload.paths?.length ?? 0
+				return
+			}
 
-	if (event.payload.type !== 'drop' || !props.instance) return
-	dragUploadOverlayVisible.value = false
-	dragUploadOverlayCount.value = 0
-	const isLinkedModpack =
-		Boolean(props.instance.linked_data?.project_id) || linkedModpackProject.value !== null
+			if (event.payload.type === 'leave') {
+				dragUploadOverlayVisible.value = false
+				dragUploadOverlayCount.value = 0
+				return
+			}
 
-	for (const file of event.payload.paths) {
-		if (file.toLowerCase().endsWith('.mrpack')) continue
+			if (event.payload.type !== 'drop' || !props.instance) return
+			dragUploadOverlayVisible.value = false
+			dragUploadOverlayCount.value = 0
 
-		const projectType = await getDroppedProjectType(file)
-		if (projectType === 'cancelled') continue
-		if (projectType) {
-			await add_project_from_path(props.instance.path, file, projectType).catch(handleError)
-			continue
-		}
+			for (const file of event.payload.paths) {
+				if (file.toLowerCase().endsWith('.mrpack')) continue
 
-		if (isLinkedModpack) {
-			// Let backend inference handle non-jar/zip files like datapacks.
-			await add_project_from_path(props.instance.path, file).catch(handleError)
-			continue
-		}
+				const projectType = await getDroppedProjectType(file)
+				if (projectType === 'cancelled') continue
+				if (projectType) {
+					await add_project_from_path(props.instance.id, file, projectType).catch(handleError)
+					continue
+				}
 
-		await add_project_from_path(props.instance.path, file).catch(handleError)
-	}
-	await initProjects()
-})
+				await add_project_from_path(props.instance.id, file).catch(handleError)
+			}
+			await initProjects()
+		})
+		.then((unlisten) => {
+			if (isUnmounted) {
+				unlisten()
+				return
+			}
 
-const unlistenProfiles = await profile_listener(
-	async (event: { event: string; profile_path_id: string }) => {
+			unlistenDragDrop = unlisten
+		})
+		.catch(handleError)
+
+	void instance_listener(async (event: { event: string; instance_id: string }) => {
 		if (
 			props.instance &&
 			event.instance_id === props.instance.id &&

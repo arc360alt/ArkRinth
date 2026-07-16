@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { getCurrentWindow } from '@tauri-apps/api/window'
-import { Combobox, ThemeSelector, Toggle } from '@modrinth/ui'
+import { Combobox, defineMessages, ThemeSelector, Toggle, useVIntl } from '@modrinth/ui'
 import { ref, watch } from 'vue'
 
 import { get, set } from '@/helpers/settings.ts'
@@ -141,7 +141,7 @@ watch(
 </script>
 <template>
 	<h2 class="m-0 text-lg font-extrabold text-contrast">Color theme</h2>
-	<p class="m-0 mt-1">Select your preferred color theme for ArkRinth App.</p>
+	<p class="m-0 mt-1">Select your preferred color theme for NyxRinth App.</p>
 
 	<ThemeSelector
 		:update-color-theme="

@@ -9,6 +9,7 @@ use super::{diagnostics, recovery, store};
 use crate::ErrorKind;
 use crate::api::pack::install_from::{
     CreatePackLocation, generate_pack_from_file,
+    generate_pack_from_url_with_reporter,
     generate_pack_from_version_id_with_reporter, get_instance_from_pack,
 };
 use crate::api::pack::install_mrpack::install_zipped_mrpack_files_with_reporter;
@@ -922,6 +923,28 @@ async fn install_pack(
                 .await?;
             generate_pack_from_file(path, instance_id.clone()).await?
         }
+        CreatePackLocation::FromUrl {
+            url,
+            title,
+            icon_url,
+        } => {
+            reporter
+                .set_context(
+                    InstallErrorContext::new("download modpack file")
+                        .urls(vec![url.clone()])
+                        .build(),
+                )
+                .await?;
+            generate_pack_from_url_with_reporter(
+                url,
+                title,
+                icon_url,
+                instance_id.clone(),
+                reason,
+                reporter.clone(),
+            )
+            .await?
+        }
     };
 
     install_zipped_mrpack_files_with_reporter(
@@ -1136,6 +1159,11 @@ fn modpack_details(location: &CreatePackLocation) -> InstallPhaseDetails {
             project_id: None,
             version_id: None,
             title: None,
+        },
+        CreatePackLocation::FromUrl { title, .. } => InstallPhaseDetails::Modpack {
+            project_id: None,
+            version_id: None,
+            title: Some(title.clone()),
         },
     }
 }

@@ -96,25 +96,3 @@ defineExpose({ getRootElement })
 		</div>
 	</div>
 </template>
-
-<style scoped lang="scss">
-.skin-btn-bg {
-	background: var(--color-gradient-button-bg);
-}
-
-.skin-btn-bg.selected {
-	background:
-		linear-gradient(
-			157.61deg,
-			var(--color-brand) -76.68%,
-			rgba(27, 43, 217, 0.53) -38.61%,
-			rgba(35, 12, 89, 0.6) 100.4%
-		),
-		var(--color-bg);
-}
-
-.skin-btn-bg.selected:hover,
-.group:hover .skin-btn-bg.selected {
-	filter: brightness(1.15);
-}
-</style>

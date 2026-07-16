@@ -97,15 +97,15 @@ pub enum CreatePackLocation {
         title: String,
         icon_url: Option<String>,
     },
-    // Create a pack from a remote URL (such as a third-party mrpack download)
+    // Create a pack from a file (such as an .mrpack for installing from a file, or a folder name for importing)
+    FromFile {
+        path: PathBuf,
+    },
+    // Create a pack by downloading an .mrpack directly from an arbitrary URL
     FromUrl {
         url: String,
         title: String,
         icon_url: Option<String>,
-    },
-    // Create a pack from a file (such as an .mrpack for installing from a file, or a folder name for importing)
-    FromFile {
-        path: PathBuf,
     },
 }
 
@@ -188,10 +188,8 @@ pub async fn get_instance_from_pack(
             ..Default::default()
         }),
         CreatePackLocation::FromUrl {
-            title,
-            icon_url,
-            ..
-        } => Ok(CreatePackProfile {
+            title, icon_url, ..
+        } => Ok(CreatePackInstance {
             name: title,
             icon_url,
             ..Default::default()
@@ -246,115 +244,20 @@ pub async fn get_instance_from_pack(
     }
 }
 
-#[tracing::instrument]
-pub async fn generate_pack_from_url(
-    url: String,
-    title: String,
-    icon_url: Option<String>,
-    profile_path: String,
-) -> crate::Result<CreatePack> {
-    let state = State::get().await?;
-
-    let loading_bar = init_loading(
-        LoadingBarType::PackFileDownload {
-            profile_path: profile_path.clone(),
-            pack_name: title.clone(),
-            icon: icon_url.clone(),
-            pack_version: title.clone(),
-        },
-        100.0,
-        "Downloading pack file",
-    )
-    .await?;
-
-    let file = fetch_advanced(
-        Method::GET,
-        &url,
-        None,
-        None,
-        None,
-        Some((&loading_bar, 80.0)),
-        &state.fetch_semaphore,
-        &state.pool,
-    )
-    .await?;
-
-    let icon = if let Some(icon_url) = icon_url {
-        emit_loading(&loading_bar, 10.0, Some("Retrieving icon"))?;
-        let icon_bytes = fetch(&icon_url, None, &state.fetch_semaphore, &state.pool).await?;
-        let filename = icon_url.rsplit('/').next();
-
-        let fetched = if let Some(filename) = filename {
-            Some(
-                write_cached_icon(
-                    filename,
-                    &state.directories.caches_dir(),
-                    icon_bytes,
-                    &state.io_semaphore,
-                )
-                .await?,
-            )
-        } else {
-            None
-        };
-        emit_loading(&loading_bar, 10.0, None)?;
-        fetched
-    } else {
-        emit_loading(&loading_bar, 20.0, None)?;
-        None
-    };
-
-    if let Some(ref icon_path) = icon {
-        let _ = profile::edit_icon(&profile_path, Some(icon_path.as_path())).await;
-    }
-
-    Ok(CreatePack {
-        file,
-        description: CreatePackDescription {
-            icon,
-            override_title: Some(title),
-            project_id: None,
-            version_id: None,
-            existing_loading_bar: Some(loading_bar),
-            profile_path,
-        },
-    })
-}
-
-#[tracing::instrument]
-
-pub async fn generate_pack_from_version_id(
+#[tracing::instrument(skip(reporter))]
+#[allow(clippy::too_many_arguments)]
+pub(crate) async fn generate_pack_from_version_id_with_reporter(
     project_id: String,
     version_id: String,
     title: String,
     icon_url: Option<String>,
-    profile_path: String,
-
-    // Existing loading bar. Unlike when existing_loading_bar is used, this one is pre-initialized with PackFileDownload
-    // For example, you might use this if multiple packs are being downloaded at once and you want to use the same loading bar
-    initialized_loading_bar: Option<LoadingBarId>,
+    instance_id: String,
+    reason: DownloadReason,
+    reporter: InstallProgressReporter,
 ) -> crate::Result<CreatePack> {
     let state = State::get().await?;
     let has_icon_url = icon_url.is_some();
 
-    let loading_bar = if let Some(bar) = initialized_loading_bar {
-        emit_loading(&bar, 0.0, Some("Downloading pack file"))?;
-        bar
-    } else {
-        init_loading(
-            LoadingBarType::PackFileDownload {
-                profile_path: profile_path.clone(),
-                pack_name: title.clone(),
-                icon: icon_url,
-                pack_version: version_id.clone(),
-            },
-            100.0,
-            "Downloading pack file",
-        )
-        .await?
-    };
-
-    emit_loading(&loading_bar, 0.0, Some("Fetching version"))?;
     let version = CachedEntry::get_version(
         &version_id,
         Some(CacheBehaviour::Bypass),
@@ -563,6 +466,149 @@ pub async fn generate_pack_from_version_id(
             override_title: Some(title),
             project_id: Some(project_id),
             version_id: Some(version_id),
+            instance_id,
+            source_filename: None,
+        },
+    })
+}
+
+/// Downloads an .mrpack directly from an arbitrary URL, bypassing the
+/// Modrinth version-lookup flow used by [`generate_pack_from_version_id_with_reporter`].
+#[tracing::instrument(skip(reporter))]
+pub(crate) async fn generate_pack_from_url_with_reporter(
+    url: String,
+    title: String,
+    icon_url: Option<String>,
+    instance_id: String,
+    reason: DownloadReason,
+    reporter: InstallProgressReporter,
+) -> crate::Result<CreatePack> {
+    let state = State::get().await?;
+
+    let metadata = crate::api::instance::get(&instance_id)
+        .await?
+        .ok_or_else(|| {
+            crate::ErrorKind::InputError(format!(
+                "Unknown instance {instance_id}"
+            ))
+        })?;
+
+    let download_meta = DownloadMeta {
+        reason,
+        game_version: metadata.applied_content_set.game_version.clone(),
+        loader: metadata.applied_content_set.loader.as_str().to_string(),
+        dependent_on: None,
+    };
+
+    let details = InstallPhaseDetails::Modpack {
+        project_id: None,
+        version_id: None,
+        title: Some(title.clone()),
+    };
+    let mut last_reported_bytes = 0_u64;
+    let mut progress =
+        |current: u64,
+         total: u64|
+         -> Pin<Box<dyn Future<Output = crate::Result<()>> + Send>> {
+            let min_delta = (total / 200).max(256 * 1024);
+            if current < total
+                && current.saturating_sub(last_reported_bytes) < min_delta
+            {
+                return Box::pin(async { Ok(()) });
+            }
+
+            last_reported_bytes = current;
+            let reporter = reporter.clone();
+            let details = details.clone();
+            Box::pin(async move {
+                reporter
+                    .update(
+                        InstallPhaseId::DownloadingPackFile,
+                        Some(InstallProgress {
+                            current,
+                            total,
+                            secondary: None,
+                        }),
+                        details,
+                    )
+                    .await?;
+                Ok(())
+            })
+        };
+    let progress = Some(&mut progress as &mut FetchProgressFn<'_>);
+
+    let context = InstallErrorContext::new("download modpack file")
+        .urls(vec![url.clone()])
+        .build();
+    reporter.set_context(context).await?;
+    let file = fetch_advanced_with_progress(
+        Method::GET,
+        &url,
+        None,
+        None,
+        None,
+        Some(&download_meta),
+        None,
+        None,
+        &state.fetch_semaphore,
+        &state.pool,
+        progress,
+    )
+    .await?;
+
+    let icon = if let Some(icon_url) = &icon_url {
+        reporter
+            .set_context(
+                InstallErrorContext::new("download modpack icon")
+                    .urls(vec![icon_url.clone()])
+                    .build(),
+            )
+            .await?;
+        let icon_bytes = fetch(
+            icon_url,
+            None,
+            None,
+            None,
+            &state.fetch_semaphore,
+            &state.pool,
+        )
+        .await?;
+
+        let filename = icon_url.rsplit('/').next();
+
+        if let Some(filename) = filename {
+            Some(
+                write_cached_icon(
+                    filename,
+                    &state.directories.caches_dir(),
+                    icon_bytes,
+                    &state.io_semaphore,
+                )
+                .await?,
+            )
+        } else {
+            None
+        }
+    } else {
+        None
+    };
+
+    // Set the icon immediately so the UI shows it during download.
+    if let Some(ref icon_path) = icon {
+        let _ = crate::api::instance::edit_icon(
+            &instance_id,
+            Some(icon_path.as_path()),
+        )
+        .await;
+    }
+
+    Ok(CreatePack {
+        file: CreatePackFile::Bytes(file),
+        description: CreatePackDescription {
+            icon,
+            override_title: Some(title),
+            project_id: None,
+            version_id: None,
             instance_id,
             source_filename: None,
         },

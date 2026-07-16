@@ -1,12 +1,14 @@
-import type { Archon } from '@modrinth/api-client'
+import type { Archon, LauncherMeta } from '@modrinth/api-client'
 import { useQueryClient } from '@tanstack/vue-query'
 import { computed, type ComputedRef, type Ref, ref, type ShallowRef, watch } from 'vue'
 import type { ComponentExposed } from 'vue-component-type-helpers'
 
 import { useDebugLogger } from '#ui/composables/debug-logger'
 import {
+	defineMessages,
+	type MessageDescriptor,
 	useVIntl,
-	type VIntlFormatters
+	type VIntlFormatters,
 } from '#ui/composables/i18n'
 import { formatLoaderLabel } from '#ui/utils/loaders'
 
@@ -22,6 +24,75 @@ export type Gamemode = 'survival' | 'creative' | 'hardcore'
 export type Difficulty = 'peaceful' | 'easy' | 'normal' | 'hard'
 export type LoaderVersionType = 'stable' | 'latest' | 'other'
 export type GeneratorSettingsMode = 'default' | 'flat' | 'custom'
+export type LoaderManifest = LauncherMeta.Manifest.v0.Manifest
+export type LoaderManifestResolver = (loader: string) => Promise<LoaderManifest>
+export interface LoaderVersionEntry {
+	id: string
+	stable: boolean
+}
+
+const loaderManifestQueryKey = (loader: string) =>
+	['creation-flow', 'loader-manifest', loader] as const
+const paperSupportedVersionsQueryKey = ['creation-flow', 'paper', 'supported-versions'] as const
+const purpurSupportedVersionsQueryKey = ['creation-flow', 'purpur', 'supported-versions'] as const
+
+export const creationFlowMessages = defineMessages({
+	createWorldTitle: {
+		id: 'creation-flow.title.create-world',
+		defaultMessage: 'Create world',
+	},
+	setUpServerTitle: {
+		id: 'creation-flow.title.set-up-server',
+		defaultMessage: 'Set up server',
+	},
+	resetServerTitle: {
+		id: 'creation-flow.title.reset-server',
+		defaultMessage: 'Reset server',
+	},
+	createInstanceTitle: {
+		id: 'creation-flow.title.create-instance',
+		defaultMessage: 'Create instance',
+	},
+	createWorldButton: {
+		id: 'creation-flow.button.create-world',
+		defaultMessage: 'Create world',
+	},
+	createInstanceButton: {
+		id: 'creation-flow.button.create-instance',
+		defaultMessage: 'Create instance',
+	},
+	setupServerButton: {
+		id: 'creation-flow.button.setup-server',
+		defaultMessage: 'Setup server',
+	},
+	finishButton: {
+		id: 'creation-flow.button.finish',
+		defaultMessage: 'Finish',
+	},
+	importInstanceTitle: {
+		id: 'creation-flow.title.import-instance',
+		defaultMessage: 'Import instance',
+	},
+	importButton: {
+		id: 'creation-flow.button.import',
+		defaultMessage: 'Import',
+	},
+	importInstancesButton: {
+		id: 'creation-flow.button.import-instances',
+		defaultMessage: 'Import {count, plural, one {# instance} other {# instances}}',
+	},
+	chooseModpackTitle: {
+		id: 'creation-flow.title.choose-modpack',
+		defaultMessage: 'Choose modpack',
+	},
+})
+
+export const flowTypeHeadingMessages: Record<FlowType, MessageDescriptor> = {
+	world: creationFlowMessages.createWorldTitle,
+	'server-onboarding': creationFlowMessages.setUpServerTitle,
+	'reset-server': creationFlowMessages.resetServerTitle,
+	instance: creationFlowMessages.createInstanceTitle,
+}
 
 export interface OptiArkVersionOption {
 	label: string
@@ -161,6 +232,7 @@ export interface CreationFlowContextValue {
 	// Platform-provided search
 	searchModpacks: (query: string, limit?: number) => Promise<ModpackSearchResult>
 	getProjectVersions: (projectId: string) => Promise<{ id: string }[]>
+	getLoaderManifest: LoaderManifestResolver | null
 	getOptiArkDownloads: () => Promise<unknown>
 }
 
@@ -181,7 +253,10 @@ export interface CreationFlowOptions {
 	onBack?: () => void
 	searchModpacks?: (query: string, limit?: number) => Promise<ModpackSearchResult>
 	getProjectVersions?: (projectId: string) => Promise<{ id: string }[]>
+	getLoaderManifest?: LoaderManifestResolver
 	getOptiArkDownloads?: () => Promise<unknown>
+	finishDisabled?: ComputedRef<boolean>
+	finishDisabledTooltip?: ComputedRef<string | undefined>
 }
 
 export function createCreationFlowContext(
@@ -204,7 +279,10 @@ export function createCreationFlowContext(
 	const initialLoader = options.initialLoader ?? null
 	const initialGameVersion = options.initialGameVersion ?? null
 	const onBack = options.onBack ?? null
+	const searchModpacks = options.searchModpacks!
+	const getProjectVersions = options.getProjectVersions!
 	const getLoaderManifest = options.getLoaderManifest ?? null
+	const getOptiArkDownloads = options.getOptiArkDownloads ?? (async () => ({}))
 	const finishDisabled = options.finishDisabled ?? computed(() => false)
 	const finishDisabledTooltip = options.finishDisabledTooltip ?? computed(() => undefined)
 
@@ -264,6 +342,7 @@ export function createCreationFlowContext(
 	const modpackSelection = ref<ModpackSelection | null>(null)
 	const modpackFile = ref<File | null>(null)
 	const modpackFilePath = ref<string | null>(null)
+
 	const optiarkRenderer = ref<string | null>(null)
 	const optiarkRendererIconUrl = ref<string | null>(null)
 	const optiarkVersionLabel = ref<string | null>(null)
@@ -505,15 +584,6 @@ export function createCreationFlowContext(
 		return { known }
 	}
 
-	const searchModpacks = options.searchModpacks ?? (async () => ({
-		hits: [],
-		total_hits: 0,
-		offset: 0,
-		limit: 0,
-	}))
-	const getProjectVersions = options.getProjectVersions ?? (async () => [])
-	const getOptiArkDownloads = options.getOptiArkDownloads ?? (async () => ({}))
-
 	const resolvedStageConfigs = disableClose
 		? stageConfigs.map((stage) => ({ ...stage, disableClose: true }))
 		: stageConfigs
@@ -591,6 +661,7 @@ export function createCreationFlowContext(
 		prefetchLoaderMetadata,
 		searchModpacks,
 		getProjectVersions,
+		getLoaderManifest,
 		getOptiArkDownloads,
 	}
 

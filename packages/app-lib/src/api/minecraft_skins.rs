@@ -310,17 +310,12 @@ pub async fn get_available_skins() -> crate::Result<Vec<Skin>> {
         .await?
         .ok_or(ErrorKind::NoCredentialsError)?;
 
-    // If this is an offline account, return an empty skin list
-    if selected_credentials.access_token == "OFFLINE_ACCESS_TOKEN" {
-        return Ok(vec![]);
-    }
-
-    let profile =
-        selected_credentials.online_profile().await.ok_or_else(|| {
-            ErrorKind::OnlineMinecraftProfileUnavailable {
-                user_name: selected_credentials.offline_profile.name.clone(),
-            }
-        })?;
+    let online_profile = selected_credentials.online_profile_fresh().await;
+    let profile_id = online_profile
+        .as_ref()
+        .map_or(selected_credentials.offline_profile.id, |profile| {
+            profile.id
+        });
 
     let current_skin = online_profile
         .as_ref()
