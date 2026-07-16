@@ -3,8 +3,6 @@ on:
   push:
     branches:
       - main
-    tags:
-      - 'v*'
     paths:
       - .github/workflows/theseus-build.yml
       - 'apps/app/**'
@@ -16,10 +14,9 @@ on:
       - 'packages/utils/**'
   workflow_dispatch:
     inputs:
-      sign-windows-binaries:
-        description: Sign Windows binaries
-        type: boolean
-        default: false
+      version:
+        description: 'Version to release (e.g. 1.4.0). Leave empty to auto-increment the minor version from the latest release.'
+        type: string
         required: false
       environment:
         description: Environment
@@ -32,8 +29,45 @@ on:
         required: false
 
 jobs:
+  determine-version:
+    name: Determine version
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      - name: Determine version
+        id: version
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          INPUT_VERSION: ${{ inputs.version }}
+          REPO: ${{ github.repository }}
+        run: |
+          if [ -n "$INPUT_VERSION" ]; then
+            VERSION="${INPUT_VERSION#v}"
+            echo "Using specified version: $VERSION"
+          else
+            LATEST_TAG="$(gh release list --repo "$REPO" --limit 1 --json tagName --jq '.[0].tagName' 2>/dev/null || true)"
+
+            if [ -z "$LATEST_TAG" ]; then
+              VERSION="0.1.0"
+              echo "No previous release found, starting at $VERSION"
+            else
+              LATEST_VERSION="${LATEST_TAG#v}"
+              MAJOR="$(echo "$LATEST_VERSION" | cut -d. -f1)"
+              MINOR="$(echo "$LATEST_VERSION" | cut -d. -f2)"
+              MINOR=$((MINOR + 1))
+              VERSION="${MAJOR}.${MINOR}.0"
+              echo "Latest release is $LATEST_TAG, bumping minor to $VERSION"
+            fi
+          fi
+
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
   build:
     name: Build
+    needs: determine-version
     env:
       VITE_STRIPE_PUBLISHABLE_KEY: pk_live_51JbFxJJygY5LJFfKLVVldb10HlLt24p421OWRsTOWc5sXYFOnFUXWieSc6HD3PHo25ktx8db1WcHr36XGFvZFVUz00V9ixrCs5
     strategy:
@@ -104,19 +138,13 @@ jobs:
       - name: Set application version and environment
         shell: bash
         run: |
-          RAW_VERSION="$(git describe --tags --always | sed -E 's/-([0-9]+)-(g[0-9a-fA-F]+)$/-canary+\1.\2/')"
-          # If git describe returned only a commit hash (no tags), use a fallback semver
-          if [[ "$RAW_VERSION" =~ ^[0-9a-fA-F]+$ ]]; then
-            APP_VERSION="0.0.0-canary+${RAW_VERSION}"
-          else
-            APP_VERSION="$RAW_VERSION"
-          fi
+          APP_VERSION="${{ needs.determine-version.outputs.version }}"
           BUILD_ENVIRONMENT="${{ inputs.environment || 'prod' }}"
           echo "Setting application version to $APP_VERSION"
           echo "Using environment $BUILD_ENVIRONMENT"
-          dasel put -f apps/app/Cargo.toml -t string -v "${APP_VERSION#v}" 'package.version'
-          dasel put -f packages/app-lib/Cargo.toml -t string -v "${APP_VERSION#v}" 'package.version'
-          dasel put -f apps/app-frontend/package.json -t string -v "${APP_VERSION#v}" 'version'
+          dasel put -f apps/app/Cargo.toml -t string -v "$APP_VERSION" 'package.version'
+          dasel put -f packages/app-lib/Cargo.toml -t string -v "$APP_VERSION" 'package.version'
+          dasel put -f apps/app-frontend/package.json -t string -v "$APP_VERSION" 'version'
 
           cp "packages/app-lib/.env.${BUILD_ENVIRONMENT}" packages/app-lib/.env
 
@@ -130,7 +158,7 @@ jobs:
         if: startsWith(matrix.platform, 'windows')
         shell: bash
         run: |
-          if [ '${{ startsWith(github.ref, 'refs/tags/v') || inputs.sign-windows-binaries }}' = 'true' ]; then
+          if [ '${{ secrets.TAURI_PRIVATE_KEY != '' }}' = 'true' ]; then
             choco install jsign --ignore-dependencies # GitHub runners come with a global Java installation already
           else
             dasel delete -f apps/app/tauri-release.conf.json 'bundle.windows.signCommand'
@@ -138,7 +166,7 @@ jobs:
 
       - name: Build macOS app (signed)
         run: pnpm --filter=@modrinth/app run tauri build --target universal-apple-darwin --config tauri-release.conf.json
-        if: startsWith(matrix.platform, 'macos') && startsWith(github.ref, 'refs/tags/v')
+        if: startsWith(matrix.platform, 'macos') && secrets.APPLE_CERTIFICATE != ''
         env:
           ENABLE_CODE_SIGNING: ${{ secrets.APPLE_CERTIFICATE }}
           APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
@@ -152,10 +180,10 @@ jobs:
 
       - name: Build macOS app (unsigned)
         run: pnpm --filter=@modrinth/app run tauri build --target universal-apple-darwin --config tauri-dev.conf.json
-        if: startsWith(matrix.platform, 'macos') && !startsWith(github.ref, 'refs/tags/v')
+        if: startsWith(matrix.platform, 'macos') && secrets.APPLE_CERTIFICATE == ''
 
       - name: Build Linux app
-        run: ${{ (startsWith(github.ref, 'refs/tags/v') && secrets.TAURI_PRIVATE_KEY) && 'pnpm --filter=@modrinth/app run tauri build --config tauri-release.conf.json' || 'pnpm --filter=@modrinth/app run tauri build --config tauri-dev.conf.json' }}
+        run: ${{ secrets.TAURI_PRIVATE_KEY != '' && 'pnpm --filter=@modrinth/app run tauri build --config tauri-release.conf.json' || 'pnpm --filter=@modrinth/app run tauri build --config tauri-dev.conf.json' }}
         if: startsWith(matrix.platform, 'ubuntu')
         env:
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_PRIVATE_KEY }}
@@ -166,7 +194,7 @@ jobs:
           [System.Convert]::FromBase64String("$env:DIGICERT_ONE_SIGNER_CLIENT_CERTIFICATE_BASE64") | Set-Content -Path signer-client-cert.p12 -AsByteStream
           $env:DIGICERT_ONE_SIGNER_CREDENTIALS = "$env:DIGICERT_ONE_SIGNER_API_KEY|$PWD\signer-client-cert.p12|$env:DIGICERT_ONE_SIGNER_CLIENT_CERTIFICATE_PASSWORD"
           $env:JAVA_HOME = "$env:JAVA_HOME_17_X64"
-          ${{ (startsWith(github.ref, 'refs/tags/v') && secrets.TAURI_PRIVATE_KEY) && 'pnpm --filter=@modrinth/app run tauri build --config tauri-release.conf.json --verbose --bundles "nsis,updater"' || 'pnpm --filter=@modrinth/app run tauri build --config tauri-dev.conf.json --verbose --bundles "nsis,updater"' }}
+          ${{ secrets.TAURI_PRIVATE_KEY != '' && 'pnpm --filter=@modrinth/app run tauri build --config tauri-release.conf.json --verbose --bundles "nsis,updater"' || 'pnpm --filter=@modrinth/app run tauri build --config tauri-dev.conf.json --verbose --bundles "nsis,updater"' }}
           Remove-Item -Path signer-client-cert.p12 -ErrorAction SilentlyContinue
         if: startsWith(matrix.platform, 'windows')
         env:
@@ -194,3 +222,36 @@ jobs:
             target/release/bundle/nsis/NyxRinth App_*-setup.exe*
             target/release/bundle/nsis/NyxRinth App (dev-*)_*-setup.exe*
             target/release/bundle/nsis/NyxRinth App_*-setup.nsis.zip*
+
+  release:
+    name: Create release
+    needs: [determine-version, build]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Download all app bundles
+        uses: actions/download-artifact@v4
+        with:
+          pattern: 'App bundle *'
+          path: artifacts
+          merge-multiple: true
+
+      - name: Create release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VERSION: ${{ needs.determine-version.outputs.version }}
+        run: |
+          shopt -s nullglob
+          FILES=(artifacts/*)
+          if [ ${#FILES[@]} -eq 0 ]; then
+            echo "No build artifacts were found to release" >&2
+            exit 1
+          fi
+
+          gh release create "v${VERSION}" \
+            --repo "${{ github.repository }}" \
+            --target "${{ github.sha }}" \
+            --title "v${VERSION}" \
+            --generate-notes \
+            "${FILES[@]}"
