@@ -90,6 +90,13 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Check available secrets
+        id: check-secrets
+        shell: bash
+        run: |
+          echo "has-apple-cert=${{ secrets.APPLE_CERTIFICATE != '' }}" >> "$GITHUB_OUTPUT"
+          echo "has-tauri-key=${{ secrets.TAURI_PRIVATE_KEY != '' }}" >> "$GITHUB_OUTPUT"
+
       - name: Setup Rust toolchain
         uses: actions-rust-lang/setup-rust-toolchain@v1
         with:
@@ -166,7 +173,7 @@ jobs:
 
       - name: Build macOS app (signed)
         run: pnpm --filter=@modrinth/app run tauri build --target universal-apple-darwin --config tauri-release.conf.json
-        if: startsWith(matrix.platform, 'macos') && secrets.APPLE_CERTIFICATE != ''
+        if: startsWith(matrix.platform, 'macos') && steps.check-secrets.outputs.has-apple-cert == 'true'
         env:
           ENABLE_CODE_SIGNING: ${{ secrets.APPLE_CERTIFICATE }}
           APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
@@ -180,7 +187,7 @@ jobs:
 
       - name: Build macOS app (unsigned)
         run: pnpm --filter=@modrinth/app run tauri build --target universal-apple-darwin --config tauri-dev.conf.json
-        if: startsWith(matrix.platform, 'macos') && secrets.APPLE_CERTIFICATE == ''
+        if: startsWith(matrix.platform, 'macos') && steps.check-secrets.outputs.has-apple-cert == 'false'
 
       - name: Build Linux app
         run: ${{ secrets.TAURI_PRIVATE_KEY != '' && 'pnpm --filter=@modrinth/app run tauri build --config tauri-release.conf.json' || 'pnpm --filter=@modrinth/app run tauri build --config tauri-dev.conf.json' }}
