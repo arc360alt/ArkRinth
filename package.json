@@ -51,27 +51,5 @@
 	"engines": {
 		"node": ">=24.15.0"
 	},
-	"pnpm": {
-		"patchedDependencies": {
-			"readable-stream@2.3.8": "patches/readable-stream@2.3.8.patch"
-		},
-		"peerDependencyRules": {
-			"allowedVersions": {
-				"vite": "8",
-				"esbuild": "0"
-			}
-		},
-		"onlyBuiltDependencies": [
-			"@parcel/watcher",
-			"@sentry/cli",
-			"core-js",
-			"esbuild",
-			"protobufjs",
-			"sharp",
-			"unrs-resolver",
-			"vue-demi",
-			"workerd"
-		]
-	},
 	"prettier": "@modrinth/tooling-config/prettier.config.cjs"
 }

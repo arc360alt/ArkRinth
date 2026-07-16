@@ -2,3 +2,19 @@ packages:
   - 'apps/*'
   - 'packages/*'
 minimumReleaseAge: 10080 # 7 days
+patchedDependencies:
+  readable-stream@2.3.8: patches/readable-stream@2.3.8.patch
+peerDependencyRules:
+  allowedVersions:
+    vite: '8'
+    esbuild: '0'
+onlyBuiltDependencies:
+  - '@parcel/watcher'
+  - '@sentry/cli'
+  - core-js
+  - esbuild
+  - protobufjs
+  - sharp
+  - unrs-resolver
+  - vue-demi
+  - workerd
