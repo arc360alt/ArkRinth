@@ -249,12 +249,13 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           VERSION: ${{ needs.determine-version.outputs.version }}
         run: |
-          shopt -s nullglob
-          FILES=(artifacts/*)
+          mapfile -d '' FILES < <(find artifacts -type f -print0)
           if [ ${#FILES[@]} -eq 0 ]; then
             echo "No build artifacts were found to release" >&2
             exit 1
           fi
+
+          printf 'Uploading: %s\n' "${FILES[@]}"
 
           gh release create "v${VERSION}" \
             --repo "${{ github.repository }}" \
