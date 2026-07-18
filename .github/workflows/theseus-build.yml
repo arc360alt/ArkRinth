@@ -211,6 +211,37 @@ jobs:
           DIGICERT_ONE_SIGNER_CLIENT_CERTIFICATE_BASE64: ${{ secrets.DIGICERT_ONE_SIGNER_CLIENT_CERTIFICATE_BASE64 }}
           DIGICERT_ONE_SIGNER_CLIENT_CERTIFICATE_PASSWORD: ${{ secrets.DIGICERT_ONE_SIGNER_CLIENT_CERTIFICATE_PASSWORD }}
 
+      - name: Package Linux tarball
+        if: startsWith(matrix.platform, 'ubuntu')
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          DEB_PATH="$(find target/release/bundle/deb -maxdepth 1 -name '*.deb' | head -1)"
+          EXTRACT_DIR="$(mktemp -d)"
+          dpkg-deb -x "$DEB_PATH" "$EXTRACT_DIR"
+
+          BIN_PATH="$(find "$EXTRACT_DIR/usr/bin" -maxdepth 1 -type f | head -1)"
+          DESKTOP_PATH="$(find "$EXTRACT_DIR/usr/share/applications" -maxdepth 1 -name '*.desktop' | head -1)"
+          ICON_128="$(find "$EXTRACT_DIR/usr/share/icons/hicolor/128x128/apps" -maxdepth 1 -type f | head -1)"
+          ICON_256="$(find "$EXTRACT_DIR/usr/share/icons/hicolor/256x256@2/apps" -maxdepth 1 -type f | head -1)"
+
+          PKG_PARENT="$(mktemp -d)"
+          PKG_DIR="$PKG_PARENT/nyxrinth-app"
+          mkdir -p "$PKG_DIR/icons"
+          cp "$BIN_PATH" "$PKG_DIR/$(basename "$BIN_PATH")"
+          cp "$DESKTOP_PATH" "$PKG_DIR/nyxrinth-app.desktop"
+          cp "$ICON_128" "$PKG_DIR/icons/128x128.png"
+          cp "$ICON_256" "$PKG_DIR/icons/256x256.png"
+
+          cp .github/scripts/nyxrinth-tarball-install.sh "$PKG_DIR/install.sh"
+          chmod +x "$PKG_DIR/install.sh"
+
+          mkdir -p target/release/bundle/tar
+          TAR_NAME="$(basename "$DEB_PATH" .deb).tar.gz"
+          tar -C "$PKG_PARENT" -czf "target/release/bundle/tar/$TAR_NAME" "nyxrinth-app"
+          echo "Created target/release/bundle/tar/$TAR_NAME"
+
       - name: Upload app bundles
         uses: actions/upload-artifact@v4
         with:
@@ -219,9 +250,11 @@ jobs:
             target/release/bundle/appimage/NyxRinth App_*.AppImage*
             target/release/bundle/deb/NyxRinth App_*.deb*
             target/release/bundle/rpm/NyxRinth App-*.rpm*
+            target/release/bundle/tar/NyxRinth App_*.tar.gz*
             target/release/bundle/appimage/NyxRinth App (dev-*)_*.AppImage*
             target/release/bundle/deb/NyxRinth App (dev-*)_*.deb*
             target/release/bundle/rpm/NyxRinth App (dev-*)-*.rpm*
+            target/release/bundle/tar/NyxRinth App (dev-*)_*.tar.gz*
             target/universal-apple-darwin/release/bundle/macos/NyxRinth App.app.tar.gz*
             target/universal-apple-darwin/release/bundle/macos/NyxRinth App (dev-*)*.app.tar.gz
             target/universal-apple-darwin/release/bundle/dmg/NyxRinth App (dev-*)*.dmg
