@@ -1,11 +1,43 @@
 <script setup lang="ts">
-import { Toggle } from '@modrinth/ui'
+import { Settings2Icon } from '@modrinth/assets'
+import {
+	ButtonStyled,
+	defineMessages,
+	injectNotificationManager,
+	injectPageContext,
+	Toggle,
+	useVIntl,
+} from '@modrinth/ui'
 import { ref, watch } from 'vue'
 
+import { open_ads_consent_preferences } from '@/helpers/ads.js'
 import { optInAnalytics, optOutAnalytics } from '@/helpers/analytics'
 import { get, set } from '@/helpers/settings.ts'
 
+const { formatMessage } = useVIntl()
+const { handleError } = injectNotificationManager()
+const { adConsentAvailable } = injectPageContext()
 const settings = ref(await get())
+
+const messages = defineMessages({
+	adsConsentTitle: {
+		id: 'app.ads-consent.title',
+		defaultMessage: 'Your privacy and how ads support Modrinth',
+	},
+	adsConsentIntro: {
+		id: 'app.settings.privacy.ads-consent.intro',
+		defaultMessage:
+			'Ads make Modrinth possible and fund creator payouts. Our partners may store or access cookies in the app to personalize ads and measure performance. You can opt out or manage your preferences below.',
+	},
+	adsConsentManage: {
+		id: 'app.ads-consent.manage',
+		defaultMessage: 'Manage preferences',
+	},
+})
+
+async function manageAdsPreferences() {
+	await open_ads_consent_preferences().catch(handleError)
+}
 
 watch(
 	settings,
