@@ -234,7 +234,7 @@ providePageContext({
 			themeStore.getFeatureFlag('server_ram_as_bytes_always_on'),
 		),
 	},
-	openExternalUrl: (url) => openUrl(url),
+	openExternalUrl: (url) => void openUrl(url),
 })
 provideModalBehavior({
 	noblur: computed(() => !themeStore.advancedRendering),
@@ -920,7 +920,7 @@ async function declineServerInviteNotification(notification) {
 
 function openServerInviteInviterProfile(inviterName) {
 	if (!inviterName) return
-	openUrl(`${config.siteUrl}/user/${encodeURIComponent(inviterName)}`)
+	void router.push(`/user/${encodeURIComponent(inviterName)}`)
 }
 
 async function handleLiveNotification(notification) {
@@ -1361,8 +1361,11 @@ function handleClick(e) {
 				!target.href.startsWith('https://tauri.localhost') &&
 				!target.href.startsWith('http://tauri.localhost')
 			) {
+				const userPath = parse_modrinth_user_link(target.href)
 				const parsed = parseModrinthLink(target.href)
-				if (target.target !== '_blank' && parsed) {
+				if (userPath) {
+					void router.push(userPath)
+				} else if (target.target !== '_blank' && parsed) {
 					void openModrinthProjectLinkInApp(parsed)
 				} else {
 					openUrl(target.href)
@@ -1601,7 +1604,7 @@ provideAppUpdateDownloadProgress(appUpdateDownload)
 				:options="[
 					{
 						id: 'view-profile',
-						action: () => openUrl('https://modrinth.com/user/' + credentials.user.username),
+						action: () => router.push(`/user/${encodeURIComponent(credentials.user.username)}`),
 					},
 					{
 						id: 'sign-out',

@@ -229,6 +229,13 @@ const messages = defineMessages({
 
 let savedModalState: ModpackContentModalState | null = null
 
+function contentOwnerLink(owner: ContentOwner): NonNullable<ContentOwner['link']> {
+	if (owner.type === 'user') return `/user/${encodeURIComponent(owner.id)}`
+	return () => {
+		void openUrl(`https://modrinth.com/organization/${owner.id}`)
+	}
+}
+
 const { formatMessage } = useVIntl()
 const { handleError, addNotification } = injectNotificationManager()
 const { installingItems, installRevisionByInstance, installFailureRevisionByInstance } =
@@ -1445,10 +1452,7 @@ provideContentManager({
 				owner: linkedModpackOwner.value
 					? {
 							...linkedModpackOwner.value,
-							link: () =>
-								openUrl(
-									`https://modrinth.com/${linkedModpackOwner.value!.type}/${linkedModpackOwner.value!.id}`,
-								),
+							link: contentOwnerLink(linkedModpackOwner.value),
 						}
 					: undefined,
 				categories: linkedModpackCategories.value,
@@ -1546,7 +1550,7 @@ provideContentManager({
 		owner: item.owner
 			? {
 					...item.owner,
-					link: () => openUrl(`https://modrinth.com/${item.owner!.type}/${item.owner!.id}`),
+					link: contentOwnerLink(item.owner),
 				}
 			: undefined,
 		enabled: canMutateContent(item) ? item.enabled : undefined,
