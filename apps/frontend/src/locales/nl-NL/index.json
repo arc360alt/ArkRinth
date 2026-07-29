@@ -2876,9 +2876,6 @@
   "layout.nav.discover": {
     "message": "Ontdek"
   },
-  "layout.nav.discover-content": {
-    "message": "Ontdek inhoud"
-  },
   "layout.nav.get-modrinth-app": {
     "message": "Modrinth-app downloaden"
   },
@@ -4799,14 +4796,8 @@
   "settings.authorizations.about-this-app": {
     "message": "Over deze app"
   },
-  "settings.authorizations.by": {
-    "message": "door"
-  },
   "settings.authorizations.description": {
     "message": "Wanneer je een app via je Modrinth-account autoriseert, verleen je die app toegang tot je account. Je kunt de toegang tot je account hier op elk moment beheren en bekijken."
-  },
-  "settings.authorizations.empty-state": {
-    "message": "We kunnen je geautoriseerde apps momenteel niet weergeven, maar we werken eraan om dit te verhelpen. Kom later nog eens terug op deze pagina!"
   },
   "settings.authorizations.head-title": {
     "message": "Toestemmingen"
@@ -5149,27 +5140,6 @@
   },
   "settings.pats.token.never-used": {
     "message": "Nooit gebruikt"
-  },
-  "settings.profile.bio.description": {
-    "message": "Een korte beschrijving om iedereen wat over jou te vertellen."
-  },
-  "settings.profile.bio.title": {
-    "message": "Bio"
-  },
-  "settings.profile.description": {
-    "message": "Je profielgegevens zijn openbaar op Modrinth en zichtbaar via de <docs-link>Modrinth API</docs-link>."
-  },
-  "settings.profile.head-title": {
-    "message": "Profielinstellingen"
-  },
-  "settings.profile.profile-info": {
-    "message": "Profielgegevens"
-  },
-  "settings.profile.profile-picture.title": {
-    "message": "Profielfoto"
-  },
-  "settings.profile.username.description": {
-    "message": "Een unieke hoofdletterongevoelige naam om je profiel mee te identificeren."
   },
   "settings.sessions.action.revoke-session": {
     "message": "Sessie beëindigen"

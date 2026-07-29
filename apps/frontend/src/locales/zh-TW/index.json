@@ -2879,9 +2879,6 @@
   "layout.nav.discover": {
     "message": "探索"
   },
-  "layout.nav.discover-content": {
-    "message": "探索內容"
-  },
   "layout.nav.get-modrinth-app": {
     "message": "取得 Modrinth App"
   },
@@ -4802,14 +4799,8 @@
   "settings.authorizations.about-this-app": {
     "message": "關於這個應用程式"
   },
-  "settings.authorizations.by": {
-    "message": "作者"
-  },
   "settings.authorizations.description": {
     "message": "當你使用 Modrinth 帳號授權應用程式時，即代表你授予該應用程式存取你帳戶的權限。你可以隨時在這裡管理並審查帳號的存取權。"
-  },
-  "settings.authorizations.empty-state": {
-    "message": "目前無法顯示你已授權的應用程式，我們正在努力修正這個問題。請稍後再回來查看！"
   },
   "settings.authorizations.head-title": {
     "message": "授權"
@@ -5167,27 +5158,6 @@
   },
   "settings.pats.token.never-used": {
     "message": "從未使用"
-  },
-  "settings.profile.bio.description": {
-    "message": "簡單介紹一下你自己。"
-  },
-  "settings.profile.bio.title": {
-    "message": "關於我"
-  },
-  "settings.profile.description": {
-    "message": "你的個人檔案資訊會公開顯示在 Modrinth 上，並可透過 <docs-link>Modrinth API</docs-link> 查詢。"
-  },
-  "settings.profile.head-title": {
-    "message": "個人設定"
-  },
-  "settings.profile.profile-info": {
-    "message": "個人檔案資訊"
-  },
-  "settings.profile.profile-picture.title": {
-    "message": "頭貼"
-  },
-  "settings.profile.username.description": {
-    "message": "獨特且不區分大小寫的名稱，用於識別你的個人檔案。"
   },
   "settings.sessions.action.revoke-session": {
     "message": "撤銷工作階段"

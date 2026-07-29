@@ -2879,9 +2879,6 @@
   "layout.nav.discover": {
     "message": "Descubra"
   },
-  "layout.nav.discover-content": {
-    "message": "Descubra conteúdo"
-  },
   "layout.nav.get-modrinth-app": {
     "message": "Baixe o Modrinth App"
   },
@@ -4802,14 +4799,8 @@
   "settings.authorizations.about-this-app": {
     "message": "Sobre este aplicativo"
   },
-  "settings.authorizations.by": {
-    "message": "por"
-  },
   "settings.authorizations.description": {
     "message": "Ao autorizar um aplicativo com sua conta do Modrinth, você concede acesso à sua conta. Você pode gerenciar e revisar o acesso à sua conta aqui a qualquer momento."
-  },
-  "settings.authorizations.empty-state": {
-    "message": "No momento, não podemos exibir seus aplicativos autorizados. Estamos trabalhando para corrigir isso. Visite esta página novamente mais tarde!"
   },
   "settings.authorizations.head-title": {
     "message": "Autorizações"
@@ -5167,27 +5158,6 @@
   },
   "settings.pats.token.never-used": {
     "message": "Nunca usado"
-  },
-  "settings.profile.bio.description": {
-    "message": "Uma breve descrição para falar um pouco sobre você para todos."
-  },
-  "settings.profile.bio.title": {
-    "message": "Sobre"
-  },
-  "settings.profile.description": {
-    "message": "As informações do seu perfil são visíveis publicamente no Modrinth e por meio da <docs-link>API do Modrinth</docs-link>."
-  },
-  "settings.profile.head-title": {
-    "message": "Configurações de perfil"
-  },
-  "settings.profile.profile-info": {
-    "message": "Informação do perfil"
-  },
-  "settings.profile.profile-picture.title": {
-    "message": "Foto de perfil"
-  },
-  "settings.profile.username.description": {
-    "message": "Um nome único sem distinção de maiúsculas e minúsculas para identificar o seu perfil."
   },
   "settings.sessions.action.revoke-session": {
     "message": "Encerrar sessão"

@@ -2369,9 +2369,6 @@
   "layout.nav.discover": {
     "message": "探索"
   },
-  "layout.nav.discover-content": {
-    "message": "コンテンツを探索"
-  },
   "layout.nav.get-modrinth-app": {
     "message": "Modrinth Appを入手"
   },
@@ -3713,14 +3710,8 @@
   "settings.authorizations.about-this-app": {
     "message": "このアプリについて"
   },
-  "settings.authorizations.by": {
-    "message": "作成者"
-  },
   "settings.authorizations.description": {
     "message": "Modrinthアカウントでアプリケーションを承認することにより、アプリケーションがあなたのアカウントにアクセスできるようになります。 アクセス権はいつでも確認でき、変更可能です。"
-  },
-  "settings.authorizations.empty-state": {
-    "message": "現在承認済みアプリを表示することができません。現在修正中のため、また後ほど確認ください！"
   },
   "settings.authorizations.head-title": {
     "message": "承認"
@@ -4069,27 +4060,6 @@
   },
   "settings.pats.token.never-used": {
     "message": "未使用"
-  },
-  "settings.profile.bio.description": {
-    "message": "あなたのことをみんなに知ってもらうための簡単な自己紹介。"
-  },
-  "settings.profile.bio.title": {
-    "message": "自己紹介"
-  },
-  "settings.profile.description": {
-    "message": "あなたのプロフィール情報は、Modrinth上および<docs-link>Modrinth API</docs-link>を通じて一般公開されます。"
-  },
-  "settings.profile.head-title": {
-    "message": "プロフィール設定"
-  },
-  "settings.profile.profile-info": {
-    "message": "プロフィール情報"
-  },
-  "settings.profile.profile-picture.title": {
-    "message": "プロフィール写真"
-  },
-  "settings.profile.username.description": {
-    "message": "大文字・小文字を区別しない、プロフィールを識別するための固有の名前。"
   },
   "settings.sessions.action.revoke-session": {
     "message": "セッションを取り消す"

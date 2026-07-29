@@ -2870,9 +2870,6 @@
   "layout.nav.discover": {
     "message": "Дослідити"
   },
-  "layout.nav.discover-content": {
-    "message": "Дослідити вміст"
-  },
   "layout.nav.get-modrinth-app": {
     "message": "Установити Modrinth App"
   },
@@ -4724,14 +4721,8 @@
   "settings.authorizations.about-this-app": {
     "message": "Про застосунок"
   },
-  "settings.authorizations.by": {
-    "message": "від"
-  },
   "settings.authorizations.description": {
     "message": "Коли ви авторизуєтеся у застосунку за допомогою Modrinth, ви надаєте йому доступ до вашого облікового запису. Ви завжди можете переглядати й керувати доступом до свого облікового запису тут."
-  },
-  "settings.authorizations.empty-state": {
-    "message": "Наразі ми не можемо показати ваші авторизовані застосунки, але ми працюємо, щоб виправити це. Будь ласка, завітайте на цю сторінку пізніше!"
   },
   "settings.authorizations.head-title": {
     "message": "Авторизації"
@@ -5089,27 +5080,6 @@
   },
   "settings.pats.token.never-used": {
     "message": "Не використовувався"
-  },
-  "settings.profile.bio.description": {
-    "message": "Короткий опис, щоб розповісти всім трохи про себе."
-  },
-  "settings.profile.bio.title": {
-    "message": "Про себе"
-  },
-  "settings.profile.description": {
-    "message": "Інформація з вашого профілю є загальнодоступною на Modrinth та через <docs-link>Modrinth API</docs-link>."
-  },
-  "settings.profile.head-title": {
-    "message": "Налаштування профілю"
-  },
-  "settings.profile.profile-info": {
-    "message": "Інформація про профіль"
-  },
-  "settings.profile.profile-picture.title": {
-    "message": "Зображення профілю"
-  },
-  "settings.profile.username.description": {
-    "message": "Унікальне ім’я без урахування регістру, для ідентифікації вашого профілю."
   },
   "settings.sessions.action.revoke-session": {
     "message": "Завершити сеанс"

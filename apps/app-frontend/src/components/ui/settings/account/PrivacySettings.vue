@@ -33,6 +33,24 @@ const messages = defineMessages({
 		id: 'app.ads-consent.manage',
 		defaultMessage: 'Manage preferences',
 	},
+	telemetryTitle: {
+		id: 'app.settings.privacy.telemetry.title',
+		defaultMessage: 'Telemetry',
+	},
+	telemetryDescription: {
+		id: 'app.settings.privacy.telemetry.description',
+		defaultMessage:
+			'Modrinth collects anonymized analytics and usage data to improve our user experience and customize your experience. By disabling this option, you opt out and your data will no longer be collected.',
+	},
+	discordRichPresenceTitle: {
+		id: 'app.settings.privacy.discord-rich-presence.title',
+		defaultMessage: 'Discord Rich Presence',
+	},
+	discordRichPresenceDescription: {
+		id: 'app.settings.privacy.discord-rich-presence.description',
+		defaultMessage:
+			'Show Modrinth App as your current activity on Discord. This does not affect Rich Presence added to instances by mods. Requires an app restart.',
+	},
 })
 
 async function manageAdsPreferences() {
@@ -57,11 +75,11 @@ watch(
 <template>
 	<div class="mt-4 flex items-center justify-between gap-4">
 		<div>
-			<h2 class="m-0 text-lg font-semibold text-contrast">Telemetry</h2>
-			<p class="m-0 mt-1 text-sm">
-				Modrinth collects anonymized analytics and usage data to improve our user experience and
-				customize your experience. By disabling this option, you opt out and your data will no
-				longer be collected.
+			<h2 class="m-0 text-lg font-semibold text-contrast">
+				{{ formatMessage(messages.telemetryTitle) }}
+			</h2>
+			<p class="m-0 mt-1">
+				{{ formatMessage(messages.telemetryDescription) }}
 			</p>
 		</div>
 		<Toggle id="opt-out-analytics" v-model="settings.telemetry" />
@@ -69,14 +87,11 @@ watch(
 
 	<div class="mt-4 flex items-center justify-between gap-4">
 		<div>
-			<h2 class="m-0 text-lg font-semibold text-contrast">Discord RPC</h2>
-			<p class="m-0 mt-1 text-sm">
-				Manages the Discord Rich Presence integration. Disabling this will cause 'Modrinth' to no
-				longer show up as a game or app you are using on your Discord profile.
-			</p>
-			<p class="m-0 mt-2 text-sm">
-				Note: This will not prevent any instance-specific Discord Rich Presence integrations, such
-				as those added by mods. (app restart required to take effect)
+			<h2 class="m-0 text-lg font-semibold text-contrast">
+				{{ formatMessage(messages.discordRichPresenceTitle) }}
+			</h2>
+			<p class="m-0 mt-1">
+				{{ formatMessage(messages.discordRichPresenceDescription) }}
 			</p>
 		</div>
 		<Toggle id="disable-discord-rpc" v-model="settings.discord_rpc" />
