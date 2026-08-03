@@ -300,7 +300,7 @@ opt-level = 3
 [profile.release]
 opt-level = "s"  # Optimize for binary size
 strip = true  # Remove debug symbols
-lto = true  # Enables link to optimizations
+lto = "thin"  # Enable LTO but keep compile times reasonable
 panic = "abort"  # Strip expensive panic clean-up logic
 
 # Specific profile for labrinth production builds
