@@ -9,9 +9,9 @@ import {
 	VerboseLoggingFeature,
 } from '@modrinth/api-client'
 import {
-	ChangeSkinIcon,
 	CompassIcon,
 	HomeIcon,
+	LeftArrowIcon,
 	LibraryIcon,
 	LogInIcon,
 	LogOutIcon,
@@ -87,10 +87,10 @@ import { useCheckDisableMouseover } from '@/composables/macCssFix.js'
 import { config } from '@/config'
 import {
 	ads_consent_listener,
+	get_ads_consent_required,
 	hide_ads_window,
 	init_ads_window,
 	perform_ads_consent_action,
-	should_show_ads_consent_popup,
 	show_ads_window,
 } from '@/helpers/ads.js'
 import { debugAnalytics, initAnalytics, trackEvent } from '@/helpers/analytics'
@@ -229,6 +229,8 @@ const tauriApiClient = new TauriModrinthClient({
 	],
 })
 provideModrinthClient(tauriApiClient)
+const showAd = ref(false)
+const adConsentAvailable = ref(false)
 providePageContext({
 	hierarchicalSidebarAvailable: ref(true),
 	showAds: showAd,
@@ -317,7 +319,7 @@ onMounted(async () => {
 	await useCheckDisableMouseover()
 	try {
 		unlistenAdsConsent = await ads_consent_listener(handleAdsConsentRequired)
-		handleAdsConsentRequired(await should_show_ads_consent_popup())
+		handleAdsConsentRequired(await get_ads_consent_required())
 	} catch (error) {
 		handleError(error)
 	}
@@ -1520,7 +1522,6 @@ provideAppUpdateDownloadProgress(appUpdateDownload)
 			>
 				<LibraryIcon />
 			</NavButton>
-			<div class="h-px w-6 mx-auto my-2 bg-surface-5"></div>
 			<suspense>
 				<QuickInstanceSwitcher />
 			</suspense>

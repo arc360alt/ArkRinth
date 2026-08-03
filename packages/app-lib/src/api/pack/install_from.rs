@@ -560,21 +560,7 @@ pub(crate) async fn generate_pack_from_url_with_reporter(
         )
         .await?;
 
-        let filename = icon_url.rsplit('/').next();
-
-        if let Some(filename) = filename {
-            Some(
-                write_cached_icon(
-                    filename,
-                    &state.directories.caches_dir(),
-                    icon_bytes,
-                    &state.io_semaphore,
-                )
-                .await?,
-            )
-        } else {
-            None
-        }
+        Some(crate::api::instance::cache_icon(icon_bytes, &state).await?)
     } else {
         None
     };
