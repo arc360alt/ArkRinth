@@ -80,15 +80,16 @@
 							{{ account.profile.name }}
 						</p>
 					</button>
-					<ButtonStyled circular color="red" color-fill="none" hover-color-fill="background">
-						<button
-							v-tooltip="formatMessage(messages.removeAccount)"
-							class="mr-2"
-							@click="logout(account.profile.id)"
-						>
-							<TrashIcon />
-						</button>
-					</ButtonStyled>
+					<IconButton
+						v-tooltip="formatMessage(messages.removeAccount)"
+						type="quiet"
+						color="red"
+						:label="formatMessage(messages.removeAccount)"
+						class="mr-2 !bg-button-bg !text-primary ![box-shadow:var(--shadow-button)] hover:!bg-red focus-visible:!bg-red hover:!text-[var(--color-accent-contrast)] focus-visible:!text-[var(--color-accent-contrast)]"
+						@click="logout(account.profile.id)"
+					>
+						<TrashIcon />
+					</IconButton>
 				</div>
 			</template>
 			<div class="flex flex-col gap-2 px-2 pt-2">
@@ -135,8 +136,9 @@ import {
 import {
 	Accordion,
 	Avatar,
-	ButtonStyled,
+	Button,
 	defineMessages,
+	IconButton,
 	injectNotificationManager,
 	useVIntl,
 } from '@modrinth/ui'

@@ -183,11 +183,11 @@ import { EyeIcon, EyeOffIcon, UploadIcon, XIcon } from '@modrinth/assets'
 import { commonMessages, defineMessages, useVIntl } from '@modrinth/ui'
 import { computed, onMounted, ref, watch } from 'vue'
 
+import { Button } from '#ui/components/base/buttons'
 import { useDebugLogger } from '#ui/composables/debug-logger'
 
 import { injectFilePicker, injectModrinthClient, injectTags } from '../../../../providers'
 import Avatar from '../../../base/Avatar.vue'
-import ButtonStyled from '../../../base/ButtonStyled.vue'
 import Chips from '../../../base/Chips.vue'
 import Collapsible from '../../../base/Collapsible.vue'
 import Combobox, { type ComboboxOption } from '../../../base/Combobox.vue'

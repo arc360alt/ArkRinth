@@ -131,7 +131,7 @@ import {
 } from '@modrinth/assets'
 import { AutoLink } from '@modrinth/ui'
 
-import ButtonStyled from '#ui/components/base/ButtonStyled.vue'
+import { Button } from '#ui/components/base/buttons'
 
 import { defineMessages, useVIntl } from '../../../composables/i18n'
 import imgAircraft from './grid-images/aircraft.png'
