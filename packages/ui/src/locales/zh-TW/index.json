@@ -566,9 +566,6 @@
   "content.inline-backup.world-label": {
     "defaultMessage": "世界"
   },
-  "content.modpack-card.installation-settings": {
-    "defaultMessage": "安裝設定"
-  },
   "content.page-layout.additional-content": {
     "defaultMessage": "額外內容"
   },
@@ -619,18 +616,6 @@
   },
   "content.page-layout.share.project-names": {
     "defaultMessage": "專案名稱"
-  },
-  "content.page-layout.sort.alphabetical": {
-    "defaultMessage": "字母順序"
-  },
-  "content.page-layout.sort.date-added-newest": {
-    "defaultMessage": "最新在前"
-  },
-  "content.page-layout.sort.date-added-oldest": {
-    "defaultMessage": "最舊在前"
-  },
-  "content.page-layout.sort.label": {
-    "defaultMessage": "排序依據：{mode}"
   },
   "content.page-layout.update-all": {
     "defaultMessage": "更新全部"
@@ -1303,9 +1288,6 @@
   },
   "files.editor.file-saved-title": {
     "defaultMessage": "已儲存檔案"
-  },
-  "files.editor.find-close": {
-    "defaultMessage": "關閉"
   },
   "files.editor.find-in-file": {
     "defaultMessage": "尋找"
@@ -2083,33 +2065,6 @@
   },
   "instances.content-install.select-icon": {
     "defaultMessage": "選擇圖示"
-  },
-  "instances.modpack-content-modal.empty-description": {
-    "defaultMessage": "這個模組包不包含任何額外內容。"
-  },
-  "instances.modpack-content-modal.empty-title": {
-    "defaultMessage": "找不到內容"
-  },
-  "instances.modpack-content-modal.external-content": {
-    "defaultMessage": "外部"
-  },
-  "instances.modpack-content-modal.external-content-description": {
-    "defaultMessage": "這個檔案未在 Modrinth 上發布。"
-  },
-  "instances.modpack-content-modal.header": {
-    "defaultMessage": "模組包內容"
-  },
-  "instances.modpack-content-modal.loading": {
-    "defaultMessage": "正在載入內容..."
-  },
-  "instances.modpack-content-modal.no-results": {
-    "defaultMessage": "沒有專案符合你的搜尋字詞。"
-  },
-  "instances.modpack-content-modal.open-in-slicer": {
-    "defaultMessage": "在 Slicer 中開啟"
-  },
-  "instances.modpack-content-modal.search-placeholder": {
-    "defaultMessage": "搜尋 {count, number} {count, plural, other {個專案}}"
   },
   "instances.updater-modal.badge.current": {
     "defaultMessage": "目前"
@@ -2900,9 +2855,6 @@
   "profile.button.create-project": {
     "defaultMessage": "建立專案"
   },
-  "profile.button.edit-role": {
-    "defaultMessage": "編輯身分"
-  },
   "profile.button.info": {
     "defaultMessage": "檢視使用者詳細資訊"
   },
@@ -2999,23 +2951,11 @@
   "profile.label.project-count": {
     "defaultMessage": "{count, plural, other {個專案}}"
   },
-  "profile.label.saving": {
-    "defaultMessage": "正在儲存..."
-  },
   "profile.official-account": {
     "defaultMessage": "Modrinth 官方帳號"
   },
   "profile.official-account.bio": {
     "defaultMessage": "Modrinth 的官方使用者帳號。請至 <support-link></support-link> 取得支援，或透過電子郵件 <email></email> 聯絡客服團隊"
-  },
-  "profile.role.select-placeholder": {
-    "defaultMessage": "選擇身分"
-  },
-  "profile.role.update-error-description": {
-    "defaultMessage": "更新使用者身分時發生錯誤，請再試一次。"
-  },
-  "profile.role.update-error-title": {
-    "defaultMessage": "無法更新身分"
   },
   "profile.unblock-user.error-description": {
     "defaultMessage": "解除封鎖使用者時發生錯誤，請再試一次。"
@@ -3850,15 +3790,6 @@
   },
   "search.filter_type.advanced": {
     "defaultMessage": "進階篩選"
-  },
-  "search.filter_type.advanced.exclude_datapack": {
-    "defaultMessage": "排除資料包"
-  },
-  "search.filter_type.advanced.exclude_mod": {
-    "defaultMessage": "排除模組"
-  },
-  "search.filter_type.advanced.exclude_plugin": {
-    "defaultMessage": "排除插件"
   },
   "search.filter_type.environment": {
     "defaultMessage": "環境"
@@ -5414,12 +5345,6 @@
   "sharing.invite-players-modal.avatar-alt": {
     "defaultMessage": "{username} 的顯示圖片"
   },
-  "sharing.invite-players-modal.cancel": {
-    "defaultMessage": "取消"
-  },
-  "sharing.invite-players-modal.cancel-button": {
-    "defaultMessage": "取消"
-  },
   "sharing.invite-players-modal.custom-expiry": {
     "defaultMessage": "自訂..."
   },
@@ -6255,4 +6180,3 @@
     "defaultMessage": "類型"
   }
 }
-

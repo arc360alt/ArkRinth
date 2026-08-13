@@ -68,6 +68,7 @@ import AppActionBar from '@/components/ui/AppActionBar.vue'
 import Breadcrumbs from '@/components/ui/Breadcrumbs.vue'
 import ErrorModal from '@/components/ui/ErrorModal.vue'
 import FriendsList from '@/components/ui/friends/FriendsList.vue'
+import HostingUpdateRequired from '@/components/ui/HostingUpdateRequired.vue'
 import AddServerToInstanceModal from '@/components/ui/install_flow/AddServerToInstanceModal.vue'
 import UnknownPackWarningModal from '@/components/ui/install_flow/UnknownPackWarningModal.vue'
 import MinecraftAuthErrorModal from '@/components/ui/minecraft-auth-error-modal/MinecraftAuthErrorModal.vue'
@@ -160,6 +161,25 @@ function updateHistoryNavigationState() {
 	canNavigateForward.value = historyState?.forward != null
 }
 
+let fullscreenAdsWindowHold = false
+
+async function handleFullscreenChange() {
+	const fullscreen = document.fullscreenElement !== null
+	if (fullscreen === fullscreenAdsWindowHold) return
+
+	fullscreenAdsWindowHold = fullscreen
+	try {
+		if (fullscreen) {
+			await take_ads_window_hold()
+		} else {
+			await release_ads_window_hold()
+		}
+	} catch (error) {
+		fullscreenAdsWindowHold = !fullscreen
+		handleError(error)
+	}
+}
+
 updateHistoryNavigationState()
 
 const APP_LEFT_NAV_WIDTH = '4rem'
@@ -169,14 +189,26 @@ const PRIDE_FUNDRAISER_END_DATE = new Date('2026-07-01T00:00:00Z').getTime()
 const credentials = ref()
 let credentialsRefreshId = 0
 const sidebarToggled = ref(true)
-const unsubscribeSidebarToggle = themeStore.$subscribe(() => {
-	sidebarToggled.value = !themeStore.toggleSidebar
-})
+watch(
+	() => themeStore.toggleSidebar,
+	(toggleSidebar) => {
+		sidebarToggled.value = !toggleSidebar
+	},
+)
 const forceSidebar = computed(
-	() => route.path.startsWith('/browse') || route.path.startsWith('/project'),
+	() =>
+		route.path.startsWith('/browse') ||
+		route.path.startsWith('/project') ||
+		route.path.startsWith('/user'),
 )
 const sidebarVisible = computed(() => sidebarToggled.value || forceSidebar.value)
 const hostingRouteActive = computed(() => route.path.startsWith('/hosting'))
+const hostingUpdateRequired = computed(
+	() =>
+		hostingRouteActive.value &&
+		!!appUpdateState.availableUpdate.value &&
+		appUpdateState.updatesEnabled.value,
+)
 const prideFundraiserEnabled = computed(
 	() => themeStore.getFeatureFlag('pride_fundraiser') && Date.now() < PRIDE_FUNDRAISER_END_DATE,
 )
@@ -187,7 +219,9 @@ const hostingIntercomIdentityKey = computed(() => {
 	return `${userId}:${serverId ?? 'hosting'}`
 })
 const hostingIntercom = useHostingIntercom({
-	enabled: computed(() => hostingRouteActive.value && !!credentials.value?.session),
+	enabled: computed(
+		() => hostingRouteActive.value && !hostingUpdateRequired.value && !!credentials.value?.session,
+	),
 	appId: 'ykeritl9',
 	fetchToken: fetchIntercomToken,
 	identityKey: hostingIntercomIdentityKey,
@@ -251,8 +285,8 @@ providePageContext({
 })
 provideModalBehavior({
 	noblur: computed(() => !themeStore.advancedRendering),
-	onShow: () => hide_ads_window(),
-	onHide: () => show_ads_window(),
+	onShow: () => take_ads_window_hold(),
+	onHide: () => release_ads_window_hold(),
 })
 
 const {
@@ -268,7 +302,7 @@ const {
 	setModpackAlreadyInstalledModal,
 	handleModpackDuplicateCreateAnyway,
 	handleModpackDuplicateGoToInstance,
-} = setupProviders(notificationManager, popupNotificationManager)
+} = setupProviders(tauriApiClient, notificationManager, popupNotificationManager)
 
 const news = ref([])
 const displayedServerInviteNotifications = new Set()
@@ -328,6 +362,7 @@ onMounted(async () => {
 
 	document.querySelector('body').addEventListener('click', handleClick)
 	document.querySelector('body').addEventListener('auxclick', handleAuxClick)
+	document.addEventListener('fullscreenchange', handleFullscreenChange)
 
 	checkUpdates()
 })
@@ -335,9 +370,13 @@ onMounted(async () => {
 onUnmounted(async () => {
 	document.querySelector('body').removeEventListener('click', handleClick)
 	document.querySelector('body').removeEventListener('auxclick', handleAuxClick)
-	unsubscribeSidebarToggle()
+	document.removeEventListener('fullscreenchange', handleFullscreenChange)
 	clearDelayedUpdatePopup()
 
+	if (fullscreenAdsWindowHold) {
+		fullscreenAdsWindowHold = false
+		await release_ads_window_hold().catch(handleError)
+	}
 	await unlistenAdsConsent?.()
 	await unlistenUpdateDownload?.()
 })
@@ -1690,7 +1729,8 @@ provideAppUpdateDownloadProgress(appUpdateDownload)
 			>
 				{{ formatMessage(messages.authUnreachableBody) }}
 			</Admonition>
-			<RouterView v-slot="{ Component }">
+			<HostingUpdateRequired v-if="hostingUpdateRequired" />
+			<RouterView v-else v-slot="{ Component }">
 				<template v-if="Component">
 					<Suspense @pending="onSuspensePending" @resolve="onSuspenseResolve">
 						<component :is="Component"></component>

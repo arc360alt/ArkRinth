@@ -236,17 +236,19 @@ import {
 	ProjectCard,
 	ProjectCardList,
 	SidebarCard,
+	sortProjectTypes,
 	useCompactNumber,
 	useVIntl,
 } from '@modrinth/ui'
 import type { Organization, ProjectStatus, ProjectType } from '@modrinth/utils'
-import { useQuery } from '@tanstack/vue-query'
+import { useQuery, useQueryClient } from '@tanstack/vue-query'
 
 import UpToDate from '~/assets/images/illustrations/up_to_date.svg?component'
 import AdPlaceholder from '~/components/ui/AdPlaceholder.vue'
 import ModalCreation from '~/components/ui/create/ProjectCreateModal.vue'
 import NavStack from '~/components/ui/NavStack.vue'
 import OrganizationPageHeader from '~/components/ui/OrganizationPageHeader.vue'
+import { warmProjectCheckCaches } from '~/composables/queries/project'
 import { acceptTeamInvite, removeTeamMember } from '~/helpers/teams.js'
 import {
 	OrganizationContext,
@@ -295,6 +297,7 @@ if (route.path.includes('settings')) {
 const routeHasSettings = computed(() => route.path.includes('settings'))
 
 const client = injectModrinthClient()
+const queryClient = useQueryClient()
 
 const {
 	data: organization,
@@ -345,6 +348,14 @@ const {
 	placeholderData: [],
 })
 
+watch(
+	projects,
+	(list) => {
+		warmProjectCheckCaches(queryClient, list)
+	},
+	{ immediate: true },
+)
+
 const refresh = async () => {
 	await Promise.all([refreshOrganization(), refreshProjects()])
 }
@@ -376,15 +387,14 @@ const isInvited = computed(() => {
 })
 
 const projectTypes = computed(() => {
-	const obj: Record<string, boolean> = {}
+	const types = new Set<string>()
 
 	for (const project of projects.value ?? []) {
-		obj[project.project_types[0] ?? 'project'] = true
+		const type = project.project_types[0] ?? 'project'
+		if (type !== 'project') types.add(type)
 	}
 
-	delete obj.project
-
-	return Object.keys(obj)
+	return sortProjectTypes(types)
 })
 function isProjectServer(project: ProjectV3): boolean {
 	return project.minecraft_server != null
@@ -494,15 +504,12 @@ const navLinks = computed(() => [
 		label: formatMessage(commonMessages.allProjectType),
 		href: `/organization/${organization.value?.slug}`,
 	},
-	...projectTypes.value
-		.map((x) => {
-			return {
-				label: formatMessage(getProjectTypeMessage(x as ProjectType, true)),
-				href: `/organization/${organization.value?.slug}/${x}s`,
-			}
-		})
-		.slice()
-		.sort((a, b) => a.label.localeCompare(b.label)),
+	...projectTypes.value.map((x) => {
+		return {
+			label: formatMessage(getProjectTypeMessage(x as ProjectType, true)),
+			href: `/organization/${organization.value?.slug}/${x}s`,
+		}
+	}),
 ])
 
 async function copyId() {

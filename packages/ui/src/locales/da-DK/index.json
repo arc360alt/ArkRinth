@@ -395,12 +395,6 @@
   "content.page-layout.share.label": {
     "defaultMessage": "Del"
   },
-  "content.page-layout.sort.date-added-oldest": {
-    "defaultMessage": "Ældst først"
-  },
-  "content.page-layout.sort.label": {
-    "defaultMessage": "Sorter efter {mode}"
-  },
   "content.page-layout.update-all": {
     "defaultMessage": "Opdater alle"
   },
@@ -556,9 +550,6 @@
   },
   "files.editor.file-saved-title": {
     "defaultMessage": "Fil gemt"
-  },
-  "files.editor.find-close": {
-    "defaultMessage": "Luk"
   },
   "files.editor.find-in-file": {
     "defaultMessage": "Find"
@@ -808,9 +799,6 @@
   },
   "instances.content-install.select-icon": {
     "defaultMessage": "Vælg ikon"
-  },
-  "instances.modpack-content-modal.external-content": {
-    "defaultMessage": "Ekstern"
   },
   "instances.updater-modal.badge.current": {
     "defaultMessage": "Nuværrende"
@@ -2253,4 +2241,3 @@
     "defaultMessage": "Vanilla Shader"
   }
 }
-

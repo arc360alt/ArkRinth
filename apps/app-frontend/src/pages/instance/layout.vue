@@ -37,11 +37,8 @@
 				:loading-server-ping="loadingServerPing"
 				:players-online="playersOnline"
 				:status-online="statusOnline"
-				:recent-plays="recentPlays"
 				:ping="ping"
 				:minecraft-server="minecraftServer"
-				:linked-project-v3="linkedProjectV3"
-				:shared-instance-manager="sharedInstanceManager"
 				@repair="() => repairInstance()"
 				@stop="() => stopInstance('InstancePage')"
 				@play="() => startInstance('InstancePage')"
@@ -64,10 +61,8 @@
 				:shared-instance-expected-user-id="sharedInstanceExpectedUserId"
 				:shared-instance-role="instance.shared_instance?.role"
 				:shared-instance-signed-out="sharedInstanceSignedOut"
-				:shared-instance-update-available="showSharedInstanceUpdateAdmonition"
 				@published="refreshInstance"
 				@delete="requestInstanceDeletion"
-				@review-update="reviewSharedInstanceUpdate"
 			/>
 		</div>
 		<div :class="['p-6 pt-4', { 'min-h-0 flex-1 overflow-y-auto': isFixedRender }]">
@@ -142,7 +137,7 @@ import {
 	isSharedInstanceUnavailableError,
 	type SharedInstanceUnavailableReason,
 } from '@/helpers/install'
-import { get_full_path, kill, remove, run } from '@/helpers/instance'
+import { get_full_path, kill, refresh_content_updates, remove, run } from '@/helpers/instance'
 import { useSharedInstanceErrors } from '@/helpers/shared-instance-errors'
 import type { GameInstance } from '@/helpers/types'
 import { createInstanceShortcut, showInstanceInFolder } from '@/helpers/utils.js'
@@ -180,7 +175,7 @@ const showInstancePlayTime = computed(() => themeStore.getFeatureFlag('show_inst
 
 const online = useOnline()
 const offline = computed(() => !online.value)
-const instanceId = computed(() => String(route.params.id ?? ''))
+const instanceId = ref(String(route.params.id ?? ''))
 const instanceQuery = useQuery(
 	computed(() => ({
 		...instanceDetailQueryOptions(instanceId.value),
@@ -194,7 +189,26 @@ useQuery(
 	})),
 )
 const instance = computed(() => instanceQuery.data.value)
-const linkedProjectId = computed(() => instance.value?.link?.project_id ?? '')
+useQuery(
+	computed(() => ({
+		queryKey: instanceKeys.contentUpdateCheck(instanceId.value),
+		queryFn: async () => {
+			const targetInstanceId = instanceId.value
+			await refresh_content_updates(targetInstanceId)
+			await queryClient.invalidateQueries({
+				queryKey: instanceKeys.content(targetInstanceId),
+			})
+			return targetInstanceId
+		},
+		enabled: !!instanceId.value && !offline.value && instance.value?.install_stage === 'installed',
+		staleTime: 10 * 60_000,
+		gcTime: 30 * 60_000,
+		retry: false,
+	})),
+)
+const linkedProjectId = computed(
+	() => instance.value?.link?.server_project_id ?? instance.value?.link?.project_id ?? '',
+)
 const linkedProjectQuery = useQuery(
 	computed(() => ({
 		...instanceLinkedProjectQueryOptions(linkedProjectId.value),
@@ -242,6 +256,7 @@ onBeforeRouteUpdate(async (to, from) => {
 
 	try {
 		await ensureCriticalInstanceData(targetInstanceId)
+		instanceId.value = targetInstanceId
 	} catch (error) {
 		if (isUnmanagedInstanceError(error)) return { path: '/' }
 		handleError(error)
@@ -284,9 +299,6 @@ const minecraftServer = computed(() => linkedProjectV3.value?.minecraft_server)
 const javaServerPingData = computed(() => linkedProjectV3.value?.minecraft_java_server?.ping?.data)
 const liveServerStatusOnline = ref(false)
 const statusOnline = computed(() => liveServerStatusOnline.value || !!javaServerPingData.value)
-const recentPlays = computed(
-	() => linkedProjectV3.value?.minecraft_java_server?.verified_plays_2w ?? undefined,
-)
 const playersOnline = ref<number | undefined>(undefined)
 const ping = ref<number | undefined>(undefined)
 const loadingServerPing = ref(false)
@@ -299,7 +311,6 @@ provideSharedInstance(sharedInstanceState)
 const {
 	actionsLocked: sharedInstanceActionsLocked,
 	expectedUserId: sharedInstanceExpectedUserId,
-	manager: sharedInstanceManager,
 	refreshUpdatePreview: refreshSharedInstanceUpdatePreview,
 	setUnavailable: setSharedInstanceUnavailable,
 	signedOut: sharedInstanceSignedOut,
@@ -313,7 +324,7 @@ const sharedInstanceUpdateKey = computed(() => {
 	const latestVersion = sharedInstanceUpdatePreview.value?.latestVersion
 	return instanceId && latestVersion !== undefined ? `${instanceId}:${latestVersion}` : null
 })
-const showSharedInstanceUpdateAdmonition = computed(
+const sharedInstanceUpdateAvailable = computed(
 	() =>
 		sharedInstanceUpdatePreview.value?.updateAvailable === true &&
 		sharedInstanceUpdateKey.value !== hiddenSharedInstanceUpdateKey.value,
@@ -497,7 +508,7 @@ async function handleSharedInstanceUnavailable(
 	setSharedInstanceUnavailable(reason)
 }
 
-function reviewSharedInstanceUpdate(event: MouseEvent) {
+function reviewSharedInstanceUpdate(event?: MouseEvent) {
 	const currentInstance = instance.value
 	const preview = sharedInstanceUpdatePreview.value
 	if (
@@ -774,6 +785,7 @@ provideInstancePage({
 	instance: instance as ComputedRef<GameInstance>,
 	linkedProject: linkedProjectV3,
 	isServerInstance,
+	sharedInstanceUpdateAvailable,
 	offline,
 	playing,
 	loading,
@@ -786,6 +798,7 @@ provideInstancePage({
 	openSettings,
 	browseContent,
 	browseServers,
+	reviewSharedInstanceUpdate,
 })
 provideInstanceBackup(() => instance.value!)
 
