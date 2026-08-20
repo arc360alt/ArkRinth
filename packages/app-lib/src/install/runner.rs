@@ -23,8 +23,10 @@ use crate::api::pack::install_mrpack::install_zipped_mrpack_files_with_reporter;
 use crate::event::InstancePayloadType;
 use crate::event::emit::emit_instance;
 use crate::state::instances::adapters::sqlite::content_rows;
+use crate::state::instances::commands::resolve_icon_path;
 use crate::state::{
-    ContentSourceKind, InstanceInstallStage, InstanceLink, ModLoader, State,
+    ContentSourceKind, InstanceIconConfig, InstanceInstallStage, InstanceLink,
+    ModLoader, State,
 };
 use crate::util::fetch::DownloadReason;
 use std::collections::HashSet;
@@ -37,6 +39,7 @@ pub async fn create_instance(
     loader: ModLoader,
     loader_version: Option<String>,
     icon_path: Option<String>,
+    icon_config: Option<InstanceIconConfig>,
     link: InstanceLink,
 ) -> crate::Result<InstallJobSnapshot> {
     start(InstallRequest::CreateInstance {
@@ -45,6 +48,7 @@ pub async fn create_instance(
         loader,
         loader_version,
         icon_path,
+        icon_config,
         link,
     })
     .await
@@ -436,6 +440,7 @@ async fn prepare_initial_instance(
             loader,
             loader_version,
             icon_path,
+            icon_config,
             link,
         } => {
             let metadata = crate::api::instance::create(
@@ -444,6 +449,7 @@ async fn prepare_initial_instance(
                 loader,
                 loader_version,
                 icon_path,
+                icon_config,
                 link,
             )
             .await?;
@@ -490,6 +496,7 @@ async fn prepare_initial_instance(
                 preview.modloader,
                 preview.loader_version,
                 icon_path,
+                None,
                 link,
             )
             .await?;
@@ -535,6 +542,7 @@ async fn prepare_initial_instance(
                 loader,
                 loader_version,
                 icon_path,
+                None,
                 shared_link,
             )
             .await?;
@@ -556,6 +564,7 @@ async fn prepare_initial_instance(
                 "1.19.4".to_string(),
                 ModLoader::Vanilla,
                 Some("latest".to_string()),
+                None,
                 None,
                 InstanceLink::Unmanaged,
             )
@@ -582,6 +591,7 @@ async fn prepare_initial_instance(
                 metadata.applied_content_set.loader,
                 metadata.applied_content_set.loader_version,
                 metadata.instance.icon_path,
+                None,
                 metadata.link,
             )
             .await?;
@@ -806,6 +816,7 @@ async fn run_request(
             loader,
             loader_version: _,
             icon_path: _,
+            icon_config: _,
             link: _,
         } => {
             let Some(instance_id) = current_instance_id(job_state) else {
@@ -1085,12 +1096,23 @@ async fn apply_post_install_edit(
     instance_id: &str,
     edit: Option<InstallPostInstallEdit>,
 ) -> crate::Result<()> {
-    let Some(edit) = edit else {
+    let Some(mut edit) = edit else {
         return Ok(());
     };
 
     if edit.name.is_none() && edit.icon_path.is_none() && edit.link.is_none() {
         return Ok(());
+    }
+
+    if let Some(icon_path) = edit.icon_path.take() {
+        let icon_path = match icon_path {
+            Some(icon_path) => {
+                let state = State::get().await?;
+                resolve_icon_path(Some(&icon_path), false, &state).await?
+            }
+            None => None,
+        };
+        edit.icon_path = Some(icon_path);
     }
 
     crate::api::instance::edit(

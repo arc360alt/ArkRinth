@@ -1,5 +1,45 @@
 <template>
 	<div class="space-y-6">
+		<div
+			v-if="ctx.projectInstall.value"
+			class="flex items-center gap-2.5 rounded-[20px] bg-surface-2 p-3"
+		>
+			<div class="shrink-0">
+				<div
+					class="size-14 shrink-0 overflow-hidden rounded-2xl border border-solid border-surface-5"
+				>
+					<Avatar
+						v-if="ctx.projectInstall.value.iconUrl"
+						:src="ctx.projectInstall.value.iconUrl"
+						:alt="ctx.projectInstall.value.title"
+						size="100%"
+						class="!rounded-2xl"
+						no-shadow
+					/>
+				</div>
+			</div>
+			<div class="flex flex-col gap-1">
+				<span class="font-semibold text-contrast">
+					{{ ctx.projectInstall.value.title }}
+				</span>
+				<div
+					v-if="ctx.projectInstall.value.owner"
+					class="flex items-center gap-2 text-sm text-secondary"
+				>
+					<div class="flex items-center gap-1.5 text-inherit">
+						<Avatar
+							:src="ctx.projectInstall.value.owner.iconUrl"
+							:alt="ctx.projectInstall.value.owner.name"
+							size="1.25rem"
+							:circle="ctx.projectInstall.value.owner.circle"
+							no-shadow
+						/>
+						<span class="font-medium">{{ ctx.projectInstall.value.owner.name }}</span>
+					</div>
+				</div>
+			</div>
+		</div>
+
 		<!-- Instance-specific: Icon upload -->
 		<div v-if="ctx.flowType === 'instance'" class="flex items-center gap-4">
 			<Avatar :src="ctx.instanceIconUrl.value ?? undefined" size="5rem" />
@@ -179,7 +219,15 @@
 
 <script setup lang="ts">
 import type { Paper } from '@modrinth/api-client'
-import { EyeIcon, EyeOffIcon, UploadIcon, XIcon } from '@modrinth/assets'
+import {
+	EyeIcon,
+	EyeOffIcon,
+	PaletteIcon,
+	RefreshCwIcon,
+	SpinnerIcon,
+	UploadIcon,
+	XIcon,
+} from '@modrinth/assets'
 import { commonMessages, defineMessages, useVIntl } from '@modrinth/ui'
 import { computed, onMounted, ref, watch } from 'vue'
 
@@ -211,13 +259,17 @@ const {
 } = ctx
 
 const messages = defineMessages({
-	selectIcon: {
+	uploadIcon: {
 		id: 'creation-flow.modal.custom-setup.icon.select',
-		defaultMessage: 'Select icon',
+		defaultMessage: 'Upload',
 	},
-	removeIcon: {
-		id: 'creation-flow.modal.custom-setup.icon.remove',
-		defaultMessage: 'Remove icon',
+	randomizeIcon: {
+		id: 'creation-flow.modal.custom-setup.icon.randomize',
+		defaultMessage: 'Randomize',
+	},
+	customizeIcon: {
+		id: 'creation-flow.modal.custom-setup.icon.customize',
+		defaultMessage: 'Customize',
 	},
 	nameLabel: {
 		id: 'creation-flow.modal.custom-setup.name.label',
@@ -301,6 +353,9 @@ const isOptiArkSetup = computed(() => ctx.setupType.value === 'optiark')
 // For instance flow, prepend 'vanilla' to available loaders.
 // For server flows, vanilla is a separate option in the setup type stage, so exclude it here.
 const effectiveLoaders = computed(() => {
+	if (ctx.projectInstall.value) {
+		return ctx.projectInstall.value.compatibleLoaders
+	}
 	if (ctx.flowType === 'instance') {
 		return ['vanilla', ...ctx.availableLoaders.filter((l) => l !== 'vanilla')]
 	}
@@ -501,6 +556,7 @@ function toApiLoaderName(loader: string): string {
 }
 
 const gameVersionsLoading = computed(() => {
+	if (ctx.projectInstall.value) return false
 	const loader = selectedLoader.value
 	if (!loader || loader === 'vanilla') return false
 	if (loader === 'paper') return ctx.paperSupportedVersions.value === null
@@ -510,6 +566,16 @@ const gameVersionsLoading = computed(() => {
 
 // Game versions from tags provider, filtered by loader support
 const gameVersionOptions = computed<ComboboxOption<string>[]>(() => {
+	if (ctx.projectInstall.value) {
+		const versions =
+			ctx.showSnapshots.value || ctx.projectInstall.value.releaseGameVersions.size === 0
+				? ctx.projectInstall.value.gameVersions
+				: ctx.projectInstall.value.gameVersions.filter((version) =>
+						ctx.projectInstall.value!.releaseGameVersions.has(version),
+					)
+		return versions.map((version) => ({ value: version, label: version }))
+	}
+
 	const versions = ctx.showSnapshots.value
 		? tags.gameVersions.value
 		: tags.gameVersions.value.filter((v) => v.version_type === 'release')
@@ -691,6 +757,7 @@ watch(
 		loaderVersionsData.value = []
 		selectedLoaderVersion.value = null
 
+		if (ctx.projectInstall.value) return
 		if (!loader || !gameVersion || loader === 'vanilla') return
 
 		loaderVersionsLoading.value = true

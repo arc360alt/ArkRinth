@@ -21,6 +21,7 @@ import {
 	defineMessages,
 	formatProjectTypeSentence,
 	injectModrinthClient,
+	injectUserPreferences,
 	PROJECT_DEP_MARKER_QUERY,
 	provideBrowseManager,
 	SelectedProjectsFloatingBar,
@@ -53,6 +54,7 @@ const debug = useDebugLogger('Discover')
 const { updateDiscoverFilterContext } = useCdnDownloadContext()
 
 const client = injectModrinthClient()
+const { updatePreferences } = injectUserPreferences()
 const queryClient = useQueryClient()
 
 const filtersMenuOpen = ref(false)
@@ -131,6 +133,17 @@ const resultsDisplayMode = computed<DisplayMode>(() =>
 		: 'list',
 )
 
+const layoutPreferenceKeys = {
+	mod: 'mods',
+	plugin: 'plugins',
+	datapack: 'datapacks',
+	shader: 'shaders',
+	resourcepack: 'resourcepacks',
+	modpack: 'modpacks',
+	server: 'servers',
+	user: 'users',
+} as const satisfies Partial<Record<DisplayLocation, keyof Labrinth.Users.v3.LayoutPreferences>>
+
 const maxResultsForView = ref<Record<DisplayMode, number[]>>({
 	list: [5, 10, 15, 20, 50, 100],
 	grid: [6, 12, 18, 24, 48, 96],
@@ -143,10 +156,21 @@ const currentMaxResultsOptions = computed(
 
 function cycleSearchDisplayMode() {
 	if (!resultsDisplayLocation.value) return
-	cosmetics.value.searchDisplayMode[resultsDisplayLocation.value] = cycleValue(
+	const displayMode = cycleValue(
 		cosmetics.value.searchDisplayMode[resultsDisplayLocation.value],
 		tags.value.projectViewModes.filter((x) => x !== 'grid'),
 	)
+	cosmetics.value.searchDisplayMode[resultsDisplayLocation.value] = displayMode
+
+	const preferenceKey =
+		layoutPreferenceKeys[resultsDisplayLocation.value as keyof typeof layoutPreferenceKeys]
+	if (!preferenceKey) return
+
+	void updatePreferences({
+		layouts: {
+			[preferenceKey]: displayMode === 'list' ? 'rows' : 'grid',
+		} as Partial<Labrinth.Users.v3.LayoutPreferences>,
+	}).catch(() => undefined)
 }
 
 const onboardingModalRef = ref<ServerInstallModalHandle | null>(null)
@@ -163,6 +187,7 @@ const {
 	hideSelectedServerInstalls,
 	installingProjectIds,
 	optimisticallyInstalledProjectIds,
+	queuedServerInstallRootProjectIds,
 	queuedServerInstallProjectIds,
 	queuedServerInstallCount,
 	isInstallingQueuedServerInstalls,
@@ -327,6 +352,7 @@ function getCardActions(
 
 	if (serverData.value) {
 		const isQueued = queuedServerInstallProjectIds.value.has(result.project_id)
+		const isQueuedRoot = queuedServerInstallRootProjectIds.value.has(result.project_id)
 		const isInstalled =
 			projectResult.installed ||
 			optimisticallyInstalledProjectIds.value.has(result.project_id) ||
@@ -362,7 +388,8 @@ function getCardActions(
 							? CheckIcon
 							: DownloadIcon,
 				iconClass: isInstalling || isInstallingSelection ? 'animate-spin' : undefined,
-				disabled: !!isInstalled || isInstalling || isInstallingSelection,
+				disabled:
+					!!isInstalled || isInstalling || isInstallingSelection || (isQueued && !isQueuedRoot),
 				color: isQueued && !isInstalling && !isInstallingSelection ? 'green' : 'brand',
 				type: 'outlined',
 				onClick: () => serverInstall(projectResult),
@@ -594,7 +621,7 @@ const { isStuck: isInstallHeaderStuck } = useStickyObserver(
 		"
 	>
 		<section
-			class="flex min-w-0 flex-col gap-3"
+			class="mt-6 flex min-w-0 flex-col gap-3 sm:mt-0"
 			:class="cosmetics.rightSearchLayout ? 'lg:order-1' : 'lg:order-2'"
 		>
 			<BrowsePageLayout>

@@ -10,7 +10,7 @@ import type { InstallProgressSecondary } from '@/generated/app-events/InstallPro
 import type { SharedInstanceUnavailableReason } from '@/generated/app-events/SharedInstanceUnavailableReason'
 import type { AppEvents } from '@/providers/app-events'
 
-import type { InstanceLink, InstanceLoader } from './types'
+import type { InstanceIconConfig, InstanceLink, InstanceLoader } from './types'
 
 export type {
 	InstallErrorView,
@@ -63,6 +63,7 @@ export interface InstallCreateInstanceRequest {
 	loader: InstanceLoader
 	loaderVersion: string | null
 	iconPath: string | null
+	iconConfig?: InstanceIconConfig | null
 	link?: InstanceLink | null
 }
 
