@@ -1560,9 +1560,8 @@ async function downloadUpdate(versionToDownload) {
 			.then(() => {
 				downloading.value = false
 				finishedDownloading.value = true
-				unlistenUpdateDownload?.().then(() => {
-					unlistenUpdateDownload = null
-				})
+				unlistenUpdateDownload?.()
+				unlistenUpdateDownload = null
 				console.log('Finished downloading!')
 				markAppUpdateActionable(versionToDownload.version, 'downloaded')
 				scheduleDelayedUpdatePopup()
