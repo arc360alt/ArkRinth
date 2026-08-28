@@ -90,12 +90,10 @@
 			<!-- CTA section -->
 			<div class="flex flex-col gap-6 items-start">
 				<div class="flex flex-col gap-3 items-start">
-					<ButtonStyled color="brand">
-						<button>
-							<PlusIcon aria-hidden="true" />
-							Download App (Coming soon)
-						</button>
-					</ButtonStyled>
+					<Button type="colored" color="brand">
+						<PlusIcon aria-hidden="true" />
+						Download App (Coming soon)
+					</Button>
 
 				<p class="this">This is a separate app from the NyxRinth App.</p>
 				</div>

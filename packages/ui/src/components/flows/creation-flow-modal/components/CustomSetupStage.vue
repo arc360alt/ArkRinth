@@ -49,18 +49,14 @@
 			</div>
 			<div class="flex flex-col gap-2">
 				<template v-if="!isOptiArkSetup">
-				<ButtonStyled type="outlined">
-					<button @click="triggerIconInput">
-						<UploadIcon />
-						{{ formatMessage(messages.selectIcon) }}
-					</button>
-				</ButtonStyled>
-				<ButtonStyled type="outlined">
-					<button :disabled="!ctx.instanceIcon.value" @click="removeIcon">
-						<XIcon />
-						{{ formatMessage(messages.removeIcon) }}
-					</button>
-				</ButtonStyled>
+				<Button type="outlined" @click="triggerIconInput">
+					<UploadIcon />
+					{{ formatMessage(messages.selectIcon) }}
+				</Button>
+				<Button type="outlined" :disabled="!ctx.instanceIcon.value" @click="removeIcon">
+					<XIcon />
+					{{ formatMessage(messages.removeIcon) }}
+				</Button>
 				</template>
 			</div>
 		</div>
@@ -241,7 +237,6 @@ import Collapsible from '../../../base/Collapsible.vue'
 import Combobox, { type ComboboxOption } from '../../../base/Combobox.vue'
 import Input from '../../../base/inputs/Input.vue'
 import PaperChannelBadge from '../../../base/PaperChannelBadge.vue'
-import StyledInput from '../../../base/StyledInput.vue'
 import type { LoaderVersionType, OptiArkVersionOption } from '../creation-flow-context'
 import { injectCreationFlowContext } from '../creation-flow-context'
 import { formatLoaderLabel } from '../shared'

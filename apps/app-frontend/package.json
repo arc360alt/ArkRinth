@@ -4,7 +4,9 @@
 	"version": "1.0.0",
 	"type": "module",
 	"scripts": {
+		"predev": "pnpm -w scripts coverage-i18n --write packages/ui/src/layouts/wrapped/settings/language-settings/language-settings-coverage.generated.ts",
 		"dev": "vite",
+		"prebuild": "pnpm -w scripts coverage-i18n --write packages/ui/src/layouts/wrapped/settings/language-settings/language-settings-coverage.generated.ts",
 		"build": "vue-tsc --noEmit && vite build",
 		"tsc:check": "vue-tsc --noEmit",
 		"lint": "eslint . && prettier --check .",

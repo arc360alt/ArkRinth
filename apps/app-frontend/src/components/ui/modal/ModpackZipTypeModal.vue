@@ -6,28 +6,22 @@
 
 		<template #actions>
 			<div class="flex justify-end gap-2">
-				<ButtonStyled type="outlined">
-					<button class="!border !border-surface-4" @click="handleCancel">
-						{{ formatMessage(commonMessages.cancelButton) }}
-					</button>
-				</ButtonStyled>
-				<ButtonStyled type="outlined">
-					<button @click="handleSelect('resourcepack')">
-						{{ formatMessage(messages.resourcepack) }}
-					</button>
-				</ButtonStyled>
-				<ButtonStyled>
-					<button @click="handleSelect('shaderpack')">
-						{{ formatMessage(messages.shaderpack) }}
-					</button>
-				</ButtonStyled>
+				<Button type="outlined" @click="handleCancel">
+					{{ formatMessage(commonMessages.cancelButton) }}
+				</Button>
+				<Button type="outlined" @click="handleSelect('resourcepack')">
+					{{ formatMessage(messages.resourcepack) }}
+				</Button>
+				<Button @click="handleSelect('shaderpack')">
+					{{ formatMessage(messages.shaderpack) }}
+				</Button>
 			</div>
 		</template>
 	</NewModal>
 </template>
 
 <script setup lang="ts">
-import { ButtonStyled, commonMessages, defineMessages, NewModal, useVIntl } from '@modrinth/ui'
+import { Button, commonMessages, defineMessages, NewModal, useVIntl } from '@modrinth/ui'
 import { ref } from 'vue'
 
 type ZipContentType = 'resourcepack' | 'shaderpack'

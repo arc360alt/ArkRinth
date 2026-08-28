@@ -4,13 +4,11 @@
 		class="flex flex-col gap-3 bg-button-bg border border-solid border-surface-5 rounded-xl p-3 mt-2"
 	>
 		<span>{{ formatMessage(messages.notSignedIn) }}</span>
-		<ButtonStyled color="brand">
-			<button color="primary" :disabled="loginDisabled" @click="login()">
-				<LogInIcon v-if="!loginDisabled" />
-				<SpinnerIcon v-else class="animate-spin" />
-				{{ formatMessage(messages.signInToMinecraft) }}
-			</button>
-		</ButtonStyled>
+		<Button type="colored" color="brand" :disabled="loginDisabled" @click="login()">
+			<LogInIcon v-if="!loginDisabled" />
+			<SpinnerIcon v-else class="animate-spin" />
+			{{ formatMessage(messages.signInToMinecraft) }}
+		</Button>
 		<div class="flex flex-col gap-2 pt-2 mt-1 border-0 border-t border-solid border-surface-5">
 			<span class="text-secondary text-xs uppercase font-semibold tracking-wide pt-2">{{
 				formatMessage(messages.playOffline)
@@ -23,12 +21,16 @@
 					maxlength="16"
 					@keydown.enter="loginOffline"
 				/>
-				<ButtonStyled circular color="brand">
-					<button :disabled="loginDisabled || !offlineUsername.trim()" @click="loginOffline">
-						<SpinnerIcon v-if="loginDisabled" class="animate-spin" />
-						<LogInIcon v-else />
-					</button>
-				</ButtonStyled>
+				<IconButton
+					type="colored"
+					color="brand"
+					:label="formatMessage(messages.signInToMinecraft)"
+					:disabled="loginDisabled || !offlineUsername.trim()"
+					@click="loginOffline"
+				>
+					<SpinnerIcon v-if="loginDisabled" class="animate-spin" />
+					<LogInIcon v-else />
+				</IconButton>
 			</div>
 		</div>
 	</div>
@@ -93,12 +95,10 @@
 				</div>
 			</template>
 			<div class="flex flex-col gap-2 px-2 pt-2">
-				<ButtonStyled v-if="accounts.length > 0" class="w-full">
-					<button :disabled="loginDisabled" @click="login()">
-						<PlusIcon />
-						{{ formatMessage(messages.addAccount) }}
-					</button>
-				</ButtonStyled>
+				<Button v-if="accounts.length > 0" class="w-full" :disabled="loginDisabled" @click="login()">
+					<PlusIcon />
+					{{ formatMessage(messages.addAccount) }}
+				</Button>
 				<div class="flex flex-col gap-2 pt-2 border-0 border-t border-solid border-surface-5">
 					<span class="text-secondary text-xs uppercase font-semibold tracking-wide pt-2">{{
 						formatMessage(messages.playOffline)
@@ -111,12 +111,16 @@
 							maxlength="16"
 							@keydown.enter="loginOffline"
 						/>
-						<ButtonStyled circular color="brand">
-							<button :disabled="loginDisabled || !offlineUsername.trim()" @click="loginOffline">
-								<SpinnerIcon v-if="loginDisabled" class="animate-spin" />
-								<LogInIcon v-else />
-							</button>
-						</ButtonStyled>
+						<IconButton
+							type="colored"
+							color="brand"
+							:label="formatMessage(messages.signInToMinecraft)"
+							:disabled="loginDisabled || !offlineUsername.trim()"
+							@click="loginOffline"
+						>
+							<SpinnerIcon v-if="loginDisabled" class="animate-spin" />
+							<LogInIcon v-else />
+						</IconButton>
 					</div>
 				</div>
 			</div>

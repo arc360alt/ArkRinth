@@ -11,7 +11,6 @@ import {
 } from '@modrinth/assets'
 import {
 	Admonition,
-	ButtonStyled,
 	commonMessages,
 	ConfirmModal,
 	defineMessages,
